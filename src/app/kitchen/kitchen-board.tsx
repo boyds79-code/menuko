@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
+import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { formatPeso } from "@/lib/money";
 
 const ORDER_SELECT =
-  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 export function KitchenBoard({
   restaurantId,
@@ -104,7 +104,12 @@ function OrderCard({
       className={`flex flex-col gap-2 rounded-xl border border-border bg-card p-4 shadow-sm ${done ? "opacity-60" : ""}`}
     >
       <div className="flex items-center justify-between">
-        <span className="font-semibold">{order.table_label}</span>
+        <span className="font-semibold">
+          {order.table_label}
+          {CHANNEL_BADGE[order.channel] && (
+            <span className="ml-1.5 text-xs font-normal text-muted">{CHANNEL_BADGE[order.channel]}</span>
+          )}
+        </span>
         <span className="text-xs text-muted">
           {new Date(order.created_at).toLocaleTimeString("en-PH", {
             hour: "2-digit",
@@ -112,6 +117,7 @@ function OrderCard({
           })}
         </span>
       </div>
+      {order.note && <p className="text-xs italic text-muted">{order.note}</p>}
       <ul className="flex flex-col gap-1 text-sm">
         {order.items.map((item) => (
           <li key={item.id} className="flex justify-between gap-2">

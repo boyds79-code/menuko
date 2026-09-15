@@ -8,8 +8,11 @@ export default async function AdminTablesPage() {
 
   const { data: tables } = await supabase
     .from("tables")
-    .select("id, label, qr_token")
+    .select("id, label, qr_token, capacity")
     .eq("restaurant_id", ctx.restaurantId)
+    // Virtual tables (Delivery/Takeout, see 0011_manual_orders.sql) aren't
+    // real seats — nothing to print a QR for.
+    .eq("is_virtual", false)
     .order("label");
 
   return (

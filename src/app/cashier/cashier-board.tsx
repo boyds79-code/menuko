@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
+import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { formatPeso } from "@/lib/money";
 import { ORDER_STATUS_LABEL } from "@/lib/constants";
 
 const ORDER_SELECT =
-  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 type TableGroup = {
   tableId: string;
@@ -30,7 +30,7 @@ export function CashierBoard({
 }) {
   const [orders, setOrders] = useState<OrderView[]>(initialOrders);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [settling, setSettling] = useState(false);
+  const [settling, setSettling] = useState<string | null>(null);
   const supabase = createClient();
 
   const refresh = useCallback(async () => {
@@ -74,16 +74,19 @@ export function CashierBoard({
     }, {}),
   ).sort((a, b) => a.tableLabel.localeCompare(b.tableLabel));
 
-  async function settle(group: TableGroup) {
-    setSettling(true);
-    const orderIds = group.orders.map((o) => o.id);
+  // Settling is this app's definition of "the visit is over" for that
+  // table — but only once nothing else is left unpaid there. A dine-in
+  // table mid-meal (someone else's order still open) must not be freed
+  // just because one order on it was settled.
+  async function settlePaid(orderIds: string[], tableId: string, remainingAfter: number) {
+    setSettling(tableId);
     await supabase.from("orders").update({ status: "paid" }).in("id", orderIds);
-    // Settling is this app's definition of "the visit is over" — free the
-    // table so the next customer's scan/seating starts a fresh session.
-    await supabase.rpc("free_table", { p_table_id: group.tableId });
+    if (remainingAfter === 0) {
+      await supabase.rpc("free_table", { p_table_id: tableId });
+    }
     setOrders((prev) => prev.filter((o) => !orderIds.includes(o.id)));
-    setSettling(false);
-    setExpanded(null);
+    setSettling(null);
+    setExpanded((prev) => (remainingAfter === 0 ? null : prev));
   }
 
   return (
@@ -111,12 +114,27 @@ export function CashierBoard({
 
               {expanded === group.tableId && (
                 <div className="flex flex-col gap-3">
-                  <ul className="flex flex-col gap-1 text-sm">
+                  <ul className="flex flex-col gap-2 text-sm">
                     {group.orders.map((order) => (
-                      <li key={order.id} className="border-t border-border pt-1 first:border-t-0 first:pt-0">
-                        <p className="text-xs text-muted">
-                          {ORDER_STATUS_LABEL[order.status] ?? order.status}
-                        </p>
+                      <li key={order.id} className="border-t border-border pt-2 first:border-t-0 first:pt-0">
+                        <div className="mb-1 flex items-center justify-between">
+                          <p className="text-xs text-muted">
+                            {ORDER_STATUS_LABEL[order.status] ?? order.status}
+                            {CHANNEL_BADGE[order.channel] && ` · ${CHANNEL_BADGE[order.channel]}`}
+                            {order.note && ` · ${order.note}`}
+                          </p>
+                          {group.orders.length > 1 && (
+                            <button
+                              onClick={() =>
+                                settlePaid([order.id], group.tableId, group.orders.length - 1)
+                              }
+                              disabled={settling === group.tableId}
+                              className="text-xs text-brand underline disabled:opacity-60"
+                            >
+                              Settle this order
+                            </button>
+                          )}
+                        </div>
                         {order.items.map((item) => (
                           <div key={item.id} className="flex justify-between">
                             <span>
@@ -154,11 +172,17 @@ export function CashierBoard({
                   )}
 
                   <button
-                    onClick={() => settle(group)}
-                    disabled={settling}
+                    onClick={() =>
+                      settlePaid(
+                        group.orders.map((o) => o.id),
+                        group.tableId,
+                        0,
+                      )
+                    }
+                    disabled={settling === group.tableId}
                     className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
                   >
-                    Settle payment
+                    {group.orders.length > 1 ? "Settle all" : "Settle payment"}
                   </button>
                 </div>
               )}

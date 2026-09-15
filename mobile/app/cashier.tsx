@@ -18,11 +18,12 @@ import { createMutationQueue } from "@/lib/offline-queue";
 import { registerForPushNotifications } from "@/lib/push";
 import { formatPeso } from "@/lib/money";
 import { ORDER_STATUS_LABEL } from "@/lib/constants";
-import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
+import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { NewOrderForm } from "@/components/NewOrderForm";
 
 const ORDER_SELECT =
-  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 type SettlePayload = { orderIds: string[] };
 
@@ -33,9 +34,13 @@ type TableGroup = {
   total: number;
 };
 
+type MenuCategory = { id: string; name: string; sort_order: number };
+type MenuItemRow = { id: string; category_id: string | null; name: string; price: number };
+
 type TableRow = {
   id: string;
   label: string;
+  capacity: number;
   occupied_since: string | null;
   occupied_source: string | null;
   first_order_at: string | null;
@@ -50,6 +55,8 @@ export default function Cashier() {
 
   const [orders, setOrders] = useState<OrderView[]>([]);
   const [tables, setTables] = useState<TableRow[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemRow[]>([]);
   const [tableBusyId, setTableBusyId] = useState<string | null>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [paymentQrUrl, setPaymentQrUrl] = useState<string | null>(null);
@@ -99,8 +106,9 @@ export default function Cashier() {
     if (!restaurantId) return;
     const { data } = await supabase
       .from("tables")
-      .select("id, label, occupied_since, occupied_source, first_order_at")
+      .select("id, label, capacity, occupied_since, occupied_source, first_order_at")
       .eq("restaurant_id", restaurantId)
+      .eq("is_virtual", false)
       .order("label");
     setTables(data ?? []);
   }, [restaurantId]);
@@ -126,6 +134,23 @@ export default function Cashier() {
       supabase.removeChannel(channel);
     };
   }, [restaurantId, fetchTables]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    supabase
+      .from("menu_categories")
+      .select("id, name, sort_order")
+      .eq("restaurant_id", restaurantId)
+      .order("sort_order")
+      .then(({ data }) => setCategories(data ?? []));
+    supabase
+      .from("menu_items")
+      .select("id, category_id, name, price")
+      .eq("restaurant_id", restaurantId)
+      .eq("is_available", true)
+      .order("sort_order")
+      .then(({ data }) => setMenuItems(data ?? []));
+  }, [restaurantId]);
 
   useEffect(() => {
     const id = setInterval(() => setNowTick(Date.now()), 15_000);
@@ -177,14 +202,17 @@ export default function Cashier() {
     });
   }, []);
 
-  async function settle(group: TableGroup) {
-    const orderIds = group.orders.map((o) => o.id);
+  // orderIds is any subset of a table's unpaid orders — the whole group
+  // ("Settle all") or a single one ("Settle this order"). Only frees the
+  // table once nothing else is left unpaid there, so settling one delivery
+  // order (or one dine-in order mid-meal) doesn't reset a still-active table.
+  async function settle(group: TableGroup, orderIds: string[]) {
     setOrders((prev) => prev.filter((o) => !orderIds.includes(o.id)));
-    setExpanded(null);
+    if (orderIds.length === group.orders.length) setExpanded(null);
     await queueRef.current.enqueue({ orderIds });
-    // Settling ends the visit in this app's model — free the table so the
-    // next customer's scan/seating starts a fresh session.
-    await supabase.rpc("free_table", { p_table_id: group.tableId });
+    if (orderIds.length === group.orders.length) {
+      await supabase.rpc("free_table", { p_table_id: group.tableId });
+    }
   }
 
   async function seatTable(tableId: string) {
@@ -251,6 +279,7 @@ export default function Cashier() {
                 ]}
               >
                 <Text style={styles.tableChipLabel}>{table.label}</Text>
+                <Text style={styles.tableChipSeats}>· {table.capacity} seats</Text>
                 {isFree ? (
                   <>
                     <Text style={styles.tableChipStatus}>Free</Text>
@@ -284,6 +313,8 @@ export default function Cashier() {
         </ScrollView>
       </View>
 
+      <NewOrderForm categories={categories} items={menuItems} />
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -305,9 +336,18 @@ export default function Cashier() {
                 <View style={{ gap: 10 }}>
                   {group.orders.map((order) => (
                     <View key={order.id}>
-                      <Text style={styles.orderStatus}>
-                        {ORDER_STATUS_LABEL[order.status] ?? order.status}
-                      </Text>
+                      <View style={styles.orderStatusRow}>
+                        <Text style={styles.orderStatus}>
+                          {ORDER_STATUS_LABEL[order.status] ?? order.status}
+                          {CHANNEL_BADGE[order.channel] ? ` · ${CHANNEL_BADGE[order.channel]}` : ""}
+                          {order.note ? ` · ${order.note}` : ""}
+                        </Text>
+                        {group.orders.length > 1 && (
+                          <TouchableOpacity onPress={() => settle(group, [order.id])}>
+                            <Text style={styles.link}>Settle this</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                       {order.items.map((item) => (
                         <View key={item.id} style={styles.itemRow}>
                           <Text style={styles.item}>
@@ -334,8 +374,13 @@ export default function Cashier() {
                     </View>
                   )}
 
-                  <TouchableOpacity style={styles.settleButton} onPress={() => settle(group)}>
-                    <Text style={styles.settleButtonText}>Settle payment</Text>
+                  <TouchableOpacity
+                    style={styles.settleButton}
+                    onPress={() => settle(group, group.orders.map((o) => o.id))}
+                  >
+                    <Text style={styles.settleButtonText}>
+                      {group.orders.length > 1 ? "Settle all" : "Settle payment"}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -385,6 +430,7 @@ const styles = StyleSheet.create({
   tableChipWaiting: { backgroundColor: "#fef3e2", borderColor: "#f3ca8e" },
   tableChipStalled: { backgroundColor: "#fee2e2", borderColor: "#fca5a5" },
   tableChipLabel: { fontSize: 12, fontWeight: "700" },
+  tableChipSeats: { fontSize: 11, color: "#8a7c68" },
   tableChipStatus: { fontSize: 11, color: "#5b5142" },
   tableChipAction: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   tableChipActionText: { fontSize: 10, fontWeight: "700", color: "#ffffff" },
@@ -404,7 +450,8 @@ const styles = StyleSheet.create({
   cardTable: { fontWeight: "700" },
   cardTotal: { fontWeight: "700", color: "#ea7c1f" },
   link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
-  orderStatus: { fontSize: 11, color: "#8a7c68", marginBottom: 2 },
+  orderStatusRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 },
+  orderStatus: { fontSize: 11, color: "#8a7c68", flex: 1 },
   itemRow: { flexDirection: "row", justifyContent: "space-between" },
   item: { fontSize: 14 },
   paymentBox: { alignItems: "center", gap: 6, backgroundColor: "#fffaf3", borderRadius: 10, padding: 10 },

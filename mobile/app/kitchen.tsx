@@ -15,11 +15,11 @@ import { readCache, writeCache } from "@/lib/offline-cache";
 import { createMutationQueue } from "@/lib/offline-queue";
 import { registerForPushNotifications } from "@/lib/push";
 import { formatPeso } from "@/lib/money";
-import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
+import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { OfflineBanner } from "@/components/OfflineBanner";
 
 const ORDER_SELECT =
-  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 type MarkServedPayload = { orderId: string };
 
@@ -164,7 +164,10 @@ function OrderCard({
   return (
     <View style={[styles.card, done && styles.cardDone]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTable}>{order.table_label}</Text>
+        <Text style={styles.cardTable}>
+          {order.table_label}
+          {CHANNEL_BADGE[order.channel] ? ` ${CHANNEL_BADGE[order.channel]}` : ""}
+        </Text>
         <Text style={styles.cardTime}>
           {new Date(order.created_at).toLocaleTimeString("en-PH", {
             hour: "2-digit",
@@ -172,6 +175,7 @@ function OrderCard({
           })}
         </Text>
       </View>
+      {order.note && <Text style={styles.cardNote}>{order.note}</Text>}
       {order.items.map((item) => (
         <Text key={item.id} style={styles.item}>
           {item.menu_item_name} × {item.quantity}
@@ -219,6 +223,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: "row", justifyContent: "space-between" },
   cardTable: { fontWeight: "700" },
   cardTime: { fontSize: 11, color: "#8a7c68" },
+  cardNote: { fontSize: 11, fontStyle: "italic", color: "#8a7c68" },
   item: { fontSize: 14 },
   cardFooter: {
     flexDirection: "row",

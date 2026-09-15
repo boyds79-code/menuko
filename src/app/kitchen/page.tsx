@@ -5,7 +5,7 @@ import { toOrderView, type RawOrderRow } from "@/lib/orders";
 import { KitchenBoard } from "./kitchen-board";
 
 const ORDER_SELECT =
-  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 export default async function KitchenPage() {
   const ctx = await requireStaff("kitchen");

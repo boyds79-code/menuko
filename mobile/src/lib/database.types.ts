@@ -292,6 +292,7 @@ export type Database = {
           channel: Database["public"]["Enums"]["order_channel"]
           created_at: string
           id: string
+          note: string | null
           restaurant_id: string
           status: Database["public"]["Enums"]["order_status"]
           table_id: string
@@ -301,6 +302,7 @@ export type Database = {
           channel?: Database["public"]["Enums"]["order_channel"]
           created_at?: string
           id?: string
+          note?: string | null
           restaurant_id: string
           status?: Database["public"]["Enums"]["order_status"]
           table_id: string
@@ -310,6 +312,7 @@ export type Database = {
           channel?: Database["public"]["Enums"]["order_channel"]
           created_at?: string
           id?: string
+          note?: string | null
           restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string
@@ -372,9 +375,11 @@ export type Database = {
       }
       tables: {
         Row: {
+          capacity: number
           created_at: string
           first_order_at: string | null
           id: string
+          is_virtual: boolean
           label: string
           occupied_since: string | null
           occupied_source: string | null
@@ -383,9 +388,11 @@ export type Database = {
           stall_alerted: boolean
         }
         Insert: {
+          capacity?: number
           created_at?: string
           first_order_at?: string | null
           id?: string
+          is_virtual?: boolean
           label: string
           occupied_since?: string | null
           occupied_source?: string | null
@@ -394,9 +401,11 @@ export type Database = {
           stall_alerted?: boolean
         }
         Update: {
+          capacity?: number
           created_at?: string
           first_order_at?: string | null
           id?: string
+          is_virtual?: boolean
           label?: string
           occupied_since?: string | null
           occupied_source?: string | null
@@ -420,6 +429,17 @@ export type Database = {
     }
     Functions: {
       check_table_stalls: { Args: never; Returns: undefined }
+      create_manual_order: {
+        Args: {
+          p_channel: Database["public"]["Enums"]["order_channel"]
+          p_items: Json
+          p_note?: string
+        }
+        Returns: {
+          access_token: string
+          order_id: string
+        }[]
+      }
       create_order: {
         Args: { p_items: Json; p_qr_token: string }
         Returns: {
@@ -452,7 +472,7 @@ export type Database = {
     Enums: {
       account_role: "owner" | "kitchen" | "cashier"
       business_type: "restaurant" | "cafe"
-      order_channel: "dine_in" | "manual_delivery_entry"
+      order_channel: "dine_in" | "manual_delivery_entry" | "manual_pickup_entry"
       order_status: "open" | "sent_to_kitchen" | "preparing" | "served" | "paid"
       restaurant_plan: "free" | "premium"
     }
@@ -587,7 +607,11 @@ export const Constants = {
     Enums: {
       account_role: ["owner", "kitchen", "cashier"],
       business_type: ["restaurant", "cafe"],
-      order_channel: ["dine_in", "manual_delivery_entry"],
+      order_channel: [
+        "dine_in",
+        "manual_delivery_entry",
+        "manual_pickup_entry",
+      ],
       order_status: ["open", "sent_to_kitchen", "preparing", "served", "paid"],
       restaurant_plan: ["free", "premium"],
     },

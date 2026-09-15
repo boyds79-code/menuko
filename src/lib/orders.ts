@@ -12,6 +12,7 @@ export type OrderView = {
   id: string;
   status: OrderStatus;
   channel: OrderChannel;
+  note: string | null;
   created_at: string;
   table_id: string;
   table_label: string;
@@ -30,6 +31,7 @@ export type RawOrderRow = {
   id: string;
   status: OrderStatus;
   channel: OrderChannel;
+  note: string | null;
   created_at: string;
   table_id: string;
   tables: { label: string } | { label: string }[] | null;
@@ -48,6 +50,7 @@ export function toOrderView(row: RawOrderRow): OrderView {
     id: row.id,
     status: row.status,
     channel: row.channel,
+    note: row.note,
     created_at: row.created_at,
     table_id: row.table_id,
     table_label: table?.label ?? "-",
@@ -65,3 +68,9 @@ export function toOrderView(row: RawOrderRow): OrderView {
     }),
   };
 }
+
+export const CHANNEL_BADGE: Record<OrderChannel, string | null> = {
+  dine_in: null,
+  manual_delivery_entry: "🛵 Delivery",
+  manual_pickup_entry: "🥡 Takeout",
+};

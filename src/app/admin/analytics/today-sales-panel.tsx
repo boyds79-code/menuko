@@ -7,7 +7,7 @@ import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib
 import { formatPeso } from "@/lib/money";
 
 const ORDER_SELECT =
-  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 // A remote, at-a-glance view of "how's the shop doing right now" for an
 // owner who isn't on-site — total revenue collected today, how many orders

@@ -5,7 +5,7 @@ import { toOrderView, type RawOrderRow } from "@/lib/orders";
 import { TodaySalesPanel } from "./today-sales-panel";
 
 const ORDER_SELECT =
-  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 export default async function AdminAnalyticsPage() {
   const ctx = await requireStaff("owner");

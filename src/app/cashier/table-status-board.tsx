@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 type TableRow = {
   id: string;
   label: string;
+  capacity: number;
   occupied_since: string | null;
   occupied_source: string | null;
   first_order_at: string | null;
@@ -31,7 +32,7 @@ export function TableStatusBoard({
   const refresh = useCallback(async () => {
     const { data } = await supabase
       .from("tables")
-      .select("id, label, occupied_since, occupied_source, first_order_at")
+      .select("id, label, capacity, occupied_since, occupied_source, first_order_at")
       .eq("restaurant_id", restaurantId)
       .order("label");
     setTables(data ?? []);
@@ -97,6 +98,7 @@ export function TableStatusBoard({
               }`}
             >
               <span className="font-medium">{table.label}</span>
+              <span className="text-muted">· {table.capacity} seats</span>
               {isFree ? (
                 <>
                   <span>Free</span>
