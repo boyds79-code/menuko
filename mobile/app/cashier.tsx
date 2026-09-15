@@ -33,12 +33,25 @@ type TableGroup = {
   total: number;
 };
 
+type TableRow = {
+  id: string;
+  label: string;
+  occupied_since: string | null;
+  occupied_source: string | null;
+  first_order_at: string | null;
+};
+
+const STALL_MINUTES = 10;
+
 export default function Cashier() {
   const { session, account, signOut } = useSession();
   const restaurantId = account?.restaurantId;
   const cacheKey = restaurantId ? `menuko:cashier:${restaurantId}` : null;
 
   const [orders, setOrders] = useState<OrderView[]>([]);
+  const [tables, setTables] = useState<TableRow[]>([]);
+  const [tableBusyId, setTableBusyId] = useState<string | null>(null);
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const [paymentQrUrl, setPaymentQrUrl] = useState<string | null>(null);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -81,6 +94,43 @@ export default function Cashier() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOrders();
   }, [fetchOrders]);
+
+  const fetchTables = useCallback(async () => {
+    if (!restaurantId) return;
+    const { data } = await supabase
+      .from("tables")
+      .select("id, label, occupied_since, occupied_source, first_order_at")
+      .eq("restaurant_id", restaurantId)
+      .order("label");
+    setTables(data ?? []);
+  }, [restaurantId]);
+
+  useEffect(() => {
+    // Same documented fetch-in-effect pattern as fetchOrders above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTables();
+  }, [fetchTables]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`table-status-${restaurantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tables", filter: `restaurant_id=eq.${restaurantId}` },
+        () => fetchTables(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [restaurantId, fetchTables]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -132,6 +182,21 @@ export default function Cashier() {
     setOrders((prev) => prev.filter((o) => !orderIds.includes(o.id)));
     setExpanded(null);
     await queueRef.current.enqueue({ orderIds });
+    // Settling ends the visit in this app's model — free the table so the
+    // next customer's scan/seating starts a fresh session.
+    await supabase.rpc("free_table", { p_table_id: group.tableId });
+  }
+
+  async function seatTable(tableId: string) {
+    setTableBusyId(tableId);
+    await supabase.rpc("mark_table_occupied", { p_table_id: tableId });
+    setTableBusyId(null);
+  }
+
+  async function freeTable(tableId: string) {
+    setTableBusyId(tableId);
+    await supabase.rpc("free_table", { p_table_id: tableId });
+    setTableBusyId(null);
   }
 
   async function onRefresh() {
@@ -161,6 +226,62 @@ export default function Cashier() {
         <TouchableOpacity onPress={() => signOut()}>
           <Text style={styles.signOut}>Sign out</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.tablesSection}>
+        <Text style={styles.tablesTitle}>Tables</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableChipRow}>
+          {tables.map((table) => {
+            const isFree = !table.occupied_since;
+            const isOrdering = !!table.first_order_at;
+            const waitingMinutes = table.occupied_since
+              ? Math.floor((nowTick - new Date(table.occupied_since).getTime()) / 60_000)
+              : 0;
+            const isStalled = !isFree && !isOrdering && waitingMinutes >= STALL_MINUTES;
+            const busy = tableBusyId === table.id;
+
+            return (
+              <View
+                key={table.id}
+                style={[
+                  styles.tableChip,
+                  isFree && styles.tableChipFree,
+                  isStalled && styles.tableChipStalled,
+                  !isFree && !isStalled && !isOrdering && styles.tableChipWaiting,
+                ]}
+              >
+                <Text style={styles.tableChipLabel}>{table.label}</Text>
+                {isFree ? (
+                  <>
+                    <Text style={styles.tableChipStatus}>Free</Text>
+                    <TouchableOpacity
+                      onPress={() => seatTable(table.id)}
+                      disabled={busy}
+                      style={styles.tableChipAction}
+                    >
+                      <Text style={styles.tableChipActionText}>Seat</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.tableChipStatus}>
+                      {table.occupied_source === "qr_scan" ? "📷 " : "✋ "}
+                      {isOrdering ? "Ordering" : isStalled ? "⚠ No order" : `Waiting ${waitingMinutes}m`}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => freeTable(table.id)}
+                      disabled={busy}
+                      style={styles.tableChipActionOutline}
+                    >
+                      <Text style={styles.tableChipActionOutlineText}>Free</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            );
+          })}
+          {tables.length === 0 && <Text style={styles.empty}>No tables yet.</Text>}
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -241,6 +362,34 @@ const styles = StyleSheet.create({
   headerTitle: { fontWeight: "700", color: "#ea7c1f" },
   headerSubtitle: { fontSize: 12, color: "#8a7c68" },
   signOut: { fontSize: 13, color: "#8a7c68" },
+  tablesSection: {
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ece2d3",
+    paddingVertical: 10,
+  },
+  tablesTitle: { fontSize: 12, fontWeight: "600", color: "#8a7c68", paddingHorizontal: 16, marginBottom: 6 },
+  tableChipRow: { paddingHorizontal: 16, gap: 8 },
+  tableChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ece2d3",
+    backgroundColor: "#fffaf3",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  tableChipFree: { backgroundColor: "#fffaf3", borderColor: "#ece2d3" },
+  tableChipWaiting: { backgroundColor: "#fef3e2", borderColor: "#f3ca8e" },
+  tableChipStalled: { backgroundColor: "#fee2e2", borderColor: "#fca5a5" },
+  tableChipLabel: { fontSize: 12, fontWeight: "700" },
+  tableChipStatus: { fontSize: 11, color: "#5b5142" },
+  tableChipAction: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  tableChipActionText: { fontSize: 10, fontWeight: "700", color: "#ffffff" },
+  tableChipActionOutline: { borderWidth: 1, borderColor: "#8a7c68", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  tableChipActionOutlineText: { fontSize: 10, fontWeight: "700", color: "#5b5142" },
   content: { padding: 16, gap: 10 },
   empty: { fontSize: 13, color: "#8a7c68" },
   card: {

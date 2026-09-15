@@ -78,6 +78,9 @@ export function CashierBoard({
     setSettling(true);
     const orderIds = group.orders.map((o) => o.id);
     await supabase.from("orders").update({ status: "paid" }).in("id", orderIds);
+    // Settling is this app's definition of "the visit is over" — free the
+    // table so the next customer's scan/seating starts a fresh session.
+    await supabase.rpc("free_table", { p_table_id: group.tableId });
     setOrders((prev) => prev.filter((o) => !orderIds.includes(o.id)));
     setSettling(false);
     setExpanded(null);

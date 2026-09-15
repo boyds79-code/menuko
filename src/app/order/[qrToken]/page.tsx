@@ -21,6 +21,12 @@ export default async function OrderPage({
 
   if (!table) notFound();
 
+  // Fire-and-forget: lets the cashier board show "waiting on table X" and
+  // eventually the 10-minute no-order alert. A no-op if the table was
+  // already occupied (won't reset another customer's stall timer), and
+  // never blocks rendering the menu if it fails for any reason.
+  void supabase.rpc("mark_table_scanned", { p_qr_token: qrToken });
+
   const [{ data: restaurant }, { data: categories }, { data: items }, { data: adRows }] =
     await Promise.all([
       supabase

@@ -5,7 +5,6 @@
 // COPY, not a symlink: this file is duplicated from ../../../src/lib/database.types.ts
 // (the web app). After running `supabase gen types` there, copy the result
 // here too — see mobile/README.md "공용 코드 동기화".
-
 export type Json =
   | string
   | number
@@ -374,24 +373,36 @@ export type Database = {
       tables: {
         Row: {
           created_at: string
+          first_order_at: string | null
           id: string
           label: string
+          occupied_since: string | null
+          occupied_source: string | null
           qr_token: string
           restaurant_id: string
+          stall_alerted: boolean
         }
         Insert: {
           created_at?: string
+          first_order_at?: string | null
           id?: string
           label: string
+          occupied_since?: string | null
+          occupied_source?: string | null
           qr_token?: string
           restaurant_id: string
+          stall_alerted?: boolean
         }
         Update: {
           created_at?: string
+          first_order_at?: string | null
           id?: string
           label?: string
+          occupied_since?: string | null
+          occupied_source?: string | null
           qr_token?: string
           restaurant_id?: string
+          stall_alerted?: boolean
         }
         Relationships: [
           {
@@ -408,6 +419,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_table_stalls: { Args: never; Returns: undefined }
       create_order: {
         Args: { p_items: Json; p_qr_token: string }
         Returns: {
@@ -415,6 +427,7 @@ export type Database = {
           order_id: string
         }[]
       }
+      free_table: { Args: { p_table_id: string }; Returns: undefined }
       get_order_for_customer: {
         Args: { p_access_token: string; p_order_id: string }
         Returns: {
@@ -428,6 +441,8 @@ export type Database = {
           unit_price_snapshot: number
         }[]
       }
+      mark_table_occupied: { Args: { p_table_id: string }; Returns: undefined }
+      mark_table_scanned: { Args: { p_qr_token: string }; Returns: undefined }
       my_restaurant_id: { Args: never; Returns: string }
       my_role: {
         Args: never
