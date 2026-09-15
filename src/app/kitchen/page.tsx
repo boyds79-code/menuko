@@ -24,7 +24,7 @@ export default async function KitchenPage() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <StaffHeader restaurantName={ctx.restaurantName} roleLabel="주방" />
+      <StaffHeader restaurantName={ctx.restaurantName} roleLabel="Kitchen" />
       <KitchenBoard restaurantId={ctx.restaurantId} initialOrders={initialOrders} />
     </div>
   );

@@ -9,14 +9,14 @@ export default function SignupPage() {
           Menuko
         </Link>
         <p className="text-sm text-muted">
-          사장님 계정 만들기 — 무료 (오너 1 + 주방 1 + 캐셔 1 계정 포함)
+          Create your owner account — free (includes 1 owner + 1 kitchen + 1 cashier account)
         </p>
       </div>
       <SignupForm />
       <p className="text-sm text-muted">
-        이미 계정이 있으신가요?{" "}
+        Already have an account?{" "}
         <Link href="/login" className="text-brand underline">
-          로그인
+          Sign in
         </Link>
       </p>
     </main>

@@ -60,7 +60,7 @@ export function toOrderView(row: RawOrderRow): OrderView {
         menu_item_id: item.menu_item_id,
         quantity: item.quantity,
         unit_price_snapshot: item.unit_price_snapshot,
-        menu_item_name: menuItem?.name ?? "(삭제된 메뉴)",
+        menu_item_name: menuItem?.name ?? "(removed item)",
       };
     }),
   };

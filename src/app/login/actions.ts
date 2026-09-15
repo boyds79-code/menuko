@@ -19,7 +19,7 @@ export async function login(
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    return { error: "이메일과 비밀번호를 입력해 주세요." };
+    return { error: "Please enter your email and password." };
   }
 
   const supabase = await createClient();
@@ -29,7 +29,7 @@ export async function login(
   });
 
   if (error || !data.user) {
-    return { error: "이메일 또는 비밀번호가 올바르지 않습니다." };
+    return { error: "Incorrect email or password." };
   }
 
   const { data: account } = await supabase
@@ -40,7 +40,7 @@ export async function login(
 
   if (!account) {
     await supabase.auth.signOut();
-    return { error: "이 계정에 연결된 매장 정보를 찾을 수 없습니다." };
+    return { error: "We couldn't find a restaurant linked to this account." };
   }
 
   redirect(ROLE_HOME[account.role] ?? "/login");

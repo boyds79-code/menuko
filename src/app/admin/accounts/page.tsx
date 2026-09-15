@@ -14,9 +14,10 @@ export default async function AdminAccountsPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold">계정 관리</h1>
+      <h1 className="text-lg font-semibold">Accounts</h1>
       <p className="text-sm text-muted">
-        무료 플랜은 오너 1 + 주방 1 + 캐셔 1 계정을 지원합니다. 추가 계정은 프리미엄 플랜이 필요합니다.
+        The free plan supports 1 owner + 1 kitchen + 1 cashier account. Additional accounts
+        require the premium plan.
       </p>
       <AccountsManager initialAccounts={accounts ?? []} />
     </main>

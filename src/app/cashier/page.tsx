@@ -31,7 +31,7 @@ export default async function CashierPage() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <StaffHeader restaurantName={ctx.restaurantName} roleLabel="캐셔" />
+      <StaffHeader restaurantName={ctx.restaurantName} roleLabel="Cashier" />
       <CashierBoard
         restaurantId={ctx.restaurantId}
         initialOrders={initialOrders}

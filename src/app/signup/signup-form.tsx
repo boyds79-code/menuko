@@ -12,7 +12,7 @@ export function SignupForm() {
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
       <div className="flex flex-col gap-1">
         <label htmlFor="restaurantName" className="text-sm font-medium">
-          매장 이름
+          Restaurant name
         </label>
         <input
           id="restaurantName"
@@ -22,24 +22,24 @@ export function SignupForm() {
         />
       </div>
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">업종</span>
+        <span className="text-sm font-medium">Business type</span>
         <div className="flex gap-4 text-sm">
           <label className="flex items-center gap-1.5">
             <input type="radio" name="businessType" value="restaurant" defaultChecked />
-            식당
+            Restaurant
           </label>
           <label className="flex items-center gap-1.5">
             <input type="radio" name="businessType" value="cafe" />
-            카페
+            Cafe
           </label>
         </div>
         <span className="text-xs text-muted">
-          나중에 매장 설정에서 바꿀 수 있어요. 크로스 프로모션 광고 노출 기준이 됩니다.
+          You can change this later in restaurant settings. It&apos;s used to target cross-promotion ads.
         </span>
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-sm font-medium">
-          이메일
+          Email
         </label>
         <input
           id="email"
@@ -52,7 +52,7 @@ export function SignupForm() {
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="password" className="text-sm font-medium">
-          비밀번호
+          Password
         </label>
         <input
           id="password"
@@ -74,7 +74,7 @@ export function SignupForm() {
         disabled={pending}
         className="rounded-full bg-brand px-4 py-2 font-medium text-brand-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
       >
-        {pending ? "가입 중..." : "무료로 시작하기"}
+        {pending ? "Signing up..." : "Get started for free"}
       </button>
     </form>
   );

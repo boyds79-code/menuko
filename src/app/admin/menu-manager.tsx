@@ -9,6 +9,7 @@ import {
   addCategory,
   renameCategory,
   deleteCategory,
+  moveCategory,
   addItem,
   updateItem,
   deleteItem,
@@ -58,7 +59,7 @@ export function MenuManager({
         <input
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
-          placeholder="새 카테고리 이름 (예: 음료, 메인)"
+          placeholder="New category name (e.g. Drinks, Mains)"
           className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
         />
         <button
@@ -66,17 +67,19 @@ export function MenuManager({
           disabled={pending}
           className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
         >
-          카테고리 추가
+          Add category
         </button>
       </form>
 
-      {initialCategories.map((category) => (
+      {initialCategories.map((category, index) => (
         <CategorySection
           key={category.id}
           restaurantId={restaurantId}
           category={category}
           items={initialItems.filter((item) => item.category_id === category.id)}
           onMutate={afterMutate}
+          isFirst={index === 0}
+          isLast={index === initialCategories.length - 1}
         />
       ))}
 
@@ -97,41 +100,67 @@ function CategorySection({
   category,
   items,
   onMutate,
+  isFirst,
+  isLast,
 }: {
   restaurantId: string;
   category: Category | null;
   items: Item[];
   onMutate: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
-  const [name, setName] = useState(category?.name ?? "미분류");
+  const [name, setName] = useState(category?.name ?? "Uncategorized");
 
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-2">
-        {category ? (
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => {
-              if (name.trim() && name !== category.name) {
-                renameCategory(category.id, name).then(onMutate);
-              }
-            }}
-            className="rounded-lg border border-transparent bg-transparent px-1 text-base font-semibold outline-none focus:border-brand"
-          />
-        ) : (
-          <span className="text-base font-semibold text-muted">미분류</span>
-        )}
+        <div className="flex flex-1 items-center gap-1">
+          {category && (
+            <div className="flex flex-col">
+              <button
+                onClick={() => moveCategory(category.id, "up").then(onMutate)}
+                disabled={isFirst}
+                title="Move up"
+                className="leading-none text-muted transition hover:text-brand disabled:opacity-25"
+              >
+                ▲
+              </button>
+              <button
+                onClick={() => moveCategory(category.id, "down").then(onMutate)}
+                disabled={isLast}
+                title="Move down"
+                className="leading-none text-muted transition hover:text-brand disabled:opacity-25"
+              >
+                ▼
+              </button>
+            </div>
+          )}
+          {category ? (
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => {
+                if (name.trim() && name !== category.name) {
+                  renameCategory(category.id, name).then(onMutate);
+                }
+              }}
+              className="flex-1 rounded-lg border border-transparent bg-transparent px-1 text-base font-semibold outline-none focus:border-brand"
+            />
+          ) : (
+            <span className="text-base font-semibold text-muted">Uncategorized</span>
+          )}
+        </div>
         {category && (
           <button
             onClick={() => {
-              if (confirm(`"${category.name}" 카테고리를 삭제할까요? (메뉴는 미분류로 이동합니다)`)) {
+              if (confirm(`Delete category "${category.name}"? (Items move to Uncategorized)`)) {
                 deleteCategory(category.id).then(onMutate);
               }
             }}
             className="text-xs text-muted underline"
           >
-            카테고리 삭제
+            Delete category
           </button>
         )}
       </div>
@@ -177,18 +206,18 @@ function ItemRow({
       <button
         onClick={() => fileRef.current?.click()}
         className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-background"
-        title="사진 변경"
+        title="Change photo"
       >
         {item.photo_url ? (
           <Image src={item.photo_url} alt={item.name} fill className="object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center text-xs text-muted">
-            사진
+            Photo
           </span>
         )}
         {uploading && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
-            업로드중
+            Uploading
           </span>
         )}
       </button>
@@ -232,18 +261,18 @@ function ItemRow({
           checked={item.is_available}
           onChange={(e) => updateItem(item.id, { isAvailable: e.target.checked }).then(onMutate)}
         />
-        판매중
+        Available
       </label>
 
       <button
         onClick={() => {
-          if (confirm(`"${item.name}" 메뉴를 삭제할까요?`)) {
+          if (confirm(`Delete "${item.name}"?`)) {
             deleteItem(item.id).then(onMutate);
           }
         }}
         className="text-xs text-muted underline"
       >
-        삭제
+        Delete
       </button>
     </div>
   );
@@ -292,13 +321,13 @@ function AddItemForm({
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="메뉴 이름"
+        placeholder="Item name"
         className="min-w-32 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-brand"
       />
       <input
         value={price}
         onChange={(e) => setPrice(e.target.value)}
-        placeholder="가격 (₱)"
+        placeholder="Price (₱)"
         inputMode="decimal"
         className="w-24 rounded-lg border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-brand"
       />
@@ -307,7 +336,7 @@ function AddItemForm({
         disabled={submitting}
         className="rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
       >
-        {submitting ? "추가중..." : `메뉴 추가${price ? ` (${formatPeso(Number(price) || 0)})` : ""}`}
+        {submitting ? "Adding..." : `Add item${price ? ` (${formatPeso(Number(price) || 0)})` : ""}`}
       </button>
     </form>
   );

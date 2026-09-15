@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Menuko",
-  description: "QR로 메뉴를 주문받는, 소상공인을 위한 무료 앱",
+  description: "A free app for small restaurants and cafes to take orders by QR menu",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

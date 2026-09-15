@@ -14,9 +14,10 @@ export default async function AdminTablesPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold">테이블 / QR 코드</h1>
+      <h1 className="text-lg font-semibold">Tables / QR codes</h1>
       <p className="text-sm text-muted">
-        테이블마다 QR을 인쇄해 비치하세요. 손님이 스캔하면 해당 테이블의 주문 화면으로 바로 연결됩니다.
+        Print a QR code for each table. When a customer scans it, they go straight to that
+        table&apos;s order screen.
       </p>
       <TablesManager initialTables={tables ?? []} />
     </main>

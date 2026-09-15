@@ -18,7 +18,7 @@ export default function SignIn() {
 
   async function handleSignIn() {
     if (!email || !password) {
-      setError("이메일과 비밀번호를 입력해 주세요.");
+      setError("Please enter your email and password.");
       return;
     }
     setSubmitting(true);
@@ -26,7 +26,7 @@ export default function SignIn() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (signInError) {
-      setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+      setError("Incorrect email or password.");
     }
     // On success, onAuthStateChange in ctx.tsx updates session and the
     // Stack.Protected guards in _layout.tsx take over routing.
@@ -38,11 +38,11 @@ export default function SignIn() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <Text style={styles.title}>Menuko</Text>
-      <Text style={styles.subtitle}>주방 / 캐셔 로그인</Text>
+      <Text style={styles.subtitle}>Kitchen / Cashier login</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="이메일"
+        placeholder="Email"
         placeholderTextColor="#8a7c68"
         autoCapitalize="none"
         autoComplete="email"
@@ -52,7 +52,7 @@ export default function SignIn() {
       />
       <TextInput
         style={styles.input}
-        placeholder="비밀번호"
+        placeholder="Password"
         placeholderTextColor="#8a7c68"
         secureTextEntry
         autoComplete="current-password"
@@ -70,7 +70,7 @@ export default function SignIn() {
         {submitting ? (
           <ActivityIndicator color="#ffffff" />
         ) : (
-          <Text style={styles.buttonText}>로그인</Text>
+          <Text style={styles.buttonText}>Sign in</Text>
         )}
       </TouchableOpacity>
     </KeyboardAvoidingView>

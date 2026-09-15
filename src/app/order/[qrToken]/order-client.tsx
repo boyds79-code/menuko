@@ -88,7 +88,7 @@ export function OrderClient({
       });
 
       if (rpcError || !data || data.length === 0) {
-        throw rpcError ?? new Error("주문 생성에 실패했습니다.");
+        throw rpcError ?? new Error("Failed to place the order.");
       }
 
       const { order_id, access_token } = data[0];
@@ -111,7 +111,7 @@ export function OrderClient({
         // survive a refresh, order itself already succeeded.
       }
     } catch {
-      setError("주문에 실패했어요. 다시 시도해 주세요.");
+      setError("Failed to place your order. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -138,7 +138,7 @@ export function OrderClient({
         if (!data || data.length === 0) return;
         const lines: ConfirmationLine[] = data.map((row) => ({
           id: row.item_id,
-          name: row.item_name ?? "(삭제된 메뉴)",
+          name: row.item_name ?? "(removed item)",
           quantity: row.quantity,
           unitPrice: row.unit_price_snapshot,
         }));
@@ -219,7 +219,7 @@ export function OrderClient({
           );
         })}
         {items.length === 0 && (
-          <p className="text-sm text-muted">아직 등록된 메뉴가 없습니다.</p>
+          <p className="text-sm text-muted">No menu items yet.</p>
         )}
       </main>
 
@@ -231,7 +231,7 @@ export function OrderClient({
             disabled={submitting}
             className="flex w-full items-center justify-between rounded-full bg-brand px-5 py-3 font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
           >
-            <span>{submitting ? "주문 중..." : `주문하기 (${cartCount})`}</span>
+            <span>{submitting ? "Placing order..." : `Place order (${cartCount})`}</span>
             <span>{formatPeso(cartTotal)}</span>
           </button>
         </div>
@@ -268,7 +268,7 @@ function MenuItemRow({
       </div>
       {quantity === 0 ? (
         <button onClick={() => onChange(1)} className={style.addButton}>
-          담기
+          Add
         </button>
       ) : (
         <div className="flex items-center gap-2">
@@ -315,7 +315,7 @@ function ConfirmationView({
 
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">주문 접수됨</h2>
+          <h2 className="font-semibold">Order received</h2>
           <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
             {ORDER_STATUS_LABEL[status] ?? status}
           </span>
@@ -331,7 +331,7 @@ function ConfirmationView({
           ))}
         </ul>
         <div className="mt-3 flex justify-between border-t border-border pt-3 font-semibold">
-          <span>합계</span>
+          <span>Total</span>
           <span>{formatPeso(confirmation.total)}</span>
         </div>
       </div>
@@ -340,11 +340,11 @@ function ConfirmationView({
 
       {(restaurant.payment_qr_url || restaurant.payment_link) && (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted">결제는 캐셔에서 확인해 드립니다</p>
+          <p className="text-sm text-muted">Please pay at the cashier</p>
           {restaurant.payment_qr_url && (
             <Image
               src={restaurant.payment_qr_url}
-              alt="결제 QR"
+              alt="Payment QR"
               width={180}
               height={180}
               className="rounded"
@@ -357,7 +357,7 @@ function ConfirmationView({
               rel="noreferrer"
               className="text-sm text-brand underline"
             >
-              결제 링크 열기
+              Open payment link
             </a>
           )}
         </div>
@@ -367,7 +367,7 @@ function ConfirmationView({
         onClick={onOrderMore}
         className="rounded-full border border-brand px-5 py-3 text-center font-medium text-brand transition hover:bg-brand hover:text-brand-foreground"
       >
-        메뉴에서 더 담기
+        Add more from the menu
       </button>
     </div>
   );

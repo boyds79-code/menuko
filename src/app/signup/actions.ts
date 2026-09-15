@@ -22,7 +22,7 @@ export async function signup(
   const password = String(formData.get("password") ?? "");
 
   if (!restaurantName || !email || password.length < 6) {
-    return { error: "매장 이름, 이메일, 6자 이상의 비밀번호를 입력해 주세요." };
+    return { error: "Please enter a restaurant name, email, and a password of at least 6 characters." };
   }
 
   const admin = createAdminClient();
@@ -34,7 +34,7 @@ export async function signup(
     .single();
 
   if (restaurantError || !restaurant) {
-    return { error: "매장 생성에 실패했습니다. 다시 시도해 주세요." };
+    return { error: "Failed to create the restaurant. Please try again." };
   }
 
   const { data: created, error: createUserError } = await admin.auth.admin.createUser({
@@ -48,8 +48,8 @@ export async function signup(
     return {
       error:
         createUserError?.message === "User already registered"
-          ? "이미 가입된 이메일입니다."
-          : "계정 생성에 실패했습니다. 다시 시도해 주세요.",
+          ? "This email is already registered."
+          : "Failed to create the account. Please try again.",
     };
   }
 
@@ -63,7 +63,7 @@ export async function signup(
   if (accountError) {
     await admin.auth.admin.deleteUser(created.user.id);
     await admin.from("restaurants").delete().eq("id", restaurant.id);
-    return { error: "계정 생성에 실패했습니다. 다시 시도해 주세요." };
+    return { error: "Failed to create the account. Please try again." };
   }
 
   const supabase = await createClient();

@@ -10,9 +10,9 @@ export const FREE_TIER_ROLE_LIMITS = {
 } as const;
 
 export const ORDER_STATUS_LABEL: Record<string, string> = {
-  open: "접수 대기",
-  sent_to_kitchen: "주방 전달됨",
-  preparing: "조리 중",
-  served: "서빙 완료",
-  paid: "결제 완료",
+  open: "Awaiting kitchen",
+  sent_to_kitchen: "Sent to kitchen",
+  preparing: "Preparing",
+  served: "Served",
+  paid: "Paid",
 };

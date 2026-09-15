@@ -122,10 +122,10 @@ export default function Kitchen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Menuko</Text>
-          <Text style={styles.headerSubtitle}>{account?.restaurantName} · 주방</Text>
+          <Text style={styles.headerSubtitle}>{account?.restaurantName} · Kitchen</Text>
         </View>
         <TouchableOpacity onPress={() => signOut()}>
-          <Text style={styles.signOut}>로그아웃</Text>
+          <Text style={styles.signOut}>Sign out</Text>
         </TouchableOpacity>
       </View>
 
@@ -133,15 +133,15 @@ export default function Kitchen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text style={styles.sectionTitle}>진행 중인 주문 ({active.length})</Text>
-        {active.length === 0 && <Text style={styles.empty}>들어온 주문이 없습니다.</Text>}
+        <Text style={styles.sectionTitle}>Active orders ({active.length})</Text>
+        {active.length === 0 && <Text style={styles.empty}>No orders yet.</Text>}
         {active.map((order) => (
           <OrderCard key={order.id} order={order} onMarkServed={() => markServed(order.id)} />
         ))}
 
         {done.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>완료됨</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Done</Text>
             {done.map((order) => (
               <OrderCard key={order.id} order={order} done />
             ))}
@@ -181,7 +181,7 @@ function OrderCard({
         <Text style={styles.total}>{formatPeso(orderTotal(order))}</Text>
         {!done && onMarkServed && (
           <TouchableOpacity style={styles.doneButton} onPress={onMarkServed}>
-            <Text style={styles.doneButtonText}>조리 완료</Text>
+            <Text style={styles.doneButtonText}>Mark done</Text>
           </TouchableOpacity>
         )}
       </View>

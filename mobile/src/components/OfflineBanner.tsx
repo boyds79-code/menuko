@@ -15,7 +15,7 @@ export function OfflineBanner() {
 
   return (
     <View style={styles.banner}>
-      <Text style={styles.text}>오프라인 — 연결되면 자동으로 다시 동기화돼요</Text>
+      <Text style={styles.text}>Offline — will sync automatically once reconnected</Text>
     </View>
   );
 }

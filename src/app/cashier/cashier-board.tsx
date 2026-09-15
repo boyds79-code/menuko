@@ -86,7 +86,7 @@ export function CashierBoard({
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
       {groups.length === 0 ? (
-        <p className="text-sm text-muted">미결제 테이블이 없습니다.</p>
+        <p className="text-sm text-muted">No unpaid tables.</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
@@ -103,7 +103,7 @@ export function CashierBoard({
                 onClick={() => setExpanded(expanded === group.tableId ? null : group.tableId)}
                 className="text-left text-xs text-muted underline"
               >
-                {expanded === group.tableId ? "내역 접기" : "내역 보기"}
+                {expanded === group.tableId ? "Hide details" : "Show details"}
               </button>
 
               {expanded === group.tableId && (
@@ -131,7 +131,7 @@ export function CashierBoard({
                       {paymentQrUrl && (
                         <Image
                           src={paymentQrUrl}
-                          alt="결제 QR"
+                          alt="Payment QR"
                           width={160}
                           height={160}
                           className="rounded"
@@ -144,7 +144,7 @@ export function CashierBoard({
                           rel="noreferrer"
                           className="text-xs text-brand underline"
                         >
-                          결제 링크 열기
+                          Open payment link
                         </a>
                       )}
                     </div>
@@ -155,7 +155,7 @@ export function CashierBoard({
                     disabled={settling}
                     className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
                   >
-                    정산 마감
+                    Settle payment
                   </button>
                 </div>
               )}

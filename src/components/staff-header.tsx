@@ -33,7 +33,7 @@ export function StaffHeader({
             type="submit"
             className="rounded-full border border-border px-3 py-1.5 text-sm text-muted transition hover:border-brand hover:text-brand"
           >
-            로그아웃
+            Sign out
           </button>
         </form>
       </div>

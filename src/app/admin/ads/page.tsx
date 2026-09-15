@@ -15,10 +15,10 @@ export default async function AdminAdsPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
       <div>
-        <h1 className="text-lg font-semibold">크로스 프로모션 광고</h1>
+        <h1 className="text-lg font-semibold">Cross-promotion ads</h1>
         <p className="text-sm text-muted">
-          만든 광고는 다른 매장 손님이 결제 총액을 확인하는 화면에 노출됩니다. 기본적으로
-          식당에는 카페 광고가, 카페에는 식당 광고가 우선 노출돼요.
+          Ads you create are shown to other restaurants&apos; customers when they check their
+          total. By default, restaurants see cafe ads and cafes see restaurant ads first.
         </p>
       </div>
       <AdsManager restaurantId={ctx.restaurantId} restaurantName={ctx.restaurantName} initialAds={ads ?? []} />

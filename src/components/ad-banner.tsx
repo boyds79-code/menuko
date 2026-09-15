@@ -37,7 +37,7 @@ function AdBannerBody({ ad }: { ad: AdContent }) {
           )}
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-medium uppercase tracking-wide text-brand">
-              {ad.advertiserName} 의 추천
+              Recommended by {ad.advertiserName}
             </p>
             <p className="truncate font-serif text-base font-bold text-brand">{ad.headline}</p>
             {ad.subcopy && <p className="truncate text-sm text-brand/80">{ad.subcopy}</p>}
@@ -73,7 +73,7 @@ function AdBannerBody({ ad }: { ad: AdContent }) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted">{ad.advertiserName}에서 보내는 소식</p>
+            <p className="text-xs text-muted">A message from {ad.advertiserName}</p>
             <p className="truncate font-semibold text-brand">{ad.headline}</p>
             {ad.subcopy && <p className="truncate text-sm text-muted">{ad.subcopy}</p>}
           </div>

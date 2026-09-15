@@ -35,6 +35,13 @@
           "color": "#ea7c1f"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5faf62ec-339b-457c-92e6-4d2acd5d2a5c"
+      }
+    },
+    "owner": "chris_kim"
   }
 }

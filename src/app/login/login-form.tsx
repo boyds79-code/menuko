@@ -12,7 +12,7 @@ export function LoginForm() {
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-sm font-medium">
-          이메일
+          Email
         </label>
         <input
           id="email"
@@ -25,7 +25,7 @@ export function LoginForm() {
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="password" className="text-sm font-medium">
-          비밀번호
+          Password
         </label>
         <input
           id="password"
@@ -46,7 +46,7 @@ export function LoginForm() {
         disabled={pending}
         className="rounded-full bg-brand px-4 py-2 font-medium text-brand-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
       >
-        {pending ? "로그인 중..." : "로그인"}
+        {pending ? "Signing in..." : "Sign in"}
       </button>
     </form>
   );

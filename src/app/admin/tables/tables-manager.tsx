@@ -25,14 +25,14 @@ export function TablesManager({ initialTables }: { initialTables: Table[] }) {
         <input
           value={newLabel}
           onChange={(e) => setNewLabel(e.target.value)}
-          placeholder="테이블 이름 (예: Table 5)"
+          placeholder="Table name (e.g. Table 5)"
           className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
         />
         <button
           type="submit"
           className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
         >
-          테이블 추가
+          Add table
         </button>
       </form>
 
@@ -87,17 +87,17 @@ function TableCard({ table, onMutate }: { table: Table; onMutate: () => void }) 
           onClick={download}
           className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition hover:border-brand hover:text-brand"
         >
-          PNG 다운로드
+          Download PNG
         </button>
         <button
           onClick={() => {
-            if (confirm(`"${table.label}" 테이블을 삭제할까요?`)) {
+            if (confirm(`Delete table "${table.label}"?`)) {
               deleteTable(table.id).then(onMutate);
             }
           }}
           className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition hover:border-red-400 hover:text-red-500"
         >
-          삭제
+          Delete
         </button>
       </div>
     </div>

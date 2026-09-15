@@ -39,7 +39,7 @@ export function AdsManager({
 
       {initialAds.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">만든 광고</h2>
+          <h2 className="text-sm font-semibold">Your ads</h2>
           {initialAds.map((ad) => (
             <div key={ad.id} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center">
               <div className="flex-1">
@@ -61,17 +61,17 @@ export function AdsManager({
                     checked={ad.is_active}
                     onChange={(e) => updateAd(ad.id, { isActive: e.target.checked }).then(() => router.refresh())}
                   />
-                  게재중
+                  Active
                 </label>
                 <button
                   onClick={() => {
-                    if (confirm("이 광고를 삭제할까요?")) {
+                    if (confirm("Delete this ad?")) {
                       deleteAd(ad.id).then(() => router.refresh());
                     }
                   }}
                   className="text-muted underline"
                 >
-                  삭제
+                  Delete
                 </button>
               </div>
             </div>
@@ -127,7 +127,7 @@ function AdComposer({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
-      <h2 className="text-sm font-semibold">새 광고 만들기</h2>
+      <h2 className="text-sm font-semibold">Create a new ad</h2>
 
       <div className="flex flex-wrap gap-2">
         {MENU_TEMPLATES.map((tpl) => (
@@ -150,7 +150,7 @@ function AdComposer({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
-            헤드라인 (예: 식사 후 커피 한 잔 어때요?)
+            Headline (e.g. How about a coffee after your meal?)
             <input
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
@@ -159,7 +159,7 @@ function AdComposer({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            부제 (선택)
+            Subtext (optional)
             <input
               value={subcopy}
               onChange={(e) => setSubcopy(e.target.value)}
@@ -167,7 +167,7 @@ function AdComposer({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            링크 (선택, 위치/페이지 URL 등)
+            Link (optional — location, page URL, etc.)
             <input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
@@ -176,7 +176,7 @@ function AdComposer({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            사진 (선택)
+            Photo (optional)
             <input
               type="file"
               accept="image/*"
@@ -186,15 +186,15 @@ function AdComposer({
               }}
               className="text-xs"
             />
-            {uploading && <span className="text-xs text-muted">업로드중...</span>}
+            {uploading && <span className="text-xs text-muted">Uploading...</span>}
           </label>
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium">미리보기</span>
+          <span className="text-sm font-medium">Preview</span>
           <AdBanner
             ad={{
-              headline: headline || "헤드라인을 입력해 주세요",
+              headline: headline || "Enter a headline",
               subcopy: subcopy || null,
               imageUrl,
               linkUrl: null,
@@ -210,7 +210,7 @@ function AdComposer({
         disabled={submitting || !headline.trim()}
         className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
       >
-        {submitting ? "만드는 중..." : "광고 만들기"}
+        {submitting ? "Creating..." : "Create ad"}
       </button>
     </form>
   );

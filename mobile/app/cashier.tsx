@@ -156,10 +156,10 @@ export default function Cashier() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Menuko</Text>
-          <Text style={styles.headerSubtitle}>{account?.restaurantName} · 캐셔</Text>
+          <Text style={styles.headerSubtitle}>{account?.restaurantName} · Cashier</Text>
         </View>
         <TouchableOpacity onPress={() => signOut()}>
-          <Text style={styles.signOut}>로그아웃</Text>
+          <Text style={styles.signOut}>Sign out</Text>
         </TouchableOpacity>
       </View>
 
@@ -167,7 +167,7 @@ export default function Cashier() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {groups.length === 0 && <Text style={styles.empty}>미결제 테이블이 없습니다.</Text>}
+        {groups.length === 0 && <Text style={styles.empty}>No unpaid tables.</Text>}
         {groups.map((group) => {
           const isExpanded = expanded === group.tableId;
           return (
@@ -177,7 +177,7 @@ export default function Cashier() {
                 <Text style={styles.cardTotal}>{formatPeso(group.total)}</Text>
               </View>
               <TouchableOpacity onPress={() => setExpanded(isExpanded ? null : group.tableId)}>
-                <Text style={styles.link}>{isExpanded ? "내역 접기" : "내역 보기"}</Text>
+                <Text style={styles.link}>{isExpanded ? "Hide details" : "Show details"}</Text>
               </TouchableOpacity>
 
               {isExpanded && (
@@ -207,14 +207,14 @@ export default function Cashier() {
                       )}
                       {paymentLink && (
                         <TouchableOpacity onPress={() => Linking.openURL(paymentLink)}>
-                          <Text style={styles.link}>결제 링크 열기</Text>
+                          <Text style={styles.link}>Open payment link</Text>
                         </TouchableOpacity>
                       )}
                     </View>
                   )}
 
                   <TouchableOpacity style={styles.settleButton} onPress={() => settle(group)}>
-                    <Text style={styles.settleButtonText}>정산 마감</Text>
+                    <Text style={styles.settleButtonText}>Settle payment</Text>
                   </TouchableOpacity>
                 </View>
               )}

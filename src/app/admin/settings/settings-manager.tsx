@@ -46,9 +46,9 @@ export function SettingsManager({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold">매장 정보</h2>
+        <h2 className="text-sm font-semibold">Restaurant info</h2>
         <label className="flex flex-col gap-1 text-sm">
-          매장 이름
+          Restaurant name
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -57,7 +57,7 @@ export function SettingsManager({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          주소
+          Address
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
@@ -66,7 +66,7 @@ export function SettingsManager({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          업종
+          Business type
           <select
             value={businessType}
             onChange={(e) => {
@@ -76,21 +76,22 @@ export function SettingsManager({
             }}
             className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
           >
-            <option value="restaurant">식당</option>
-            <option value="cafe">카페</option>
+            <option value="restaurant">Restaurant</option>
+            <option value="cafe">Cafe</option>
           </select>
           <span className="text-xs text-muted">
-            크로스 프로모션 광고 노출 기준으로 쓰입니다 (식당 손님에겐 카페 광고, 카페 손님에겐
-            식당 광고가 기본으로 노출돼요).
+            Used to target cross-promotion ads (restaurants see cafe ads and cafes see
+            restaurant ads by default).
           </span>
         </label>
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold">결제 안내</h2>
+        <h2 className="text-sm font-semibold">Payment info</h2>
         <p className="text-xs text-muted">
-          GCash/Maya 등 매장이 이미 가진 결제 QR 이미지를 올려두면, 손님 주문 화면과 캐셔 화면에
-          그대로 표시됩니다. Menuko는 결제를 직접 처리하지 않습니다.
+          Upload a payment QR image you already have (GCash/Maya, etc.) and it&apos;s shown as-is
+          on the customer order screen and cashier screen. Menuko never processes payments
+          directly.
         </p>
         <div className="flex items-center gap-3">
           <button
@@ -98,15 +99,15 @@ export function SettingsManager({
             className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-background"
           >
             {qrUrl ? (
-              <Image src={qrUrl} alt="결제 QR" fill className="object-cover" />
+              <Image src={qrUrl} alt="Payment QR" fill className="object-cover" />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-xs text-muted">
-                QR 업로드
+                Upload QR
               </span>
             )}
             {uploading && (
               <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
-                업로드중
+                Uploading
               </span>
             )}
           </button>
@@ -122,7 +123,7 @@ export function SettingsManager({
             }}
           />
           <label className="flex flex-1 flex-col gap-1 text-sm">
-            결제 링크 (선택, PayMongo 등 외부에서 발급받은 링크)
+            Payment link (optional — from PayMongo or another external provider)
             <input
               value={paymentLink}
               onChange={(e) => setPaymentLink(e.target.value)}

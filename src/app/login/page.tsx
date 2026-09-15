@@ -8,13 +8,13 @@ export default function LoginPage() {
         <Link href="/" className="text-2xl font-bold text-brand">
           Menuko
         </Link>
-        <p className="text-sm text-muted">사장님 / 주방 / 캐셔 로그인</p>
+        <p className="text-sm text-muted">Owner / kitchen / cashier login</p>
       </div>
       <LoginForm />
       <p className="text-sm text-muted">
-        아직 계정이 없으신가요?{" "}
+        Don&apos;t have an account yet?{" "}
         <Link href="/signup" className="text-brand underline">
-          무료로 시작하기
+          Get started for free
         </Link>
       </p>
     </main>

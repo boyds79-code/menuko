@@ -63,10 +63,10 @@ export function KitchenBoard({
     <main className="flex flex-1 flex-col gap-6 p-4">
       <section>
         <h2 className="mb-3 text-sm font-semibold text-muted">
-          진행 중인 주문 ({active.length})
+          Active orders ({active.length})
         </h2>
         {active.length === 0 ? (
-          <p className="text-sm text-muted">들어온 주문이 없습니다.</p>
+          <p className="text-sm text-muted">No orders yet.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {active.map((order) => (
@@ -78,7 +78,7 @@ export function KitchenBoard({
 
       {done.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-muted">완료됨</h2>
+          <h2 className="mb-3 text-sm font-semibold text-muted">Done</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {done.map((order) => (
               <OrderCard key={order.id} order={order} done />
@@ -128,7 +128,7 @@ function OrderCard({
             onClick={onDone}
             className="rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition hover:opacity-90"
           >
-            조리 완료
+            Mark done
           </button>
         )}
       </div>

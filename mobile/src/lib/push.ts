@@ -26,7 +26,7 @@ export async function registerForPushNotifications(accountId: string): Promise<v
 
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("orders", {
-        name: "주문 알림",
+        name: "Order notifications",
         importance: Notifications.AndroidImportance.HIGH,
       });
     }

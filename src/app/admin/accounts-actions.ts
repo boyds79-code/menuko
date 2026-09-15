@@ -19,10 +19,10 @@ export async function inviteAccount(
   const password = String(formData.get("password") ?? "");
 
   if (role !== "kitchen" && role !== "cashier") {
-    return { error: "역할을 선택해 주세요.", success: false };
+    return { error: "Please choose a role.", success: false };
   }
   if (!email || password.length < 6) {
-    return { error: "이메일과 6자 이상의 비밀번호를 입력해 주세요.", success: false };
+    return { error: "Please enter an email and a password of at least 6 characters.", success: false };
   }
 
   const supabase = await createClient();
@@ -36,7 +36,7 @@ export async function inviteAccount(
   // Adding more requires premium — no billing exists yet, so we just block.
   if ((count ?? 0) >= FREE_TIER_ROLE_LIMITS[role]) {
     return {
-      error: `무료 플랜은 ${role === "kitchen" ? "주방" : "캐셔"} 계정을 1개까지 지원합니다. 추가 계정은 프리미엄 플랜이 필요합니다.`,
+      error: `The free plan supports 1 ${role === "kitchen" ? "kitchen" : "cashier"} account. Additional accounts require the premium plan.`,
       success: false,
     };
   }
@@ -49,7 +49,7 @@ export async function inviteAccount(
   });
 
   if (createError || !created.user) {
-    return { error: createError?.message ?? "계정 생성에 실패했습니다.", success: false };
+    return { error: createError?.message ?? "Failed to create the account.", success: false };
   }
 
   const { error: insertError } = await admin.from("accounts").insert({

@@ -14,7 +14,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold">매장 설정</h1>
+      <h1 className="text-lg font-semibold">Restaurant settings</h1>
       <SettingsManager restaurantId={ctx.restaurantId} initial={restaurant} />
     </main>
   );

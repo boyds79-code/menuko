@@ -22,20 +22,20 @@ export default async function AdminMenuPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">메뉴 관리</h1>
+        <h1 className="text-lg font-semibold">Menu</h1>
         <a
           href={`/print/${ctx.restaurantId}`}
           target="_blank"
           rel="noreferrer"
           className="rounded-full border border-border px-4 py-2 text-sm text-muted transition hover:border-brand hover:text-brand"
         >
-          인쇄용 메뉴판 열기
+          Open printable menu
         </a>
       </div>
       <p className="-mt-2 text-xs text-muted">
-        메뉴/가격/사진을 입력하면 손님용 웹 메뉴와 인쇄용 메뉴판이 같은 데이터로 자동 만들어져요.
-        디자인은 &ldquo;인쇄용 메뉴판 열기&rdquo;에서 고를 수 있고, 고른 디자인이 웹 메뉴에도
-        그대로 적용됩니다.
+        Enter your menu, prices, and photos and both the customer-facing web menu and the
+        printable menu are generated from the same data automatically. Pick a design under
+        &ldquo;Open printable menu&rdquo; — it applies to the web menu too.
       </p>
       <MenuManager
         restaurantId={ctx.restaurantId}

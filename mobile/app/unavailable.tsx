@@ -13,14 +13,14 @@ export default function Unavailable() {
       <Text style={styles.title}>Menuko</Text>
       {account?.role === "owner" ? (
         <Text style={styles.body}>
-          사장님 계정은 아직 이 앱을 지원하지 않아요. 지금은 웹 브라우저로 menuko 관리자
-          페이지(/admin)에 접속해 주세요.
+          Owner accounts aren&apos;t supported in this app yet. Please use the web admin page
+          (/admin) in your browser for now.
         </Text>
       ) : (
-        <Text style={styles.body}>이 계정에 연결된 매장 정보를 찾을 수 없어요.</Text>
+        <Text style={styles.body}>We couldn&apos;t find a restaurant linked to this account.</Text>
       )}
       <TouchableOpacity style={styles.button} onPress={() => signOut()}>
-        <Text style={styles.buttonText}>로그아웃</Text>
+        <Text style={styles.buttonText}>Sign out</Text>
       </TouchableOpacity>
     </View>
   );

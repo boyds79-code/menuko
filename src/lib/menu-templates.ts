@@ -10,9 +10,9 @@ export const MENU_TEMPLATES: {
   label: string;
   description: string;
 }[] = [
-  { id: "classic", label: "Classic", description: "따뜻한 브랜드 컬러의 기본 스타일" },
-  { id: "warm", label: "Warm", description: "카페 느낌의 부드러운 파스텔 톤" },
-  { id: "minimal", label: "Minimal", description: "흑백 기반의 미니멀한 파인다이닝 스타일" },
+  { id: "classic", label: "Classic", description: "The default look, in the warm brand color" },
+  { id: "warm", label: "Warm", description: "Soft pastel tones with a cafe feel" },
+  { id: "minimal", label: "Minimal", description: "Black-and-white, minimal fine-dining style" },
 ];
 
 export function isMenuTemplateId(value: string): value is MenuTemplateId {
