@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Claude Code local tool config — not part of the app (matches anywhere in
+# the tree, e.g. mobile/.claude/ too).
+.claude/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -1,6 +1,10 @@
 // Generated via `supabase gen types typescript --linked` against the
 // Menuko project — regenerate the same way after any schema migration
 // instead of hand-editing the Database type below.
+//
+// COPY, not a symlink: this file is duplicated from ../../../src/lib/database.types.ts
+// (the web app). After running `supabase gen types` there, copy the result
+// here too — see mobile/README.md "공용 코드 동기화".
 
 export type Json =
   | string

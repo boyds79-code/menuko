@@ -1,0 +1,265 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Image,
+  Linking,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import NetInfo from "@react-native-community/netinfo";
+import { useSession } from "@/ctx";
+import { supabase } from "@/lib/supabase";
+import { readCache, writeCache } from "@/lib/offline-cache";
+import { createMutationQueue } from "@/lib/offline-queue";
+import { registerForPushNotifications } from "@/lib/push";
+import { formatPeso } from "@/lib/money";
+import { ORDER_STATUS_LABEL } from "@/lib/constants";
+import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
+import { OfflineBanner } from "@/components/OfflineBanner";
+
+const ORDER_SELECT =
+  "id, status, channel, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+
+type SettlePayload = { orderIds: string[] };
+
+type TableGroup = {
+  tableId: string;
+  tableLabel: string;
+  orders: OrderView[];
+  total: number;
+};
+
+export default function Cashier() {
+  const { session, account, signOut } = useSession();
+  const restaurantId = account?.restaurantId;
+  const cacheKey = restaurantId ? `menuko:cashier:${restaurantId}` : null;
+
+  const [orders, setOrders] = useState<OrderView[]>([]);
+  const [paymentQrUrl, setPaymentQrUrl] = useState<string | null>(null);
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const queueRef = useRef(
+    createMutationQueue<SettlePayload>("menuko:queue:cashier", async ({ orderIds }) => {
+      const { error } = await supabase.from("orders").update({ status: "paid" }).in("id", orderIds);
+      if (error) throw error;
+    }),
+  );
+
+  const fetchOrders = useCallback(async () => {
+    if (!restaurantId) return;
+    const { data, error } = await supabase
+      .from("orders")
+      .select(ORDER_SELECT)
+      .eq("restaurant_id", restaurantId)
+      .neq("status", "paid")
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      const next = (data as unknown as RawOrderRow[]).map(toOrderView);
+      setOrders(next);
+      if (cacheKey) writeCache(cacheKey, next);
+    }
+  }, [restaurantId, cacheKey]);
+
+  useEffect(() => {
+    if (!cacheKey) return;
+    readCache<OrderView[]>(cacheKey).then((cached) => {
+      if (cached) setOrders(cached);
+    });
+  }, [cacheKey]);
+
+  useEffect(() => {
+    // fetchOrders only calls setOrders after an `await` (React's documented
+    // fetch-in-effect pattern) — no synchronous setState happens here, this
+    // rule's static check just can't see across the async boundary.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOrders();
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    supabase
+      .from("restaurants")
+      .select("payment_qr_url, payment_link")
+      .eq("id", restaurantId)
+      .single()
+      .then(({ data }) => {
+        setPaymentQrUrl(data?.payment_qr_url ?? null);
+        setPaymentLink(data?.payment_link ?? null);
+      });
+  }, [restaurantId]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`cashier-${restaurantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurantId}` },
+        () => fetchOrders(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "order_items", filter: `restaurant_id=eq.${restaurantId}` },
+        () => fetchOrders(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [restaurantId, fetchOrders]);
+
+  useEffect(() => {
+    if (session?.user.id) registerForPushNotifications(session.user.id);
+  }, [session?.user.id]);
+
+  useEffect(() => {
+    const queue = queueRef.current;
+    return NetInfo.addEventListener((state) => {
+      if (state.isConnected) queue.flush();
+    });
+  }, []);
+
+  async function settle(group: TableGroup) {
+    const orderIds = group.orders.map((o) => o.id);
+    setOrders((prev) => prev.filter((o) => !orderIds.includes(o.id)));
+    setExpanded(null);
+    await queueRef.current.enqueue({ orderIds });
+  }
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await fetchOrders();
+    setRefreshing(false);
+  }
+
+  const groups: TableGroup[] = Object.values(
+    orders.reduce<Record<string, TableGroup>>((acc, order) => {
+      const key = order.table_id;
+      acc[key] ??= { tableId: key, tableLabel: order.table_label, orders: [], total: 0 };
+      acc[key].orders.push(order);
+      acc[key].total += orderTotal(order);
+      return acc;
+    }, {}),
+  ).sort((a, b) => a.tableLabel.localeCompare(b.tableLabel));
+
+  return (
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <OfflineBanner />
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Menuko</Text>
+          <Text style={styles.headerSubtitle}>{account?.restaurantName} · 캐셔</Text>
+        </View>
+        <TouchableOpacity onPress={() => signOut()}>
+          <Text style={styles.signOut}>로그아웃</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {groups.length === 0 && <Text style={styles.empty}>미결제 테이블이 없습니다.</Text>}
+        {groups.map((group) => {
+          const isExpanded = expanded === group.tableId;
+          return (
+            <View key={group.tableId} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTable}>{group.tableLabel}</Text>
+                <Text style={styles.cardTotal}>{formatPeso(group.total)}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setExpanded(isExpanded ? null : group.tableId)}>
+                <Text style={styles.link}>{isExpanded ? "내역 접기" : "내역 보기"}</Text>
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <View style={{ gap: 10 }}>
+                  {group.orders.map((order) => (
+                    <View key={order.id}>
+                      <Text style={styles.orderStatus}>
+                        {ORDER_STATUS_LABEL[order.status] ?? order.status}
+                      </Text>
+                      {order.items.map((item) => (
+                        <View key={item.id} style={styles.itemRow}>
+                          <Text style={styles.item}>
+                            {item.menu_item_name} × {item.quantity}
+                          </Text>
+                          <Text style={styles.item}>
+                            {formatPeso(item.quantity * item.unit_price_snapshot)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+
+                  {(paymentQrUrl || paymentLink) && (
+                    <View style={styles.paymentBox}>
+                      {paymentQrUrl && (
+                        <Image source={{ uri: paymentQrUrl }} style={styles.qrImage} />
+                      )}
+                      {paymentLink && (
+                        <TouchableOpacity onPress={() => Linking.openURL(paymentLink)}>
+                          <Text style={styles.link}>결제 링크 열기</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                  <TouchableOpacity style={styles.settleButton} onPress={() => settle(group)}>
+                    <Text style={styles.settleButtonText}>정산 마감</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: "#fffaf3" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ece2d3",
+  },
+  headerTitle: { fontWeight: "700", color: "#ea7c1f" },
+  headerSubtitle: { fontSize: 12, color: "#8a7c68" },
+  signOut: { fontSize: 13, color: "#8a7c68" },
+  content: { padding: 16, gap: 10 },
+  empty: { fontSize: 13, color: "#8a7c68" },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#ece2d3",
+    padding: 14,
+    gap: 8,
+  },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between" },
+  cardTable: { fontWeight: "700" },
+  cardTotal: { fontWeight: "700", color: "#ea7c1f" },
+  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
+  orderStatus: { fontSize: 11, color: "#8a7c68", marginBottom: 2 },
+  itemRow: { flexDirection: "row", justifyContent: "space-between" },
+  item: { fontSize: 14 },
+  paymentBox: { alignItems: "center", gap: 6, backgroundColor: "#fffaf3", borderRadius: 10, padding: 10 },
+  qrImage: { width: 140, height: 140, borderRadius: 6 },
+  settleButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 10, alignItems: "center" },
+  settleButtonText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
+});

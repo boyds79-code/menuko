@@ -5,6 +5,10 @@ QR로 메뉴를 주문받고 싶은 식당·카페 소상공인을 위한 무료
 화면 4개: 손님 주문(`/order/[qrToken]`), 주방(`/kitchen`), 캐셔(`/cashier`), 사장님 관리자(`/admin`).
 스택: Next.js (App Router, TypeScript, Tailwind) + Supabase (Postgres, Auth, Realtime, Storage).
 
+**주방/캐셔용 네이티브 앱**(Android+iOS)은 `mobile/`에 별도 Expo 프로젝트로 있습니다 —
+푸시 알림 + 오프라인 동작이 필요해 네이티브로 만들었고, 손님 주문과 사장님 관리자는 계속
+이 웹앱을 씁니다. 자세한 건 `mobile/README.md` 참고.
+
 ## 처음 세팅하기
 
 1. **Supabase 프로젝트 만들기** — [supabase.com](https://supabase.com)에서 무료 프로젝트 1개 생성.
@@ -21,7 +25,9 @@ QR로 메뉴를 주문받고 싶은 식당·카페 소상공인을 위한 무료
    ```
    (`0001_init.sql`이 테이블+RLS+RPC를, `0002_storage.sql`이 사진용 Storage 버킷 2개
    (`menu-photos`, `payment-qr`), `0003_ads.sql`이 크로스 프로모션 광고 테이블 + `ad-images`
-   버킷 + `restaurants.business_type`/`menu_template` 컬럼을 만듭니다.)
+   버킷 + `restaurants.business_type`/`menu_template` 컬럼을, `0004_push_tokens.sql`이
+   모바일 앱의 푸시 토큰 테이블을, `0005_order_webhook.sql`이 주문 생성/상태변경 시
+   `supabase/functions/notify-order-event`를 호출하는 DB 트리거를 만듭니다.)
 4. **개발 서버 실행**
    ```bash
    npm install
@@ -30,6 +36,12 @@ QR로 메뉴를 주문받고 싶은 식당·카페 소상공인을 위한 무료
 5. **첫 사장님 계정 만들기** — `http://localhost:3000/signup`에서 매장 이름/이메일/비밀번호로
    가입하면 매장 + 오너 계정이 함께 생성됩니다. `/admin/accounts`에서 주방/캐셔 계정을
    추가로 발급할 수 있습니다 (무료 플랜은 역할당 1개).
+6. **(모바일 앱의 푸시 알림용) Edge Function 배포** — 로컬에 Docker 없어도 배포됩니다:
+   ```bash
+   supabase functions deploy notify-order-event --no-verify-jwt
+   ```
+   `--no-verify-jwt`인 이유와 그 보안 트레이드오프는 `supabase/migrations/0005_order_webhook.sql`
+   상단 주석에 적어뒀습니다.
 
 ## 프로젝트 구조
 
