@@ -14,6 +14,7 @@ export type OrderView = {
   status: OrderStatus;
   channel: OrderChannel;
   note: string | null;
+  payment_proof_url: string | null;
   created_at: string;
   table_id: string;
   table_label: string;
@@ -33,6 +34,7 @@ export type RawOrderRow = {
   status: OrderStatus;
   channel: OrderChannel;
   note: string | null;
+  payment_proof_url: string | null;
   created_at: string;
   table_id: string;
   tables: { label: string } | { label: string }[] | null;
@@ -52,6 +54,7 @@ export function toOrderView(row: RawOrderRow): OrderView {
     status: row.status,
     channel: row.channel,
     note: row.note,
+    payment_proof_url: row.payment_proof_url,
     created_at: row.created_at,
     table_id: row.table_id,
     table_label: table?.label ?? "-",

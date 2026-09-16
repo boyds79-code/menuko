@@ -1,24 +1,17 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSession } from "@/ctx";
 
-// Reached when a signed-in user isn't a kitchen/cashier account — most
-// commonly an owner account (the native app doesn't cover /admin yet, spec
-// says keep using the mobile-responsive web admin), or an account row that
-// couldn't be resolved.
+// Reached when a signed-in user's account role couldn't be resolved to
+// kitchen/cashier/owner — e.g. the accounts row is missing or malformed.
+// All three real roles now have a dedicated screen, so this is purely an
+// error/edge-case fallback.
 export default function Unavailable() {
-  const { account, signOut } = useSession();
+  const { signOut } = useSession();
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Menuko</Text>
-      {account?.role === "owner" ? (
-        <Text style={styles.body}>
-          Owner accounts aren&apos;t supported in this app yet. Please use the web admin page
-          (/admin) in your browser for now.
-        </Text>
-      ) : (
-        <Text style={styles.body}>We couldn&apos;t find a restaurant linked to this account.</Text>
-      )}
+      <Text style={styles.body}>We couldn&apos;t find a restaurant linked to this account.</Text>
       <TouchableOpacity style={styles.button} onPress={() => signOut()}>
         <Text style={styles.buttonText}>Sign out</Text>
       </TouchableOpacity>

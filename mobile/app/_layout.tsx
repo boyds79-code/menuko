@@ -26,7 +26,8 @@ function RootNavigator() {
     );
   }
 
-  const isStaffRole = account?.role === "kitchen" || account?.role === "cashier";
+  const isKnownRole =
+    account?.role === "kitchen" || account?.role === "cashier" || account?.role === "owner";
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -34,7 +35,7 @@ function RootNavigator() {
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
 
-      <Stack.Protected guard={!!session && !isStaffRole}>
+      <Stack.Protected guard={!!session && !isKnownRole}>
         <Stack.Screen name="unavailable" />
       </Stack.Protected>
 
@@ -44,6 +45,10 @@ function RootNavigator() {
 
       <Stack.Protected guard={!!session && account?.role === "cashier"}>
         <Stack.Screen name="cashier" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!session && account?.role === "owner"}>
+        <Stack.Screen name="admin" />
       </Stack.Protected>
 
       <Stack.Screen name="index" options={{ headerShown: false }} />

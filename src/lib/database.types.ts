@@ -230,6 +230,70 @@ export type Database = {
           },
         ]
       }
+      order_change_requests: {
+        Row: {
+          created_at: string
+          deny_reason: string | null
+          id: string
+          kind: string
+          note: string | null
+          order_id: string
+          requested_items: Json | null
+          resolved_at: string | null
+          resolved_by: string | null
+          restaurant_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          deny_reason?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          order_id: string
+          requested_items?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          restaurant_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          deny_reason?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          order_id?: string
+          requested_items?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          restaurant_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_change_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_change_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_change_requests_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -289,9 +353,11 @@ export type Database = {
           created_at: string
           id: string
           note: string | null
+          payment_proof_url: string | null
           restaurant_id: string
           status: Database["public"]["Enums"]["order_status"]
           table_id: string
+          updated_at: string
         }
         Insert: {
           access_token?: string
@@ -299,9 +365,11 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
+          payment_proof_url?: string | null
           restaurant_id: string
           status?: Database["public"]["Enums"]["order_status"]
           table_id: string
+          updated_at?: string
         }
         Update: {
           access_token?: string
@@ -309,9 +377,11 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
+          payment_proof_url?: string | null
           restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -337,6 +407,7 @@ export type Database = {
           created_at: string
           cuisine_tags: string[]
           id: string
+          logo_url: string | null
           menu_template: string
           name: string
           payment_link: string | null
@@ -349,6 +420,7 @@ export type Database = {
           created_at?: string
           cuisine_tags?: string[]
           id?: string
+          logo_url?: string | null
           menu_template?: string
           name: string
           payment_link?: string | null
@@ -361,6 +433,7 @@ export type Database = {
           created_at?: string
           cuisine_tags?: string[]
           id?: string
+          logo_url?: string | null
           menu_template?: string
           name?: string
           payment_link?: string | null
@@ -424,6 +497,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_order_change_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       check_table_stalls: { Args: never; Returns: undefined }
       create_manual_order: {
         Args: {
@@ -443,10 +520,18 @@ export type Database = {
           order_id: string
         }[]
       }
+      deny_order_change_request: {
+        Args: { p_reason?: string; p_request_id: string }
+        Returns: undefined
+      }
       free_table: { Args: { p_table_id: string }; Returns: undefined }
       get_order_for_customer: {
         Args: { p_access_token: string; p_order_id: string }
         Returns: {
+          change_request_deny_reason: string
+          change_request_id: string
+          change_request_kind: string
+          change_request_status: string
           created_at: string
           id: string
           item_id: string
@@ -464,12 +549,64 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["account_role"]
       }
+      request_order_cancel: {
+        Args: { p_access_token: string; p_note?: string; p_order_id: string }
+        Returns: string
+      }
+      request_order_edit: {
+        Args: {
+          p_access_token: string
+          p_items: Json
+          p_note?: string
+          p_order_id: string
+        }
+        Returns: string
+      }
+      sales_by_day: {
+        Args: { p_days: number }
+        Returns: {
+          order_count: number
+          revenue: number
+          sale_date: string
+        }[]
+      }
+      sales_by_hour: {
+        Args: { p_days: number }
+        Returns: {
+          hour_of_day: number
+          order_count: number
+          revenue: number
+        }[]
+      }
+      sales_by_item: {
+        Args: { p_days: number; p_limit?: number }
+        Returns: {
+          item_name: string
+          total_quantity: number
+          total_revenue: number
+        }[]
+      }
+      send_daily_report: { Args: never; Returns: undefined }
+      top_combos: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          item_a_name: string
+          item_b_name: string
+          order_count: number
+        }[]
+      }
     }
     Enums: {
       account_role: "owner" | "kitchen" | "cashier"
       business_type: "restaurant" | "cafe"
       order_channel: "dine_in" | "manual_delivery_entry" | "manual_pickup_entry"
-      order_status: "open" | "sent_to_kitchen" | "preparing" | "served" | "paid"
+      order_status:
+        | "open"
+        | "sent_to_kitchen"
+        | "preparing"
+        | "served"
+        | "paid"
+        | "cancelled"
       restaurant_plan: "free" | "premium"
     }
     CompositeTypes: {
@@ -608,7 +745,14 @@ export const Constants = {
         "manual_delivery_entry",
         "manual_pickup_entry",
       ],
-      order_status: ["open", "sent_to_kitchen", "preparing", "served", "paid"],
+      order_status: [
+        "open",
+        "sent_to_kitchen",
+        "preparing",
+        "served",
+        "paid",
+        "cancelled",
+      ],
       restaurant_plan: ["free", "premium"],
     },
   },

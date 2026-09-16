@@ -8,7 +8,7 @@ import { formatPeso } from "@/lib/money";
 import { ORDER_STATUS_LABEL } from "@/lib/constants";
 
 const ORDER_SELECT =
-  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, payment_proof_url, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 type TableGroup = {
   tableId: string;
@@ -38,7 +38,7 @@ export function CashierBoard({
       .from("orders")
       .select(ORDER_SELECT)
       .eq("restaurant_id", restaurantId)
-      .neq("status", "paid")
+      .not("status", "in", "(paid,cancelled)")
       .order("created_at", { ascending: true });
 
     setOrders(((data ?? []) as unknown as RawOrderRow[]).map(toOrderView));
@@ -143,6 +143,23 @@ export function CashierBoard({
                             <span>{formatPeso(item.quantity * item.unit_price_snapshot)}</span>
                           </div>
                         ))}
+                        {order.payment_proof_url && (
+                          <a
+                            href={order.payment_proof_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 flex items-center gap-2 text-xs text-brand underline"
+                          >
+                            <Image
+                              src={order.payment_proof_url}
+                              alt="Payment proof"
+                              width={32}
+                              height={32}
+                              className="rounded object-cover"
+                            />
+                            View payment screenshot
+                          </a>
+                        )}
                       </li>
                     ))}
                   </ul>

@@ -21,9 +21,10 @@ import { ORDER_STATUS_LABEL } from "@/lib/constants";
 import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { NewOrderForm } from "@/components/NewOrderForm";
+import { ChangeRequestsPanel } from "@/components/ChangeRequestsPanel";
 
 const ORDER_SELECT =
-  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, payment_proof_url, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 type SettlePayload = { orderIds: string[] };
 
@@ -77,7 +78,7 @@ export default function Cashier() {
       .from("orders")
       .select(ORDER_SELECT)
       .eq("restaurant_id", restaurantId)
-      .neq("status", "paid")
+      .not("status", "in", "(paid,cancelled)")
       .order("created_at", { ascending: true });
 
     if (!error && data) {
@@ -313,6 +314,8 @@ export default function Cashier() {
         </ScrollView>
       </View>
 
+      <ChangeRequestsPanel restaurantId={restaurantId ?? ""} menuItems={menuItems} />
+
       <NewOrderForm categories={categories} items={menuItems} />
 
       <ScrollView
@@ -358,6 +361,15 @@ export default function Cashier() {
                           </Text>
                         </View>
                       ))}
+                      {order.payment_proof_url && (
+                        <TouchableOpacity
+                          style={styles.proofRow}
+                          onPress={() => Linking.openURL(order.payment_proof_url!)}
+                        >
+                          <Image source={{ uri: order.payment_proof_url }} style={styles.proofThumb} />
+                          <Text style={styles.link}>View payment screenshot</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   ))}
 
@@ -456,6 +468,8 @@ const styles = StyleSheet.create({
   item: { fontSize: 14 },
   paymentBox: { alignItems: "center", gap: 6, backgroundColor: "#fffaf3", borderRadius: 10, padding: 10 },
   qrImage: { width: 140, height: 140, borderRadius: 6 },
+  proofRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
+  proofThumb: { width: 24, height: 24, borderRadius: 4 },
   settleButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 10, alignItems: "center" },
   settleButtonText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
 });

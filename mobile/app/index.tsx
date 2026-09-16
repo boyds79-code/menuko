@@ -18,6 +18,7 @@ export default function Index() {
   if (!session) return <Redirect href="/sign-in" />;
   if (account?.role === "kitchen") return <Redirect href="/kitchen" />;
   if (account?.role === "cashier") return <Redirect href="/cashier" />;
+  if (account?.role === "owner") return <Redirect href="/admin" />;
   return <Redirect href="/unavailable" />;
 }
 

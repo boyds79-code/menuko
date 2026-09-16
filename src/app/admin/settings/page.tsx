@@ -8,7 +8,7 @@ export default async function AdminSettingsPage() {
 
   const { data: restaurant } = await supabase
     .from("restaurants")
-    .select("name, address, business_type, payment_qr_url, payment_link")
+    .select("name, address, business_type, payment_qr_url, payment_link, logo_url")
     .eq("id", ctx.restaurantId)
     .single();
 

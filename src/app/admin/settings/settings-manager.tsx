@@ -13,6 +13,7 @@ type Restaurant = {
   business_type: BusinessType;
   payment_qr_url: string | null;
   payment_link: string | null;
+  logo_url: string | null;
 } | null;
 
 export function SettingsManager({
@@ -28,8 +29,11 @@ export function SettingsManager({
   const [businessType, setBusinessType] = useState<BusinessType>(initial?.business_type ?? "restaurant");
   const [paymentLink, setPaymentLink] = useState(initial?.payment_link ?? "");
   const [qrUrl, setQrUrl] = useState(initial?.payment_qr_url ?? null);
+  const [logoUrl, setLogoUrl] = useState(initial?.logo_url ?? null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<HTMLInputElement>(null);
 
   async function handleQrUpload(file: File) {
     setUploading(true);
@@ -43,10 +47,57 @@ export function SettingsManager({
     }
   }
 
+  async function handleLogoUpload(file: File) {
+    setUploadingLogo(true);
+    try {
+      const url = await uploadPhoto("restaurant-logo", restaurantId, file);
+      setLogoUrl(url);
+      await updateRestaurant({ logoUrl: url });
+      router.refresh();
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
         <h2 className="text-sm font-semibold">Restaurant info</h2>
+        <label className="flex flex-col gap-1 text-sm">
+          Logo (optional)
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => logoFileRef.current?.click()}
+              className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-background"
+            >
+              {logoUrl ? (
+                <Image src={logoUrl} alt="Restaurant logo" fill className="object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">
+                  Add logo
+                </span>
+              )}
+              {uploadingLogo && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] text-white">
+                  Uploading
+                </span>
+              )}
+            </button>
+            <input
+              ref={logoFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleLogoUpload(file);
+                e.target.value = "";
+              }}
+            />
+            <span className="text-xs text-muted">Shown if you add it — not required to get started.</span>
+          </div>
+        </label>
         <label className="flex flex-col gap-1 text-sm">
           Restaurant name
           <input

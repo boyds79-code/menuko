@@ -15,4 +15,5 @@ export const ORDER_STATUS_LABEL: Record<string, string> = {
   preparing: "Preparing",
   served: "Served",
   paid: "Paid",
+  cancelled: "Cancelled",
 };

@@ -13,6 +13,7 @@ export async function updateRestaurant(input: {
   menuTemplate?: MenuTemplateId;
   paymentQrUrl?: string | null;
   paymentLink?: string | null;
+  logoUrl?: string | null;
 }) {
   const ctx = await requireStaff("owner");
   const supabase = await createClient();
@@ -25,6 +26,7 @@ export async function updateRestaurant(input: {
       ...(input.menuTemplate !== undefined ? { menu_template: input.menuTemplate } : {}),
       ...(input.paymentQrUrl !== undefined ? { payment_qr_url: input.paymentQrUrl } : {}),
       ...(input.paymentLink !== undefined ? { payment_link: input.paymentLink } : {}),
+      ...(input.logoUrl !== undefined ? { logo_url: input.logoUrl } : {}),
     })
     .eq("id", ctx.restaurantId);
   revalidatePath("/admin/settings");

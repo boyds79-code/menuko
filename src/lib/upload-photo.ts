@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 // Compresses an image client-side before upload — storage cost is the main
 // server-bill variable, so we never store originals (spec section 6).
 export async function uploadPhoto(
-  bucket: "menu-photos" | "payment-qr" | "ad-images",
+  bucket: "menu-photos" | "payment-qr" | "ad-images" | "restaurant-logo",
   restaurantId: string,
   file: File,
 ): Promise<string> {

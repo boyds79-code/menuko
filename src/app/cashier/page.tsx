@@ -5,9 +5,10 @@ import { toOrderView, type RawOrderRow } from "@/lib/orders";
 import { CashierBoard } from "./cashier-board";
 import { TableStatusBoard } from "./table-status-board";
 import { NewOrderForm } from "./new-order-form";
+import { ChangeRequestsPanel } from "./change-requests-panel";
 
 const ORDER_SELECT =
-  "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
+  "id, status, channel, note, payment_proof_url, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
 export default async function CashierPage() {
   const ctx = await requireStaff("cashier");
@@ -19,7 +20,7 @@ export default async function CashierPage() {
         .from("orders")
         .select(ORDER_SELECT)
         .eq("restaurant_id", ctx.restaurantId)
-        .neq("status", "paid")
+        .not("status", "in", "(paid,cancelled)")
         .order("created_at", { ascending: true }),
       supabase
         .from("restaurants")
@@ -53,6 +54,7 @@ export default async function CashierPage() {
     <div className="flex min-h-full flex-1 flex-col">
       <StaffHeader restaurantName={ctx.restaurantName} roleLabel="Cashier" />
       <TableStatusBoard restaurantId={ctx.restaurantId} initialTables={tables ?? []} />
+      <ChangeRequestsPanel restaurantId={ctx.restaurantId} menuItems={items ?? []} />
       <div className="p-4 pb-0">
         <NewOrderForm categories={categories ?? []} items={items ?? []} />
       </div>

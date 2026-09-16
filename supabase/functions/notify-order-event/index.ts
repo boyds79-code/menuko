@@ -1,26 +1,22 @@
-// Fired by a Postgres trigger on the `orders` table (see
-// supabase/migrations/0005_order_webhook.sql) whenever an order is created
-// or its status changes. Sends an Expo push notification to the right
-// staff role's devices:
-//   - new order (INSERT)                -> that restaurant's kitchen devices
-//   - status becomes 'served' (UPDATE)  -> that restaurant's cashier devices
+// Fired by a Postgres trigger whenever an order is created/updated (see
+// supabase/migrations/0005_order_webhook.sql) or a cancel/edit request is
+// created (see 0015_order_change_requests.sql). Sends an Expo push
+// notification to the right staff role's devices:
+//   - new order (INSERT)                    -> that restaurant's kitchen devices
+//   - status becomes 'served' (UPDATE)      -> that restaurant's cashier devices
+//   - new change request (INSERT)           -> that restaurant's cashier devices
 //
 // Deployed with --no-verify-jwt (this is a server-to-server DB trigger, not
 // a user-facing endpoint) — see README for the tradeoff this accepts.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-type WebhookPayload = {
-  type: "INSERT" | "UPDATE" | "DELETE";
-  table: string;
-  record: {
-    id: string;
-    restaurant_id: string;
-    table_id: string;
-    status: string;
-  };
-  old_record: { status: string } | null;
-};
+type OrderRecord = { id: string; restaurant_id: string; table_id: string; status: string };
+type ChangeRequestRecord = { id: string; order_id: string; restaurant_id: string; kind: string };
+
+type WebhookPayload =
+  | { type: "INSERT" | "UPDATE" | "DELETE"; table: "orders"; record: OrderRecord; old_record: { status: string } | null }
+  | { type: "INSERT"; table: "order_change_requests"; record: ChangeRequestRecord; old_record: null };
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
@@ -32,41 +28,65 @@ Deno.serve(async (req) => {
     return new Response("bad request", { status: 400 });
   }
 
-  if (payload.table !== "orders") {
-    return new Response("ignored", { status: 200 });
-  }
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
 
-  const { type, record, old_record } = payload;
-
+  let restaurantId: string;
   let targetRole: "kitchen" | "cashier" | null = null;
   let title = "";
-  if (type === "INSERT") {
-    targetRole = "kitchen";
-    title = "새 주문이 들어왔어요";
-  } else if (type === "UPDATE" && old_record?.status !== "served" && record.status === "served") {
+  let body = "";
+  let orderId: string;
+
+  if (payload.table === "orders") {
+    const { type, record, old_record } = payload;
+    restaurantId = record.restaurant_id;
+    orderId = record.id;
+
+    if (type === "INSERT") {
+      targetRole = "kitchen";
+      title = "New order";
+    } else if (type === "UPDATE" && old_record?.status !== "served" && record.status === "served") {
+      targetRole = "cashier";
+      title = "Order ready for payment";
+    }
+
+    if (targetRole) {
+      const { data: table } = await supabase
+        .from("tables")
+        .select("label")
+        .eq("id", record.table_id)
+        .single();
+      body = `${table?.label ?? "Table"} — please check`;
+    }
+  } else if (payload.table === "order_change_requests") {
+    const { record } = payload;
+    restaurantId = record.restaurant_id;
+    orderId = record.order_id;
     targetRole = "cashier";
-    title = "정산할 주문이 있어요";
+    title = record.kind === "cancel" ? "Cancellation requested" : "Order change requested";
+
+    const { data: order } = await supabase
+      .from("orders")
+      .select("table_id, tables ( label )")
+      .eq("id", record.order_id)
+      .single();
+    const tableInfo = order?.tables as unknown as { label: string } | { label: string }[] | null;
+    const tableLabel = Array.isArray(tableInfo) ? tableInfo[0]?.label : tableInfo?.label;
+    body = `${tableLabel ?? "Table"} — please check with the kitchen`;
+  } else {
+    return new Response("ignored", { status: 200 });
   }
 
   if (!targetRole) {
     return new Response("no-op", { status: 200 });
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
-
-  const { data: table } = await supabase
-    .from("tables")
-    .select("label")
-    .eq("id", record.table_id)
-    .single();
-
   const { data: tokenRows, error } = await supabase
     .from("device_push_tokens")
     .select("expo_push_token, accounts!inner(role, restaurant_id)")
-    .eq("accounts.restaurant_id", record.restaurant_id)
+    .eq("accounts.restaurant_id", restaurantId)
     .eq("accounts.role", targetRole);
 
   if (error || !tokenRows || tokenRows.length === 0) {
@@ -76,8 +96,8 @@ Deno.serve(async (req) => {
   const messages = tokenRows.map((row) => ({
     to: row.expo_push_token,
     title,
-    body: `${table?.label ?? "테이블"} — 확인해 주세요`,
-    data: { orderId: record.id, restaurantId: record.restaurant_id },
+    body,
+    data: { orderId, restaurantId },
   }));
 
   await fetch(EXPO_PUSH_URL, {

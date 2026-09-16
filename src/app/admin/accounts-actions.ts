@@ -26,15 +26,20 @@ export async function inviteAccount(
   }
 
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("accounts")
-    .select("id", { count: "exact", head: true })
-    .eq("restaurant_id", ctx.restaurantId)
-    .eq("role", role);
+  const [{ count }, { data: restaurant }] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("id", { count: "exact", head: true })
+      .eq("restaurant_id", ctx.restaurantId)
+      .eq("role", role),
+    supabase.from("restaurants").select("plan").eq("id", ctx.restaurantId).single(),
+  ]);
 
   // Free tier: 1 owner + 1 kitchen + 1 cashier per restaurant (spec 4.1).
-  // Adding more requires premium — no billing exists yet, so we just block.
-  if ((count ?? 0) >= FREE_TIER_ROLE_LIMITS[role]) {
+  // Premium restaurants (toggled from /internal/restaurants for now — no
+  // billing exists yet) get unlimited extra accounts.
+  const isPremium = restaurant?.plan === "premium";
+  if (!isPremium && (count ?? 0) >= FREE_TIER_ROLE_LIMITS[role]) {
     return {
       error: `The free plan supports 1 ${role === "kitchen" ? "kitchen" : "cashier"} account. Additional accounts require the premium plan.`,
       success: false,
