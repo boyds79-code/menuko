@@ -1,8 +1,14 @@
 import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-// Owner-only tab group — mirrors the web app's /admin/* nav (StaffHeader's
-// NAV array in src/app/admin/layout.tsx), just as bottom tabs instead of a
-// top nav bar since this is the one role that needs multiple screens.
+// Owner-only tab group. 4 tabs: Preview (a live preview of the real
+// customer page, not an editor), Floor (live table/order status, same
+// screen as the cashier app), Settings (editing — business info, staff
+// accounts, payment, menu design, plus the Menu/Tables editors as its own
+// nested stack), and My Page (analytics + this account's own settings).
+// Ads and standalone Accounts screens were folded in (ads creation moved
+// to a manual "send us the file" process; accounts management lives under
+// Settings > My Business).
 export default function AdminLayout() {
   return (
     <Tabs
@@ -13,12 +19,34 @@ export default function AdminLayout() {
         tabBarStyle: { borderTopColor: "#ece2d3" },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Menu" }} />
-      <Tabs.Screen name="tables" options={{ title: "Tables" }} />
-      <Tabs.Screen name="ads" options={{ title: "Ads" }} />
-      <Tabs.Screen name="accounts" options={{ title: "Accounts" }} />
-      <Tabs.Screen name="settings" options={{ title: "Settings" }} />
-      <Tabs.Screen name="analytics" options={{ title: "Analytics" }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Preview",
+          tabBarIcon: ({ color, size }) => <Ionicons name="eye-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tables"
+        options={{
+          title: "Floor",
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="my-page"
+        options={{
+          title: "My Page",
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

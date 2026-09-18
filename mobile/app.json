@@ -34,6 +34,12 @@
           "icon": "./assets/icon.png",
           "color": "#ea7c1f"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Menuko uses your location only while the app is open, to confirm you're at the restaurant before approving a customer's cancel/change request."
+        }
       ]
     ],
     "extra": {

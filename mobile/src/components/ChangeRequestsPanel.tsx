@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { formatPeso } from "@/lib/money";
+import { getCurrentCoords } from "@/lib/location";
+import type { AccountRole } from "@/lib/database.types";
 
 type RequestedItem = { menu_item_id: string; quantity: number };
 
@@ -30,14 +32,22 @@ type ChangeRequestRow = {
 export function ChangeRequestsPanel({
   restaurantId,
   menuItems,
+  role,
 }: {
   restaurantId: string;
   menuItems: { id: string; name: string }[];
+  // Owner accounts get a fresh, on-demand location check at the moment of
+  // approve/deny (server-verified against the restaurant's geofence — see
+  // 0019_owner_geofence.sql). Cashier accounts skip this entirely: they're
+  // presumed present by definition of being at the physical cashier station.
+  role: AccountRole | null | undefined;
 }) {
   const [requests, setRequests] = useState<ChangeRequestRow[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [denyingId, setDenyingId] = useState<string | null>(null);
   const [denyReason, setDenyReason] = useState("");
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const itemNameById = new Map(menuItems.map((i) => [i.id, i.name]));
 
   const refresh = useCallback(async () => {
@@ -76,8 +86,28 @@ export function ChangeRequestsPanel({
 
   async function approve(id: string) {
     setBusyId(id);
+    setLocationError(null);
+    setErrorRequestId(null);
     try {
-      await supabase.rpc("approve_order_change_request", { p_request_id: id });
+      let coords: { latitude: number; longitude: number } | null = null;
+      if (role === "owner") {
+        coords = await getCurrentCoords();
+        if (!coords) {
+          setLocationError("Turn on location access to approve this as the owner.");
+          setErrorRequestId(id);
+          return;
+        }
+      }
+      const { error } = await supabase.rpc("approve_order_change_request", {
+        p_request_id: id,
+        p_lat: coords?.latitude,
+        p_lng: coords?.longitude,
+      });
+      if (error) {
+        setLocationError(error.message);
+        setErrorRequestId(id);
+        return;
+      }
       setRequests((prev) => prev.filter((r) => r.id !== id));
     } finally {
       setBusyId(null);
@@ -86,8 +116,29 @@ export function ChangeRequestsPanel({
 
   async function deny(id: string) {
     setBusyId(id);
+    setLocationError(null);
+    setErrorRequestId(null);
     try {
-      await supabase.rpc("deny_order_change_request", { p_request_id: id, p_reason: denyReason || undefined });
+      let coords: { latitude: number; longitude: number } | null = null;
+      if (role === "owner") {
+        coords = await getCurrentCoords();
+        if (!coords) {
+          setLocationError("Turn on location access to resolve this as the owner.");
+          setErrorRequestId(id);
+          return;
+        }
+      }
+      const { error } = await supabase.rpc("deny_order_change_request", {
+        p_request_id: id,
+        p_reason: denyReason || undefined,
+        p_lat: coords?.latitude,
+        p_lng: coords?.longitude,
+      });
+      if (error) {
+        setLocationError(error.message);
+        setErrorRequestId(id);
+        return;
+      }
       setRequests((prev) => prev.filter((r) => r.id !== id));
       setDenyingId(null);
       setDenyReason("");
@@ -147,6 +198,8 @@ export function ChangeRequestsPanel({
 
             {req.note && <Text style={styles.note}>&ldquo;{req.note}&rdquo;</Text>}
 
+            {locationError && errorRequestId === req.id && <Text style={styles.errorText}>{locationError}</Text>}
+
             {denyingId === req.id ? (
               <View style={styles.denyRow}>
                 <TextInput
@@ -200,6 +253,7 @@ const styles = StyleSheet.create({
   compareCol: { flex: 1, gap: 2 },
   compareTitle: { fontSize: 11, fontWeight: "700", color: "#8a7c68", marginBottom: 2 },
   note: { fontSize: 11, fontStyle: "italic", color: "#8a7c68" },
+  errorText: { fontSize: 12, color: "#c0392b", fontWeight: "600" },
   actionsRow: { flexDirection: "row", gap: 10 },
   approveButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 },
   approveButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },

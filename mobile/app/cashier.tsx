@@ -22,6 +22,10 @@ import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRo
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { NewOrderForm } from "@/components/NewOrderForm";
 import { ChangeRequestsPanel } from "@/components/ChangeRequestsPanel";
+import { ServerCallsPanel } from "@/components/ServerCallsPanel";
+import { getCurrentCoords } from "@/lib/location";
+
+const PRESENCE_PING_MS = 5 * 60 * 1000;
 
 const ORDER_SELECT =
   "id, status, channel, note, payment_proof_url, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
@@ -49,7 +53,12 @@ type TableRow = {
 
 const STALL_MINUTES = 10;
 
-export default function Cashier() {
+// `embedded` lets this exact screen be reused as-is inside the owner app's
+// Tables tab (app/admin/tables.tsx) — same component, same live data and
+// settle action, just without its own top bar (the tab's AdminHeader covers
+// that) so an owner can't accidentally sign themselves out of their own
+// session via the cashier-account "Sign out" control.
+export default function Cashier({ embedded = false }: { embedded?: boolean } = {}) {
   const { session, account, signOut } = useSession();
   const restaurantId = account?.restaurantId;
   const cacheKey = restaurantId ? `menuko:cashier:${restaurantId}` : null;
@@ -203,6 +212,31 @@ export default function Cashier() {
     });
   }, []);
 
+  // Owner-only presence ping — a cashier account is presumed present by
+  // definition of being logged into the physical cashier station, so this
+  // only matters when an owner is covering that role themselves (see
+  // 0019_owner_geofence.sql). Runs only while this screen is mounted (no
+  // background location, no "Always" permission) — every few minutes, not
+  // continuously, just enough to know "recently at the restaurant or not"
+  // for deciding whether to push-notify the owner about new requests.
+  useEffect(() => {
+    if (account?.role !== "owner") return;
+    let cancelled = false;
+
+    async function ping() {
+      const coords = await getCurrentCoords();
+      if (!coords || cancelled) return;
+      await supabase.rpc("update_owner_presence", { p_lat: coords.latitude, p_lng: coords.longitude });
+    }
+
+    ping();
+    const id = setInterval(ping, PRESENCE_PING_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [account?.role]);
+
   // orderIds is any subset of a table's unpaid orders — the whole group
   // ("Settle all") or a single one ("Settle this order"). Only frees the
   // table once nothing else is left unpaid there, so settling one delivery
@@ -245,17 +279,19 @@ export default function Cashier() {
   ).sort((a, b) => a.tableLabel.localeCompare(b.tableLabel));
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={styles.safe} edges={embedded ? [] : ["top"]}>
       <OfflineBanner />
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Menuko</Text>
-          <Text style={styles.headerSubtitle}>{account?.restaurantName} · Cashier</Text>
+      {!embedded && (
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>Menuko</Text>
+            <Text style={styles.headerSubtitle}>{account?.restaurantName} · Cashier</Text>
+          </View>
+          <TouchableOpacity onPress={() => signOut()}>
+            <Text style={styles.signOut}>Sign out</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => signOut()}>
-          <Text style={styles.signOut}>Sign out</Text>
-        </TouchableOpacity>
-      </View>
+      )}
 
       <View style={styles.tablesSection}>
         <Text style={styles.tablesTitle}>Tables</Text>
@@ -314,7 +350,8 @@ export default function Cashier() {
         </ScrollView>
       </View>
 
-      <ChangeRequestsPanel restaurantId={restaurantId ?? ""} menuItems={menuItems} />
+      <ServerCallsPanel restaurantId={restaurantId ?? ""} />
+      <ChangeRequestsPanel restaurantId={restaurantId ?? ""} menuItems={menuItems} role={account?.role} />
 
       <NewOrderForm categories={categories} items={menuItems} />
 
@@ -434,11 +471,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "#ece2d3",
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#ffffff",
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  tableChipFree: { backgroundColor: "#fffaf3", borderColor: "#ece2d3" },
+  tableChipFree: { backgroundColor: "#ffffff", borderColor: "#ece2d3" },
   tableChipWaiting: { backgroundColor: "#fef3e2", borderColor: "#f3ca8e" },
   tableChipStalled: { backgroundColor: "#fee2e2", borderColor: "#fca5a5" },
   tableChipLabel: { fontSize: 12, fontWeight: "700" },
@@ -466,7 +503,7 @@ const styles = StyleSheet.create({
   orderStatus: { fontSize: 11, color: "#8a7c68", flex: 1 },
   itemRow: { flexDirection: "row", justifyContent: "space-between" },
   item: { fontSize: 14 },
-  paymentBox: { alignItems: "center", gap: 6, backgroundColor: "#fffaf3", borderRadius: 10, padding: 10 },
+  paymentBox: { alignItems: "center", gap: 6, backgroundColor: "#ffffff", borderRadius: 10, padding: 10 },
   qrImage: { width: 140, height: 140, borderRadius: 6 },
   proofRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   proofThumb: { width: 24, height: 24, borderRadius: 4 },

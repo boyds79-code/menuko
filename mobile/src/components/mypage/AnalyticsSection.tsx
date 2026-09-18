@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { formatPeso } from "@/lib/money";
 import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
-import { AdminHeader } from "@/components/AdminHeader";
 import { SalesInsights } from "@/components/SalesInsights";
 
 const ORDER_SELECT =
@@ -24,7 +22,7 @@ function startOfTodayManila(): Date {
 
 type Combo = { item_a_name: string; item_b_name: string; order_count: number };
 
-export default function AdminAnalytics() {
+export function AnalyticsSection() {
   const { account } = useSession();
   const restaurantId = account?.restaurantId;
 
@@ -89,60 +87,57 @@ export default function AdminAnalytics() {
   const unpaidTableCount = new Set(orders.filter((o) => o.status !== "paid").map((o) => o.table_id)).size;
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-      <AdminHeader title="Analytics" />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.todayHeader}>
-            <Text style={styles.cardTitle}>Today</Text>
-            <View style={styles.liveRow}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>Live</Text>
+    <View style={styles.content}>
+      <View style={styles.card}>
+        <View style={styles.todayHeader}>
+          <Text style={styles.cardTitle}>Today</Text>
+          <View style={styles.liveRow}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>Live</Text>
+          </View>
+        </View>
+        <View style={styles.statRow}>
+          <Stat label="Revenue collected" value={formatPeso(revenueToday)} />
+          <Stat label="Orders today" value={String(orderCountToday)} />
+          <Stat label="Unpaid tables" value={String(unpaidTableCount)} />
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Combo suggestions</Text>
+        <Text style={styles.hint}>
+          Items customers keep ordering together — might be worth bundling into a combo.
+        </Text>
+        {combos.length > 0 ? (
+          combos.map((combo, i) => (
+            <View key={i} style={styles.comboRow}>
+              <Text style={styles.comboText}>
+                {combo.item_a_name} + {combo.item_b_name}
+              </Text>
+              <Text style={styles.comboCount}>ordered together {combo.order_count}×</Text>
             </View>
-          </View>
-          <View style={styles.statRow}>
-            <Stat label="Revenue collected" value={formatPeso(revenueToday)} />
-            <Stat label="Orders today" value={String(orderCountToday)} />
-            <Stat label="Unpaid tables" value={String(unpaidTableCount)} />
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Combo suggestions</Text>
-          <Text style={styles.hint}>
-            Items customers keep ordering together — might be worth bundling into a combo.
-          </Text>
-          {combos.length > 0 ? (
-            combos.map((combo, i) => (
-              <View key={i} style={styles.comboRow}>
-                <Text style={styles.comboText}>
-                  {combo.item_a_name} + {combo.item_b_name}
-                </Text>
-                <Text style={styles.comboCount}>ordered together {combo.order_count}×</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.hint}>
-              Not enough order history yet — check back once a few weeks of orders come in.
-            </Text>
-          )}
-        </View>
-
-        {isPremium ? (
-          <SalesInsights />
+          ))
         ) : (
-          <View style={[styles.card, styles.premiumCard]}>
-            <Text style={styles.premiumBadge}>Premium</Text>
-            <Text style={styles.cardTitle}>Deeper analytics</Text>
-            <Text style={styles.hint}>
-              Best-selling items, order combos, and your best-selling day/hour over the last week
-              or month — available on the premium plan. The first 2 months of premium are free to
-              try.
-            </Text>
-          </View>
+          <Text style={styles.hint}>
+            Not enough order history yet — check back once a few weeks of orders come in.
+          </Text>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+      {isPremium ? (
+        <SalesInsights />
+      ) : (
+        <View style={[styles.card, styles.premiumCard]}>
+          <Text style={styles.premiumBadge}>Premium</Text>
+          <Text style={styles.cardTitle}>Deeper analytics</Text>
+          <Text style={styles.hint}>
+            Best-selling items, order combos, and your best-selling day/hour over the last week
+            or month — available on the premium plan. The first 2 months of premium are free to
+            try.
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -156,8 +151,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fffaf3" },
-  content: { padding: 16, gap: 12 },
+  content: { gap: 12 },
   card: { backgroundColor: "#ffffff", borderRadius: 14, borderWidth: 1, borderColor: "#ece2d3", padding: 14, gap: 10 },
   cardTitle: { fontSize: 14, fontWeight: "700" },
   hint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
@@ -166,13 +160,13 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#ea7c1f" },
   liveText: { fontSize: 11, color: "#8a7c68" },
   statRow: { flexDirection: "row", gap: 8 },
-  stat: { flex: 1, backgroundColor: "#fffaf3", borderRadius: 10, padding: 10, gap: 2 },
+  stat: { flex: 1, backgroundColor: "#ffffff", borderRadius: 10, padding: 10, gap: 2 },
   statValue: { fontSize: 15, fontWeight: "700", color: "#ea7c1f" },
   statLabel: { fontSize: 10, color: "#8a7c68" },
   comboRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#ffffff",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,

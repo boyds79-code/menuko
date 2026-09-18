@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   barLabel: { fontSize: 8, color: "#8a7c68", marginTop: 2, textAlign: "center" },
   itemRow: {
     position: "relative",
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#ffffff",
     borderRadius: 8,
     overflow: "hidden",
     paddingHorizontal: 10,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   comboRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#ffffff",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
