@@ -26,6 +26,15 @@ export default function HomePage() {
       <p className="text-sm text-muted">
         If you&apos;re a customer, please scan the QR code on your table.
       </p>
+      <p className="text-xs text-muted">
+        <Link href="/privacy" className="underline hover:text-brand">
+          Privacy Policy
+        </Link>{" "}
+        ·{" "}
+        <Link href="/terms" className="underline hover:text-brand">
+          Terms of Service
+        </Link>
+      </p>
     </main>
   );
 }
