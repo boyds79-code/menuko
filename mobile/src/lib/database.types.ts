@@ -47,6 +47,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          last_at_restaurant_at: string | null
           restaurant_id: string
           role: Database["public"]["Enums"]["account_role"]
         }
@@ -54,6 +55,7 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          last_at_restaurant_at?: string | null
           restaurant_id: string
           role: Database["public"]["Enums"]["account_role"]
         }
@@ -61,6 +63,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          last_at_restaurant_at?: string | null
           restaurant_id?: string
           role?: Database["public"]["Enums"]["account_role"]
         }
@@ -181,10 +184,15 @@ export type Database = {
       }
       menu_items: {
         Row: {
+          allergy_info: string | null
           category_id: string | null
+          cook_time_minutes: number | null
           created_at: string
+          description: string | null
           id: string
+          ingredients: string | null
           is_available: boolean
+          is_featured: boolean
           name: string
           photo_url: string | null
           price: number
@@ -192,10 +200,15 @@ export type Database = {
           sort_order: number
         }
         Insert: {
+          allergy_info?: string | null
           category_id?: string | null
+          cook_time_minutes?: number | null
           created_at?: string
+          description?: string | null
           id?: string
+          ingredients?: string | null
           is_available?: boolean
+          is_featured?: boolean
           name: string
           photo_url?: string | null
           price: number
@@ -203,10 +216,15 @@ export type Database = {
           sort_order?: number
         }
         Update: {
+          allergy_info?: string | null
           category_id?: string | null
+          cook_time_minutes?: number | null
           created_at?: string
+          description?: string | null
           id?: string
+          ingredients?: string | null
           is_available?: boolean
+          is_featured?: boolean
           name?: string
           photo_url?: string | null
           price?: number
@@ -407,7 +425,9 @@ export type Database = {
           created_at: string
           cuisine_tags: string[]
           id: string
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           menu_template: string
           name: string
           payment_link: string | null
@@ -420,7 +440,9 @@ export type Database = {
           created_at?: string
           cuisine_tags?: string[]
           id?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           menu_template?: string
           name: string
           payment_link?: string | null
@@ -433,7 +455,9 @@ export type Database = {
           created_at?: string
           cuisine_tags?: string[]
           id?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           menu_template?: string
           name?: string
           payment_link?: string | null
@@ -441,6 +465,58 @@ export type Database = {
           plan?: Database["public"]["Enums"]["restaurant_plan"]
         }
         Relationships: []
+      }
+      server_calls: {
+        Row: {
+          created_at: string
+          id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          restaurant_id: string
+          status: string
+          table_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          restaurant_id: string
+          status?: string
+          table_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          restaurant_id?: string
+          status?: string
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "server_calls_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "server_calls_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "server_calls_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tables: {
         Row: {
@@ -498,7 +574,7 @@ export type Database = {
     }
     Functions: {
       approve_order_change_request: {
-        Args: { p_request_id: string }
+        Args: { p_lat?: number; p_lng?: number; p_request_id: string }
         Returns: undefined
       }
       check_table_stalls: { Args: never; Returns: undefined }
@@ -521,7 +597,12 @@ export type Database = {
         }[]
       }
       deny_order_change_request: {
-        Args: { p_reason?: string; p_request_id: string }
+        Args: {
+          p_lat?: number
+          p_lng?: number
+          p_reason?: string
+          p_request_id: string
+        }
         Returns: undefined
       }
       free_table: { Args: { p_table_id: string }; Returns: undefined }
@@ -541,6 +622,10 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           unit_price_snapshot: number
         }[]
+      }
+      haversine_meters: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
       }
       mark_table_occupied: { Args: { p_table_id: string }; Returns: undefined }
       mark_table_scanned: { Args: { p_qr_token: string }; Returns: undefined }
@@ -562,6 +647,8 @@ export type Database = {
         }
         Returns: string
       }
+      request_server_call: { Args: { p_qr_token: string }; Returns: undefined }
+      resolve_server_call: { Args: { p_id: string }; Returns: undefined }
       sales_by_day: {
         Args: { p_days: number }
         Returns: {
@@ -594,6 +681,10 @@ export type Database = {
           item_b_name: string
           order_count: number
         }[]
+      }
+      update_owner_presence: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: undefined
       }
     }
     Enums: {

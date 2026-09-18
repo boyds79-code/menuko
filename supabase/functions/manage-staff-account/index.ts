@@ -134,5 +134,37 @@ Deno.serve(async (req) => {
     return json({ success: true });
   }
 
+  // Owner-initiated account deletion ("My Page" in the mobile app). This is
+  // permanent: deleting the restaurant row cascades (via existing FK "on
+  // delete cascade" rules — see 0001_init.sql and later migrations) to
+  // every account, table, menu item, order, and everything else under it,
+  // not just the caller's own login. Guarded by requiring the restaurant's
+  // exact current name as a confirmation string, checked server-side (not
+  // just in the UI) since this is the one action here with no way back.
+  if (body.action === "delete_restaurant") {
+    const confirmName = String(body.confirmName ?? "");
+    const { data: restaurant } = await admin
+      .from("restaurants")
+      .select("name")
+      .eq("id", callerAccount.restaurant_id)
+      .single();
+
+    if (!restaurant || confirmName !== restaurant.name) {
+      return json({ error: "Restaurant name didn't match — nothing was deleted." }, 400);
+    }
+
+    const { error: deleteRestaurantError } = await admin
+      .from("restaurants")
+      .delete()
+      .eq("id", callerAccount.restaurant_id);
+
+    if (deleteRestaurantError) {
+      return json({ error: deleteRestaurantError.message }, 400);
+    }
+
+    await admin.auth.admin.deleteUser(user.id);
+    return json({ success: true });
+  }
+
   return json({ error: "Unknown action" }, 400);
 });
