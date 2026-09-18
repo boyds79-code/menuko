@@ -17,8 +17,18 @@ export default async function AdminTablesPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold">Tables / QR codes</h1>
-      <p className="text-sm text-muted">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">Tables / QR codes</h1>
+        <a
+          href={`/print/${ctx.restaurantId}/qr`}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-full border border-border px-4 py-2 text-sm text-muted transition hover:border-brand hover:text-brand"
+        >
+          Print all QR codes
+        </a>
+      </div>
+      <p className="-mt-2 text-sm text-muted">
         Print a QR code for each table. When a customer scans it, they go straight to that
         table&apos;s order screen.
       </p>
