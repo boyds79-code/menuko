@@ -93,6 +93,11 @@ export async function updateItem(
     categoryId: string | null;
     photoUrl: string | null;
     isAvailable: boolean;
+    description: string | null;
+    ingredients: string | null;
+    allergyInfo: string | null;
+    cookTimeMinutes: number | null;
+    isFeatured: boolean;
   }>,
 ) {
   await requireStaff("owner");
@@ -105,6 +110,11 @@ export async function updateItem(
       ...(input.categoryId !== undefined ? { category_id: input.categoryId } : {}),
       ...(input.photoUrl !== undefined ? { photo_url: input.photoUrl } : {}),
       ...(input.isAvailable !== undefined ? { is_available: input.isAvailable } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.ingredients !== undefined ? { ingredients: input.ingredients } : {}),
+      ...(input.allergyInfo !== undefined ? { allergy_info: input.allergyInfo } : {}),
+      ...(input.cookTimeMinutes !== undefined ? { cook_time_minutes: input.cookTimeMinutes } : {}),
+      ...(input.isFeatured !== undefined ? { is_featured: input.isFeatured } : {}),
     })
     .eq("id", itemId);
   revalidatePath("/admin");

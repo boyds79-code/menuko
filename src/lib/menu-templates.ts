@@ -26,6 +26,7 @@ export const DIGITAL_TEMPLATE_STYLES: Record<
     page: string;
     header: string;
     headerTitle: string;
+    headerSubtitle: string;
     categoryTitle: string;
     card: string;
     cardImage: string;
@@ -35,9 +36,11 @@ export const DIGITAL_TEMPLATE_STYLES: Record<
 > = {
   classic: {
     page: "bg-background",
-    header: "border-b border-border bg-card px-4 py-3",
-    headerTitle: "font-bold text-brand",
-    categoryTitle: "mb-3 text-base font-semibold",
+    header: "rounded-b-3xl bg-header-dark px-4 pb-14 pt-5",
+    headerTitle: "text-lg font-bold text-header-dark-foreground",
+    headerSubtitle: "text-xs text-header-dark-foreground/60",
+    categoryTitle:
+      "mb-2 inline-block rounded-full bg-brand/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand",
     card: "flex items-center gap-3 rounded-xl border border-border bg-card p-3",
     cardImage: "h-16 w-16 rounded-lg",
     priceText: "text-sm text-muted",
@@ -48,6 +51,7 @@ export const DIGITAL_TEMPLATE_STYLES: Record<
     page: "bg-[#fff3e6]",
     header: "border-b-2 border-dashed border-brand/40 bg-[#fff3e6] px-4 py-4",
     headerTitle: "font-serif text-xl font-bold text-brand",
+    headerSubtitle: "text-sm text-muted",
     categoryTitle:
       "mb-3 inline-block rounded-full bg-brand/15 px-3 py-1 text-sm font-semibold text-brand",
     card: "flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm",
@@ -60,6 +64,7 @@ export const DIGITAL_TEMPLATE_STYLES: Record<
     page: "bg-white",
     header: "border-b border-black px-4 py-3",
     headerTitle: "font-semibold uppercase tracking-widest text-black",
+    headerSubtitle: "text-sm text-black/60",
     categoryTitle: "mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-black",
     card: "flex items-center gap-3 border-b border-black/10 px-1 py-3",
     cardImage: "h-14 w-14 rounded-none grayscale",

@@ -41,7 +41,9 @@ export default async function OrderPage({
         .order("sort_order"),
       supabase
         .from("menu_items")
-        .select("id, category_id, name, price, photo_url, is_available, sort_order")
+        .select(
+          "id, category_id, name, price, photo_url, is_available, sort_order, description, ingredients, allergy_info, cook_time_minutes, is_featured",
+        )
         .eq("restaurant_id", table.restaurant_id)
         .eq("is_available", true)
         .order("sort_order"),

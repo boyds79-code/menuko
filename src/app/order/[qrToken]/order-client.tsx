@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
 import { formatPeso } from "@/lib/money";
@@ -20,6 +21,11 @@ type MenuItem = {
   photo_url: string | null;
   is_available: boolean;
   sort_order: number;
+  description: string | null;
+  ingredients: string | null;
+  allergy_info: string | null;
+  cook_time_minutes: number | null;
+  is_featured: boolean;
 };
 type Restaurant = {
   id: string;
@@ -47,6 +53,26 @@ function storageKey(qrToken: string) {
   return `menuko:order:${qrToken}`;
 }
 
+function CallServerButton({
+  calling,
+  called,
+  onCall,
+}: {
+  calling: boolean;
+  called: boolean;
+  onCall: () => void;
+}) {
+  return (
+    <button
+      onClick={onCall}
+      disabled={calling || called}
+      className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-60"
+    >
+      {called ? "Server called ✓" : calling ? "Calling…" : "Call Server"}
+    </button>
+  );
+}
+
 export function OrderClient({
   qrToken,
   table,
@@ -70,12 +96,23 @@ export function OrderClient({
   const [status, setStatus] = useState<OrderStatus>("open");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Tapping any item photo (in a category row or the Our Best row) opens
+  // this full-screen detail view — photos are visible by default (no
+  // accordion), each category scrolls horizontally when it has more items
+  // than fit on screen.
+  const [detailItem, setDetailItem] = useState<MenuItem | null>(null);
   const [changeRequest, setChangeRequest] = useState<ChangeRequest | null>(null);
   const [dismissedRequestId, setDismissedRequestId] = useState<string | null>(null);
   const [editingRequest, setEditingRequest] = useState(false);
   const [requestingCancel, setRequestingCancel] = useState(false);
+  const [callingServer, setCallingServer] = useState(false);
+  const [serverCalled, setServerCalled] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const itemsById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
+  // Owner-curated highlights (Settings > Menu) — capped at 3 regardless of
+  // how many are marked, same as the mobile admin's own cap.
+  const featuredItems = useMemo(() => items.filter((i) => i.is_featured).slice(0, 3), [items]);
 
   const cartLines: CartLine[] = Object.entries(cart)
     .filter(([, qty]) => qty > 0)
@@ -87,6 +124,21 @@ export function OrderClient({
 
   function setQty(itemId: string, quantity: number) {
     setCart((prev) => ({ ...prev, [itemId]: Math.max(0, quantity) }));
+  }
+
+  // Ties to the table's QR token, not the order — a customer can call for
+  // help before placing an order at all. The server only keeps one pending
+  // call per table (see 0020_server_calls.sql), so this cooldown is just
+  // UI feedback, not the real dedup guard.
+  async function callServer() {
+    setCallingServer(true);
+    try {
+      await supabase.rpc("request_server_call", { p_qr_token: qrToken });
+      setServerCalled(true);
+      setTimeout(() => setServerCalled(false), 60_000);
+    } finally {
+      setCallingServer(false);
+    }
   }
 
   async function placeOrder() {
@@ -269,6 +321,9 @@ export function OrderClient({
         onRequestCancel={requestCancel}
         onStartEdit={startEditRequest}
         onOrderMore={() => setConfirmation(null)}
+        callingServer={callingServer}
+        serverCalled={serverCalled}
+        onCallServer={callServer}
       />
     );
   }
@@ -277,10 +332,40 @@ export function OrderClient({
 
   return (
     <div className={`flex min-h-full flex-1 flex-col pb-24 ${style.page}`}>
-      <header className={style.header}>
-        <p className={style.headerTitle}>{restaurant.name}</p>
-        <p className="text-sm text-muted">{table.label}</p>
+      <header className={`flex items-start justify-between gap-3 ${style.header}`}>
+        <div>
+          <h1 className={style.headerTitle}>{restaurant.name}</h1>
+          <p className={style.headerSubtitle}>{table.label}</p>
+        </div>
+        <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} />
       </header>
+
+      {featuredItems.length > 0 && (
+        <div className="-mt-10 flex gap-3 overflow-x-auto px-4 pb-1">
+          {featuredItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setDetailItem(item)}
+              className="relative h-[150px] w-[220px] shrink-0 overflow-hidden rounded-2xl shadow-lg transition-opacity hover:opacity-95"
+            >
+              {item.photo_url ? (
+                <Image src={item.photo_url} alt="" fill className="object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center bg-border text-xs text-muted">
+                  Menuko
+                </span>
+              )}
+              <span className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" aria-hidden />
+              <span className="absolute bottom-3 left-3 rounded-full bg-brand px-3 py-1 text-xs font-bold text-brand-foreground">
+                Our Best!
+              </span>
+              <span className="absolute right-3 bottom-3 max-w-[55%] truncate text-right text-xs font-semibold text-white">
+                {item.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {editingRequest && (
         <div className="mx-4 mt-4 flex items-center justify-between rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm">
@@ -298,22 +383,16 @@ export function OrderClient({
         </div>
       )}
 
-      <main className="flex flex-1 flex-col gap-6 p-4">
+      <main className="flex flex-1 flex-col gap-5 p-4">
         {categories.map((category) => {
           const categoryItems = items.filter((i) => i.category_id === category.id);
           if (categoryItems.length === 0) return null;
           return (
             <section key={category.id}>
               <h2 className={style.categoryTitle}>{category.name}</h2>
-              <div className="flex flex-col gap-3">
+              <div className="flex gap-3 overflow-x-auto pb-1">
                 {categoryItems.map((item) => (
-                  <MenuItemRow
-                    key={item.id}
-                    item={item}
-                    quantity={cart[item.id] ?? 0}
-                    onChange={(qty) => setQty(item.id, qty)}
-                    style={style}
-                  />
+                  <RowCard key={item.id} item={item} onClick={() => setDetailItem(item)} />
                 ))}
               </div>
             </section>
@@ -322,80 +401,247 @@ export function OrderClient({
         {items.length === 0 && (
           <p className="text-sm text-muted">No menu items yet.</p>
         )}
+        <p className="pt-2 text-center text-[11px] text-muted">
+          By ordering, you agree to our{" "}
+          <Link href="/terms" className="underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </main>
 
       {cartCount > 0 && (
-        <div className="fixed inset-x-0 bottom-0 border-t border-border bg-card p-4 shadow-lg">
-          {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+        <div className="fixed inset-x-0 bottom-0 border-t border-border bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg">
+          {error && (
+            <p role="alert" aria-live="polite" className="mb-2 text-sm text-red-600">
+              {error}
+            </p>
+          )}
           <button
-            onClick={editingRequest ? sendEditRequest : placeOrder}
+            onClick={editingRequest ? sendEditRequest : () => setReviewOpen(true)}
             disabled={submitting}
-            className="flex w-full items-center justify-between rounded-full bg-brand px-5 py-3 font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+            className="flex w-full items-center justify-between rounded-full bg-brand px-5 py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             <span>
               {submitting
                 ? editingRequest
-                  ? "Sending request..."
-                  : "Placing order..."
+                  ? "Sending request…"
+                  : "Placing order…"
                 : editingRequest
                   ? `Send change request (${cartCount})`
-                  : `Place order (${cartCount})`}
+                  : `Check Out (${cartCount})`}
             </span>
             <span>{formatPeso(cartTotal)}</span>
           </button>
         </div>
       )}
+
+      {reviewOpen && !editingRequest && (
+        <ReviewSheet
+          lines={cartLines}
+          total={cartTotal}
+          submitting={submitting}
+          onConfirm={async () => {
+            await placeOrder();
+            setReviewOpen(false);
+          }}
+          onClose={() => setReviewOpen(false)}
+        />
+      )}
+
+      {detailItem && (
+        <ItemDetailOverlay
+          item={detailItem}
+          quantity={cart[detailItem.id] ?? 0}
+          onChangeQty={(qty) => setQty(detailItem.id, qty)}
+          onClose={() => setDetailItem(null)}
+          canCheckout={cartCount > 0}
+          onGoToCheckout={() => {
+            setDetailItem(null);
+            setReviewOpen(true);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function MenuItemRow({
-  item,
-  quantity,
-  onChange,
-  style,
+function ReviewSheet({
+  lines,
+  total,
+  submitting,
+  onConfirm,
+  onClose,
 }: {
-  item: MenuItem;
-  quantity: number;
-  onChange: (quantity: number) => void;
-  style: (typeof DIGITAL_TEMPLATE_STYLES)[MenuTemplateId];
+  lines: CartLine[];
+  total: number;
+  submitting: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
 }) {
   return (
-    <div className={style.card}>
-      <div className={`relative shrink-0 overflow-hidden bg-background ${style.cardImage}`}>
+    <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/45" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Review your order"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md overscroll-contain rounded-t-3xl bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg"
+      >
+        <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-border" aria-hidden />
+        <h2 className="mb-3 font-semibold">Review your order</h2>
+        <ul className="flex flex-col gap-2 text-sm">
+          {lines.map((line) => (
+            <li key={line.item.id} className="flex justify-between gap-3">
+              <span className="min-w-0 truncate">
+                {line.item.name} × {line.quantity}
+              </span>
+              <span className="shrink-0 tabular-nums">{formatPeso(line.item.price * line.quantity)}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 flex justify-between border-t border-border pt-3 font-semibold">
+          <span>Total</span>
+          <span>{formatPeso(total)}</span>
+        </div>
+        <button
+          onClick={onConfirm}
+          disabled={submitting}
+          className="mt-4 w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {submitting ? "Placing order…" : "Check Out"}
+        </button>
+        <button onClick={onClose} className="mt-2 w-full text-center text-sm text-muted underline">
+          Back to menu
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RowCard({ item, onClick }: { item: MenuItem; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-36 shrink-0 overflow-visible rounded-xl border border-border bg-card text-left transition-colors hover:border-brand"
+    >
+      <div className="relative h-24 w-full overflow-hidden rounded-t-xl bg-background">
         {item.photo_url ? (
-          <Image src={item.photo_url} alt={item.name} fill className="object-cover" />
+          <Image src={item.photo_url} alt="" fill sizes="144px" className="object-cover" />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-xs text-muted">
+          <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">
             Menuko
           </span>
         )}
       </div>
-      <div className="flex-1">
-        <p className="font-medium">{item.name}</p>
-        <p className={style.priceText}>{formatPeso(item.price)}</p>
+      <div className="relative px-2 pb-2 pt-3">
+        <span className="absolute -top-2 left-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-brand-foreground shadow">
+          {formatPeso(item.price)}
+        </span>
+        <p className="truncate text-xs font-medium text-foreground">{item.name}</p>
       </div>
-      {quantity === 0 ? (
-        <button onClick={() => onChange(1)} className={style.addButton}>
-          Add
+    </button>
+  );
+}
+
+function ItemDetailOverlay({
+  item,
+  quantity,
+  onChangeQty,
+  onClose,
+  canCheckout,
+  onGoToCheckout,
+}: {
+  item: MenuItem;
+  quantity: number;
+  onChangeQty: (quantity: number) => void;
+  onClose: () => void;
+  canCheckout: boolean;
+  onGoToCheckout: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.name}
+      className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card"
+    >
+      <div className="relative h-64 shrink-0 bg-background">
+        {item.photo_url ? (
+          <Image src={item.photo_url} alt="" fill priority className="object-cover" />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>
+        )}
+        <button
+          onClick={onClose}
+          aria-label="Back to menu"
+          className="absolute top-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-lg text-white transition-colors hover:bg-black/60"
+        >
+          ←
         </button>
-      ) : (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onChange(quantity - 1)}
-            className="h-8 w-8 rounded-full border border-border text-lg"
-          >
-            −
-          </button>
-          <span className="w-4 text-center">{quantity}</span>
-          <button
-            onClick={() => onChange(quantity + 1)}
-            className="h-8 w-8 rounded-full border border-border text-lg"
-          >
-            +
-          </button>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-2 p-5">
+        <h2 className="text-lg font-bold text-balance">{item.name}</h2>
+        <p className="font-semibold text-brand">{formatPeso(item.price)}</p>
+        {item.description && <p className="text-sm text-foreground">{item.description}</p>}
+        {item.ingredients && (
+          <p className="text-sm text-muted">
+            <span className="font-medium text-foreground">Ingredients: </span>
+            {item.ingredients}
+          </p>
+        )}
+        {item.allergy_info && (
+          <p className="text-sm text-muted">
+            <span className="font-medium text-foreground">Allergy: </span>
+            {item.allergy_info}
+          </p>
+        )}
+        {item.cook_time_minutes && (
+          <p className="flex items-center gap-1 text-sm text-muted">
+            <span aria-hidden>🕐</span>
+            {item.cook_time_minutes} min
+          </p>
+        )}
+
+        <div className="mt-auto flex flex-col items-center gap-3 pt-6">
+          {quantity === 0 ? (
+            <button
+              onClick={() => onChangeQty(1)}
+              className="w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90"
+            >
+              Add to Cart
+            </button>
+          ) : (
+            <div className="flex items-center gap-5">
+              <button
+                onClick={() => onChangeQty(quantity - 1)}
+                aria-label="Decrease quantity"
+                className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand"
+              >
+                −
+              </button>
+              <span className="w-6 text-center text-lg tabular-nums">{quantity}</span>
+              <button
+                onClick={() => onChangeQty(quantity + 1)}
+                aria-label="Increase quantity"
+                className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand"
+              >
+                +
+              </button>
+            </div>
+          )}
+          {canCheckout && (
+            <button onClick={onGoToCheckout} className="text-sm text-muted underline">
+              Go to Checkout
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -413,6 +659,9 @@ function ConfirmationView({
   onRequestCancel,
   onStartEdit,
   onOrderMore,
+  callingServer,
+  serverCalled,
+  onCallServer,
 }: {
   restaurant: Restaurant;
   table: { id: string; label: string };
@@ -426,6 +675,9 @@ function ConfirmationView({
   onRequestCancel: () => void;
   onStartEdit: () => void;
   onOrderMore: () => void;
+  callingServer: boolean;
+  serverCalled: boolean;
+  onCallServer: () => void;
 }) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const isFinal = status === "paid" || status === "cancelled";
@@ -438,9 +690,12 @@ function ConfirmationView({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4">
-      <header>
-        <p className="font-bold text-brand">{restaurant.name}</p>
-        <p className="text-sm text-muted">{table.label}</p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-bold text-brand">{restaurant.name}</h1>
+          <p className="text-sm text-muted">{table.label}</p>
+        </div>
+        <CallServerButton calling={callingServer} called={serverCalled} onCall={onCallServer} />
       </header>
 
       {hasPendingRequest && (
@@ -480,11 +735,11 @@ function ConfirmationView({
         </div>
         <ul className="flex flex-col gap-2 text-sm">
           {confirmation.lines.map((line) => (
-            <li key={line.id} className="flex justify-between">
-              <span>
+            <li key={line.id} className="flex justify-between gap-3">
+              <span className="min-w-0 truncate">
                 {line.name} × {line.quantity}
               </span>
-              <span>{formatPeso(line.unitPrice * line.quantity)}</span>
+              <span className="shrink-0 tabular-nums">{formatPeso(line.unitPrice * line.quantity)}</span>
             </li>
           ))}
         </ul>
@@ -515,7 +770,7 @@ function ConfirmationView({
                   className="font-medium text-red-600 underline"
                   disabled={requestingCancel}
                 >
-                  {requestingCancel ? "Sending..." : "Yes, cancel"}
+                  {requestingCancel ? "Sending…" : "Yes, cancel"}
                 </button>
               </div>
             </div>
@@ -562,7 +817,7 @@ function ConfirmationView({
 
       <button
         onClick={onOrderMore}
-        className="rounded-full border border-brand px-5 py-3 text-center font-medium text-brand transition hover:bg-brand hover:text-brand-foreground"
+        className="rounded-full border border-brand px-5 py-3 text-center font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground"
       >
         Add more from the menu
       </button>
@@ -607,12 +862,19 @@ function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessT
       </p>
       {shownImage && (
         // eslint-disable-next-line @next/next/no-img-element -- local blob preview before the real URL lands
-        <img src={shownImage} alt="Payment proof" className="h-24 w-24 rounded object-cover" />
+        <img
+          src={shownImage}
+          alt="Payment proof"
+          width={96}
+          height={96}
+          className="h-24 w-24 rounded object-cover"
+        />
       )}
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
+        aria-label="Upload payment screenshot"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -624,15 +886,19 @@ function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessT
         type="button"
         onClick={() => fileRef.current?.click()}
         disabled={compressing || pending}
-        className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition hover:border-brand hover:text-brand disabled:opacity-60"
+        className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-60"
       >
         {compressing || pending
-          ? "Uploading..."
+          ? "Uploading…"
           : state.url
             ? "Replace screenshot"
             : "Upload payment screenshot"}
       </button>
-      {state.error && <p className="text-xs text-red-600">{state.error}</p>}
+      {state.error && (
+        <p role="alert" aria-live="polite" className="text-xs text-red-600">
+          {state.error}
+        </p>
+      )}
       {state.url && !state.error && <p className="text-xs text-brand">Screenshot received ✓</p>}
     </div>
   );

@@ -1,13 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fffaf3;
-  --foreground: #201a12;
-  --brand: #ea7c1f;
-  --brand-foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #1c2222;
+  --brand: #ce8c59;
+  --brand-foreground: #1c2222;
   --card: #ffffff;
-  --border: #ece2d3;
-  --muted: #8a7c68;
+  --border: #e3e8e7;
+  --muted: #7c8686;
+  /* The dark header band (restaurant name/table/Call Server) is a fixed
+     design choice, not a light/dark-theme concern — it stays this color
+     in both color schemes, so it isn't redefined in the dark-mode block
+     below. */
+  --header-dark: #20282c;
+  --header-dark-foreground: #ffffff;
 }
 
 @theme inline {
@@ -18,19 +24,21 @@
   --color-card: var(--card);
   --color-border: var(--border);
   --color-muted: var(--muted);
+  --color-header-dark: var(--header-dark);
+  --color-header-dark-foreground: var(--header-dark-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #17130d;
-    --foreground: #f5ede1;
-    --brand: #f5943a;
-    --brand-foreground: #17130d;
-    --card: #211b13;
-    --border: #35291a;
-    --muted: #a8987f;
+    --background: #14181a;
+    --foreground: #eef1f0;
+    --brand: #dba274;
+    --brand-foreground: #1c2222;
+    --card: #1c2226;
+    --border: #2c3438;
+    --muted: #90a0a0;
   }
 }
 

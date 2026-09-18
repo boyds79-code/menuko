@@ -24,7 +24,14 @@ type Item = {
   photo_url: string | null;
   is_available: boolean;
   sort_order: number;
+  description: string | null;
+  ingredients: string | null;
+  allergy_info: string | null;
+  cook_time_minutes: number | null;
+  is_featured: boolean;
 };
+
+const MAX_FEATURED_ITEMS = 3;
 
 export function MenuManager({
   restaurantId,
@@ -43,10 +50,18 @@ export function MenuManager({
     startTransition(() => router.refresh());
   }
 
-  const uncategorized = initialItems.filter((item) => item.category_id === null);
+  const uncategorized = initialItems.filter(
+    (item) => item.category_id === null,
+  );
+  const featuredCount = initialItems.filter((item) => item.is_featured).length;
 
   return (
     <div className="flex flex-col gap-8">
+      <p className="text-xs text-muted">
+        ⭐ marks up to {MAX_FEATURED_ITEMS} items shown as &ldquo;Our Best!&rdquo; on the customer menu (
+        {featuredCount}/{MAX_FEATURED_ITEMS} used)
+      </p>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -76,10 +91,13 @@ export function MenuManager({
           key={category.id}
           restaurantId={restaurantId}
           category={category}
-          items={initialItems.filter((item) => item.category_id === category.id)}
+          items={initialItems.filter(
+            (item) => item.category_id === category.id,
+          )}
           onMutate={afterMutate}
           isFirst={index === 0}
           isLast={index === initialCategories.length - 1}
+          featuredCount={featuredCount}
         />
       ))}
 
@@ -89,6 +107,7 @@ export function MenuManager({
           category={null}
           items={uncategorized}
           onMutate={afterMutate}
+          featuredCount={featuredCount}
         />
       )}
     </div>
@@ -102,6 +121,7 @@ function CategorySection({
   onMutate,
   isFirst,
   isLast,
+  featuredCount,
 }: {
   restaurantId: string;
   category: Category | null;
@@ -109,6 +129,7 @@ function CategorySection({
   onMutate: () => void;
   isFirst?: boolean;
   isLast?: boolean;
+  featuredCount: number;
 }) {
   const [name, setName] = useState(category?.name ?? "Uncategorized");
 
@@ -148,13 +169,19 @@ function CategorySection({
               className="flex-1 rounded-lg border border-transparent bg-transparent px-1 text-base font-semibold outline-none focus:border-brand"
             />
           ) : (
-            <span className="text-base font-semibold text-muted">Uncategorized</span>
+            <span className="text-base font-semibold text-muted">
+              Uncategorized
+            </span>
           )}
         </div>
         {category && (
           <button
             onClick={() => {
-              if (confirm(`Delete category "${category.name}"? (Items move to Uncategorized)`)) {
+              if (
+                confirm(
+                  `Delete category "${category.name}"? (Items move to Uncategorized)`,
+                )
+              ) {
                 deleteCategory(category.id).then(onMutate);
               }
             }}
@@ -167,11 +194,21 @@ function CategorySection({
 
       <div className="flex flex-col gap-2">
         {items.map((item) => (
-          <ItemRow key={item.id} restaurantId={restaurantId} item={item} onMutate={onMutate} />
+          <ItemRow
+            key={item.id}
+            restaurantId={restaurantId}
+            item={item}
+            onMutate={onMutate}
+            featuredCount={featuredCount}
+          />
         ))}
       </div>
 
-      <AddItemForm restaurantId={restaurantId} categoryId={category?.id ?? null} onMutate={onMutate} />
+      <AddItemForm
+        restaurantId={restaurantId}
+        categoryId={category?.id ?? null}
+        onMutate={onMutate}
+      />
     </section>
   );
 }
@@ -180,14 +217,23 @@ function ItemRow({
   restaurantId,
   item,
   onMutate,
+  featuredCount,
 }: {
   restaurantId: string;
   item: Item;
   onMutate: () => void;
+  featuredCount: number;
 }) {
   const [name, setName] = useState(item.name);
   const [price, setPrice] = useState(String(item.price));
   const [uploading, setUploading] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [description, setDescription] = useState(item.description ?? "");
+  const [ingredients, setIngredients] = useState(item.ingredients ?? "");
+  const [allergyInfo, setAllergyInfo] = useState(item.allergy_info ?? "");
+  const [cookTime, setCookTime] = useState(
+    item.cook_time_minutes?.toString() ?? "",
+  );
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handlePhotoChange(file: File) {
@@ -201,79 +247,177 @@ function ItemRow({
     }
   }
 
+  async function saveDetails() {
+    const parsedCookTime = cookTime.trim() ? Number(cookTime) : null;
+    await updateItem(item.id, {
+      description: description.trim() || null,
+      ingredients: ingredients.trim() || null,
+      allergyInfo: allergyInfo.trim() || null,
+      cookTimeMinutes: Number.isNaN(parsedCookTime) ? null : parsedCookTime,
+    });
+    onMutate();
+  }
+
+  async function toggleFeatured() {
+    if (!item.is_featured && featuredCount >= MAX_FEATURED_ITEMS) {
+      alert(`Only ${MAX_FEATURED_ITEMS} items can be featured at once — turn one off first.`);
+      return;
+    }
+    await updateItem(item.id, { isFeatured: !item.is_featured });
+    onMutate();
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-2">
-      <button
-        onClick={() => fileRef.current?.click()}
-        className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-background"
-        title="Change photo"
-      >
-        {item.photo_url ? (
-          <Image src={item.photo_url} alt={item.name} fill className="object-cover" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center text-xs text-muted">
-            Photo
-          </span>
-        )}
-        {uploading && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
-            Uploading
-          </span>
-        )}
-      </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handlePhotoChange(file);
-          e.target.value = "";
-        }}
-      />
-
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onBlur={() => {
-          if (name.trim() && name !== item.name) updateItem(item.id, { name }).then(onMutate);
-        }}
-        className="min-w-32 flex-1 rounded-lg border border-transparent bg-transparent px-1 text-sm outline-none focus:border-brand"
-      />
-
-      <input
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        onBlur={() => {
-          const parsed = Number(price);
-          if (!Number.isNaN(parsed) && parsed !== item.price) {
-            updateItem(item.id, { price: parsed }).then(onMutate);
-          }
-        }}
-        inputMode="decimal"
-        className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-brand"
-      />
-
-      <label className="flex items-center gap-1 text-xs text-muted">
+    <div className="flex flex-col gap-2 rounded-lg border border-border p-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-background"
+          title="Change photo"
+        >
+          {item.photo_url ? (
+            <Image
+              src={item.photo_url}
+              alt={item.name}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-xs text-muted">
+              Photo
+            </span>
+          )}
+          {uploading && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
+              Uploading
+            </span>
+          )}
+        </button>
         <input
-          type="checkbox"
-          checked={item.is_available}
-          onChange={(e) => updateItem(item.id, { isAvailable: e.target.checked }).then(onMutate)}
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handlePhotoChange(file);
+            e.target.value = "";
+          }}
         />
-        Available
-      </label>
 
-      <button
-        onClick={() => {
-          if (confirm(`Delete "${item.name}"?`)) {
-            deleteItem(item.id).then(onMutate);
-          }
-        }}
-        className="text-xs text-muted underline"
-      >
-        Delete
-      </button>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => {
+            if (name.trim() && name !== item.name)
+              updateItem(item.id, { name }).then(onMutate);
+          }}
+          className="min-w-32 flex-1 rounded-lg border border-transparent bg-transparent px-1 text-sm outline-none focus:border-brand"
+        />
+
+        <input
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          onBlur={() => {
+            const parsed = Number(price);
+            if (!Number.isNaN(parsed) && parsed !== item.price) {
+              updateItem(item.id, { price: parsed }).then(onMutate);
+            }
+          }}
+          inputMode="decimal"
+          className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-brand"
+        />
+
+        <label className="flex items-center gap-1 text-xs text-muted">
+          <input
+            type="checkbox"
+            checked={item.is_available}
+            onChange={(e) =>
+              updateItem(item.id, { isAvailable: e.target.checked }).then(
+                onMutate,
+              )
+            }
+          />
+          Available
+        </label>
+
+        <button
+          type="button"
+          onClick={toggleFeatured}
+          aria-pressed={item.is_featured}
+          aria-label={item.is_featured ? "Remove from Our Best" : "Add to Our Best"}
+          className="text-base leading-none"
+        >
+          {item.is_featured ? "⭐" : "☆"}
+        </button>
+
+        <button
+          onClick={() => setDetailsOpen((open) => !open)}
+          className="text-xs text-muted underline"
+        >
+          {detailsOpen
+            ? "Hide details"
+            : "Description/ingredients/allergy/time"}
+        </button>
+
+        <button
+          onClick={() => {
+            if (confirm(`Delete "${item.name}"?`)) {
+              deleteItem(item.id).then(onMutate);
+            }
+          }}
+          className="text-xs text-muted underline"
+        >
+          Delete
+        </button>
+      </div>
+
+      {detailsOpen && (
+        <div className="flex flex-col gap-2 border-t border-border pt-2">
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Description
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={saveDetails}
+              rows={2}
+              placeholder="A short description customers see when they tap this item"
+              className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Ingredients
+            <input
+              value={ingredients}
+              onChange={(e) => setIngredients(e.target.value)}
+              onBlur={saveDetails}
+              placeholder="e.g. Pork belly, kimchi, tofu, scallion"
+              className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Allergy info
+            <input
+              value={allergyInfo}
+              onChange={(e) => setAllergyInfo(e.target.value)}
+              onBlur={saveDetails}
+              placeholder="e.g. Contains shellfish, soy"
+              className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Cook time (minutes)
+            <input
+              value={cookTime}
+              onChange={(e) => setCookTime(e.target.value)}
+              onBlur={saveDetails}
+              inputMode="numeric"
+              placeholder="e.g. 15"
+              className="w-24 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }
@@ -299,7 +443,9 @@ function AddItemForm({
 
     setSubmitting(true);
     try {
-      const photoUrl = file ? await uploadPhoto("menu-photos", restaurantId, file) : null;
+      const photoUrl = file
+        ? await uploadPhoto("menu-photos", restaurantId, file)
+        : null;
       await addItem({ categoryId, name, price: parsedPrice, photoUrl });
       setName("");
       setPrice("");
@@ -311,7 +457,10 @@ function AddItemForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-wrap items-center gap-2 border-t border-border pt-3"
+    >
       <input
         type="file"
         accept="image/*"
@@ -336,7 +485,9 @@ function AddItemForm({
         disabled={submitting}
         className="rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
       >
-        {submitting ? "Adding..." : `Add item${price ? ` (${formatPeso(Number(price) || 0)})` : ""}`}
+        {submitting
+          ? "Adding..."
+          : `Add item${price ? ` (${formatPeso(Number(price) || 0)})` : ""}`}
       </button>
     </form>
   );
