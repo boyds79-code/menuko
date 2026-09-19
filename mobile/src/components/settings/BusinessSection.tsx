@@ -18,6 +18,7 @@ export function BusinessSection() {
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [about, setAbout] = useState("");
   const [businessType, setBusinessType] = useState<BusinessType>("restaurant");
   const [paymentQrUrl, setPaymentQrUrl] = useState<string | null>(null);
   const [paymentLink, setPaymentLink] = useState("");
@@ -38,12 +39,13 @@ export function BusinessSection() {
     if (!restaurantId) return;
     const { data } = await supabase
       .from("restaurants")
-      .select("name, address, business_type, payment_qr_url, payment_link, logo_url, latitude, longitude")
+      .select("name, address, about, business_type, payment_qr_url, payment_link, logo_url, latitude, longitude")
       .eq("id", restaurantId)
       .single();
     if (data) {
       setName(data.name ?? "");
       setAddress(data.address ?? "");
+      setAbout(data.about ?? "");
       setBusinessType(data.business_type);
       setPaymentQrUrl(data.payment_qr_url);
       setPaymentLink(data.payment_link ?? "");
@@ -170,6 +172,19 @@ export function BusinessSection() {
           onBlur={() => save({ address })}
           style={styles.input}
         />
+        <Text style={styles.label}>About your restaurant</Text>
+        <TextInput
+          value={about}
+          onChangeText={setAbout}
+          onBlur={() => save({ about })}
+          placeholder="A short line customers see on your menu page — e.g. what makes your food special, or your story."
+          placeholderTextColor="#b8ab93"
+          multiline
+          numberOfLines={3}
+          maxLength={280}
+          style={[styles.input, styles.inputMultiline]}
+        />
+        <Text style={styles.hint}>Shown under your restaurant name on the customer menu page. Optional.</Text>
         <Text style={styles.label}>Business type</Text>
         <View style={styles.chipRow}>
           {(["restaurant", "cafe"] as BusinessType[]).map((type) => (
@@ -305,6 +320,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 14, fontWeight: "700", color: "#ea7c1f" },
   label: { fontSize: 12, color: "#8a7c68" },
   hint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
+  inputMultiline: { minHeight: 64, textAlignVertical: "top" },
   input: {
     borderWidth: 1,
     borderColor: "#ece2d3",

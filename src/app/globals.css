@@ -48,6 +48,94 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Customer menu templates (order-client.tsx, print-view.tsx) — each is
+   scoped to its own [data-menu-theme] subtree so it can have a fully
+   independent color identity, separate from the single global brand color
+   used everywhere else (admin, mobile chrome). Every bg-brand/text-brand/
+   etc. Tailwind utility already used throughout those two pages picks these
+   up automatically since --color-brand etc. are declared "inline" above. */
+[data-menu-theme] {
+  font-family: var(--font-body, var(--font-sans)), Arial, Helvetica, sans-serif;
+}
+[data-menu-theme] h1,
+[data-menu-theme] h2 {
+  font-family: var(--font-heading, var(--font-body, var(--font-sans)));
+}
+
+[data-menu-theme="terracotta"] {
+  /* Colors from the Stitch "Terracotta Bistro & Craft" interactive
+     prototype (stitch_menuko_qr_restaurant_menu_app (2)/code.html) — its
+     own `tailwind.config` terracotta/surface/bistro palette, used as-is.
+     header-dark is kept as our own established curved-band tint (Stitch's
+     header is a flat bar nearly the same color as its page background,
+     a different structural choice we aren't adopting here). */
+  --brand: #e0623a;
+  --brand-foreground: #ffffff;
+  --background: #fff8f5;
+  --foreground: #2b1b17;
+  --card: #fff1ea;
+  --border: #e9d6cd;
+  --muted: #7d6861;
+  --header-dark: #fbe4d3;
+  --header-dark-foreground: #2b1b17;
+  --font-heading: var(--font-playfair);
+  --font-body: var(--font-jakarta);
+}
+
+[data-menu-theme="heritage"] {
+  /* Colors from the Stitch "KIMTOUKSOON Grand Salon" interactive prototype
+     (stitch_menuko_qr_restaurant_menu_app (1)/code.html) — its own
+     `tailwind.config` heritage.* palette, used as-is. */
+  --brand: #c5a880;
+  --brand-foreground: #102a43;
+  --background: #faf6ef;
+  --foreground: #2c251e;
+  --card: #fdfbf7;
+  --border: #dfcebb;
+  --muted: #8a7a68;
+  --header-dark: #0b1d2e;
+  --header-dark-foreground: #fcf8f2;
+  --font-heading: var(--font-playfair);
+  --font-body: var(--font-jakarta);
+}
+
+[data-menu-theme="nordic"] {
+  /* Colors from the Stitch "Nordic Architectural Minimal" interactive
+     prototype (stitch_menuko_qr_restaurant_menu_app/code.html) — its
+     actions/prices are near-black, not the taupe accent it uses for
+     decorative touches; kept simple here as just the one brand color. */
+  --brand: #191c1d;
+  --brand-foreground: #faf9f7;
+  --background: #faf9f7;
+  --foreground: #191c1d;
+  --card: #ffffff;
+  --border: #e2e2df;
+  --muted: #71787d;
+  --header-dark: #faf9f7;
+  --header-dark-foreground: #191c1d;
+  --font-heading: var(--font-space-grotesk);
+  --font-body: var(--font-jakarta);
+}
+
+[data-menu-theme="botanical"] {
+  /* "Botanical Linen" — from the Stitch DESIGN.md palette (island flora /
+     pressed paper), used as the site-wide direction going forward. Deep
+     forest sage as the one brand color, warm linen surfaces, and a soft
+     rounded-b-3xl header like terracotta's (this system favors organic
+     curvature over nordic's flat architectural edges). */
+  --brand: #1e3a2b;
+  --brand-foreground: #f7f9f6;
+  --background: #f7f9f6;
+  --foreground: #212623;
+  --card: #eff3ee;
+  --border: rgba(30, 58, 43, 0.08);
+  --muted: #727973;
+  --header-dark: #1e3a2b;
+  --header-dark-foreground: #f7f9f6;
+  --font-heading: var(--font-epilogue);
+  --font-body: var(--font-jakarta);
+}
+
 @media print {
   body {
     background: #ffffff;

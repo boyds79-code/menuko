@@ -1,6 +1,3 @@
-// Generated via `supabase gen types typescript --linked` against the
-// Menuko project — regenerate the same way after any schema migration
-// instead of hand-editing the Database type below.
 export type Json =
   | string
   | number
@@ -420,6 +417,7 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          about: string | null
           address: string | null
           business_type: Database["public"]["Enums"]["business_type"]
           created_at: string
@@ -435,6 +433,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["restaurant_plan"]
         }
         Insert: {
+          about?: string | null
           address?: string | null
           business_type?: Database["public"]["Enums"]["business_type"]
           created_at?: string
@@ -450,6 +449,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["restaurant_plan"]
         }
         Update: {
+          about?: string | null
           address?: string | null
           business_type?: Database["public"]["Enums"]["business_type"]
           created_at?: string

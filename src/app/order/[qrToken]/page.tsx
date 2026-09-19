@@ -31,7 +31,7 @@ export default async function OrderPage({
     await Promise.all([
       supabase
         .from("restaurants")
-        .select("id, name, payment_qr_url, payment_link, business_type, menu_template")
+        .select("id, name, about, payment_qr_url, payment_link, business_type, menu_template")
         .eq("id", table.restaurant_id)
         .single(),
       supabase
@@ -90,7 +90,7 @@ export default async function OrderPage({
       }
     : null;
 
-  const menuTemplate = isMenuTemplateId(restaurant.menu_template) ? restaurant.menu_template : "classic";
+  const menuTemplate = isMenuTemplateId(restaurant.menu_template) ? restaurant.menu_template : "terracotta";
 
   return (
     <OrderClient

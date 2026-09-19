@@ -19,7 +19,7 @@ type Ad = {
 };
 
 function toMenuTemplateId(value: string): MenuTemplateId {
-  return value === "warm" || value === "minimal" ? value : "classic";
+  return value === "heritage" || value === "nordic" ? value : "terracotta";
 }
 
 export function AdsManager({
@@ -42,7 +42,7 @@ export function AdsManager({
           <h2 className="text-sm font-semibold">Your ads</h2>
           {initialAds.map((ad) => (
             <div key={ad.id} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center">
-              <div className="flex-1">
+              <div data-menu-theme={toMenuTemplateId(ad.template_id)} className="flex-1">
                 <AdBanner
                   ad={{
                     headline: ad.headline,
@@ -91,7 +91,7 @@ function AdComposer({
   restaurantName: string;
   onMutate: () => void;
 }) {
-  const [templateId, setTemplateId] = useState<MenuTemplateId>("classic");
+  const [templateId, setTemplateId] = useState<MenuTemplateId>("terracotta");
   const [headline, setHeadline] = useState("");
   const [subcopy, setSubcopy] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -192,16 +192,18 @@ function AdComposer({
 
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium">Preview</span>
-          <AdBanner
-            ad={{
-              headline: headline || "Enter a headline",
-              subcopy: subcopy || null,
-              imageUrl,
-              linkUrl: null,
-              advertiserName: restaurantName,
-              templateId,
-            }}
-          />
+          <div data-menu-theme={templateId}>
+            <AdBanner
+              ad={{
+                headline: headline || "Enter a headline",
+                subcopy: subcopy || null,
+                imageUrl,
+                linkUrl: null,
+                advertiserName: restaurantName,
+                templateId,
+              }}
+            />
+          </div>
         </div>
       </div>
 

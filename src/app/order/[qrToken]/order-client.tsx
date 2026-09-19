@@ -30,12 +30,18 @@ type MenuItem = {
 type Restaurant = {
   id: string;
   name: string;
+  about: string | null;
   payment_qr_url: string | null;
   payment_link: string | null;
 };
 
 type CartLine = { item: MenuItem; quantity: number };
-type ConfirmationLine = { id: string; name: string; quantity: number; unitPrice: number };
+type ConfirmationLine = {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+};
 type Confirmation = {
   orderId: string;
   accessToken: string;
@@ -53,43 +59,15 @@ function storageKey(qrToken: string) {
   return `menuko:order:${qrToken}`;
 }
 
-function CallServerButton({
-  calling,
-  called,
-  onCall,
-}: {
-  calling: boolean;
-  called: boolean;
-  onCall: () => void;
-}) {
+function CallServerButton({ calling, called, onCall }: { calling: boolean; called: boolean; onCall: () => void }) {
   return (
-    <button
-      onClick={onCall}
-      disabled={calling || called}
-      className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-60"
-    >
+    <button onClick={onCall} disabled={calling || called} className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-60">
       {called ? "Server called ✓" : calling ? "Calling…" : "Call Server"}
     </button>
   );
 }
 
-export function OrderClient({
-  qrToken,
-  table,
-  restaurant,
-  menuTemplate,
-  categories,
-  items,
-  ad,
-}: {
-  qrToken: string;
-  table: { id: string; label: string };
-  restaurant: Restaurant;
-  menuTemplate: MenuTemplateId;
-  categories: Category[];
-  items: MenuItem[];
-  ad: AdContent | null;
-}) {
+export function OrderClient({ qrToken, table, restaurant, menuTemplate, categories, items, ad }: { qrToken: string; table: { id: string; label: string }; restaurant: Restaurant; menuTemplate: MenuTemplateId; categories: Category[]; items: MenuItem[]; ad: AdContent | null }) {
   const supabase = createClient();
   const [cart, setCart] = useState<Record<string, number>>({});
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -148,7 +126,10 @@ export function OrderClient({
     try {
       const { data, error: rpcError } = await supabase.rpc("create_order", {
         p_qr_token: qrToken,
-        p_items: cartLines.map((l) => ({ menu_item_id: l.item.id, quantity: l.quantity })),
+        p_items: cartLines.map((l) => ({
+          menu_item_id: l.item.id,
+          quantity: l.quantity,
+        })),
       });
 
       if (rpcError || !data || data.length === 0) {
@@ -162,14 +143,16 @@ export function OrderClient({
         quantity: l.quantity,
         unitPrice: l.item.price,
       }));
-      setConfirmation({ orderId: order_id, accessToken: access_token, lines, total: cartTotal });
+      setConfirmation({
+        orderId: order_id,
+        accessToken: access_token,
+        lines,
+        total: cartTotal,
+      });
       setStatus("open");
       setCart({});
       try {
-        sessionStorage.setItem(
-          storageKey(qrToken),
-          JSON.stringify({ orderId: order_id, accessToken: access_token }),
-        );
+        sessionStorage.setItem(storageKey(qrToken), JSON.stringify({ orderId: order_id, accessToken: access_token }));
       } catch {
         // Private browsing / storage disabled — confirmation just won't
         // survive a refresh, order itself already succeeded.
@@ -293,7 +276,10 @@ export function OrderClient({
       const { error: rpcError } = await supabase.rpc("request_order_edit", {
         p_order_id: confirmation.orderId,
         p_access_token: confirmation.accessToken,
-        p_items: cartLines.map((l) => ({ menu_item_id: l.item.id, quantity: l.quantity })),
+        p_items: cartLines.map((l) => ({
+          menu_item_id: l.item.id,
+          quantity: l.quantity,
+        })),
       });
       if (rpcError) throw rpcError;
       setCart({});
@@ -307,63 +293,51 @@ export function OrderClient({
   }
 
   if (confirmation && !editingRequest) {
-    return (
-      <ConfirmationView
-        restaurant={restaurant}
-        table={table}
-        confirmation={confirmation}
-        status={status}
-        ad={ad}
-        changeRequest={changeRequest}
-        dismissedRequestId={dismissedRequestId}
-        onDismissChangeRequest={() => changeRequest && setDismissedRequestId(changeRequest.id)}
-        requestingCancel={requestingCancel}
-        onRequestCancel={requestCancel}
-        onStartEdit={startEditRequest}
-        onOrderMore={() => setConfirmation(null)}
-        callingServer={callingServer}
-        serverCalled={serverCalled}
-        onCallServer={callServer}
-      />
-    );
+    return <ConfirmationView restaurant={restaurant} table={table} menuTemplate={menuTemplate} confirmation={confirmation} status={status} ad={ad} changeRequest={changeRequest} dismissedRequestId={dismissedRequestId} onDismissChangeRequest={() => changeRequest && setDismissedRequestId(changeRequest.id)} requestingCancel={requestingCancel} onRequestCancel={requestCancel} onStartEdit={startEditRequest} onOrderMore={() => setConfirmation(null)} callingServer={callingServer} serverCalled={serverCalled} onCallServer={callServer} />;
   }
 
   const style = DIGITAL_TEMPLATE_STYLES[menuTemplate];
 
   return (
-    <div className={`flex min-h-full flex-1 flex-col pb-24 ${style.page}`}>
+    <div data-menu-theme={menuTemplate} className={`flex min-h-full flex-1 flex-col pb-24 ${style.page}`}>
       <header className={`flex items-start justify-between gap-3 ${style.header}`}>
-        <div>
+        <div className="min-w-0">
           <h1 className={style.headerTitle}>{restaurant.name}</h1>
-          <p className={style.headerSubtitle}>{table.label}</p>
+          {restaurant.about && <p className="mt-1 line-clamp-2 text-xs leading-snug text-header-dark-foreground/80">{restaurant.about}</p>}
+          <p className={`${style.headerSubtitle} mt-1`}>{table.label}</p>
         </div>
         <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} />
       </header>
 
       {featuredItems.length > 0 && (
-        <div className="-mt-10 flex gap-3 overflow-x-auto px-4 pb-1">
-          {featuredItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setDetailItem(item)}
-              className="relative h-[150px] w-[220px] shrink-0 overflow-hidden rounded-2xl shadow-lg transition-opacity hover:opacity-95"
-            >
-              {item.photo_url ? (
-                <Image src={item.photo_url} alt="" fill className="object-cover" />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center bg-border text-xs text-muted">
-                  Menuko
-                </span>
-              )}
-              <span className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" aria-hidden />
-              <span className="absolute bottom-3 left-3 rounded-full bg-brand px-3 py-1 text-xs font-bold text-brand-foreground">
-                Our Best!
-              </span>
-              <span className="absolute right-3 bottom-3 max-w-[55%] truncate text-right text-xs font-semibold text-white">
-                {item.name}
-              </span>
-            </button>
-          ))}
+        <div className={`flex gap-3 overflow-x-auto px-4 pb-1 ${style.featuredOverlap}`}>
+          {featuredItems.map((item) =>
+            style.variant === "nordic" ? (
+              <button key={item.id} onClick={() => setDetailItem(item)} className="flex w-[220px] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card text-left transition-colors hover:border-brand">
+                <div className="relative h-28 w-full overflow-hidden bg-background">
+                  {item.photo_url ? <Image src={item.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-xs text-muted">Menuko</span>}
+                  <span className="absolute top-2.5 left-2.5 rounded bg-foreground px-2 py-0.5 text-[10px] font-medium tracking-wider text-background uppercase">Our Best</span>
+                </div>
+                <div className="p-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate text-sm font-bold text-foreground">{item.name}</p>
+                    <span className="font-mono text-xs font-bold whitespace-nowrap text-foreground">{formatPeso(item.price)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
+                    {item.cook_time_minutes ? <span className="font-mono text-[10px] text-muted">{item.cook_time_minutes} min</span> : <span />}
+                    <span className="text-xs font-semibold text-foreground">Details →</span>
+                  </div>
+                </div>
+              </button>
+            ) : (
+              <button key={item.id} onClick={() => setDetailItem(item)} className="relative h-[150px] w-[220px] shrink-0 overflow-hidden rounded-2xl shadow-lg transition-opacity hover:opacity-95">
+                {item.photo_url ? <Image src={item.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center bg-border text-xs text-muted">Menuko</span>}
+                <span className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" aria-hidden />
+                <span className="absolute bottom-3 left-3 rounded-full bg-brand px-3 py-1 text-xs font-bold text-brand-foreground">Our Best!</span>
+                <span className="absolute right-3 bottom-3 max-w-[55%] truncate text-right text-xs font-semibold text-white">{item.name}</span>
+              </button>
+            ),
+          )}
         </div>
       )}
 
@@ -391,16 +365,14 @@ export function OrderClient({
             <section key={category.id}>
               <h2 className={style.categoryTitle}>{category.name}</h2>
               <div className="flex gap-3 overflow-x-auto pb-1">
-                {categoryItems.map((item) => (
-                  <RowCard key={item.id} item={item} onClick={() => setDetailItem(item)} />
+                {categoryItems.map((item, idx) => (
+                  <RowCard key={item.id} item={item} onClick={() => setDetailItem(item)} variant={style.variant} eyebrow={`${category.name.toUpperCase()} ${String(idx + 1).padStart(2, "0")}`} />
                 ))}
               </div>
             </section>
           );
         })}
-        {items.length === 0 && (
-          <p className="text-sm text-muted">No menu items yet.</p>
-        )}
+        {items.length === 0 && <p className="text-sm text-muted">No menu items yet.</p>}
         <p className="pt-2 text-center text-[11px] text-muted">
           By ordering, you agree to our{" "}
           <Link href="/terms" className="underline">
@@ -421,21 +393,9 @@ export function OrderClient({
               {error}
             </p>
           )}
-          <button
-            onClick={editingRequest ? sendEditRequest : () => setReviewOpen(true)}
-            disabled={submitting}
-            className="flex w-full items-center justify-between rounded-full bg-brand px-5 py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            <span>
-              {submitting
-                ? editingRequest
-                  ? "Sending request…"
-                  : "Placing order…"
-                : editingRequest
-                  ? `Send change request (${cartCount})`
-                  : `Check Out (${cartCount})`}
-            </span>
-            <span>{formatPeso(cartTotal)}</span>
+          <button onClick={editingRequest ? sendEditRequest : () => setReviewOpen(true)} disabled={submitting} className={style.variant === "nordic" ? "flex w-full items-center justify-between rounded bg-brand px-5 py-3.5 text-xs font-bold tracking-wider text-brand-foreground uppercase transition-opacity hover:opacity-90 disabled:opacity-60" : "flex w-full items-center justify-between rounded-full bg-brand px-5 py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"}>
+            <span>{submitting ? (editingRequest ? "Sending request…" : "Placing order…") : editingRequest ? `Send change request (${cartCount})` : `Review Order (${cartCount})`}</span>
+            <span className={style.variant === "nordic" ? "font-mono normal-case" : ""}>{formatPeso(cartTotal)}</span>
           </button>
         </div>
       )}
@@ -444,6 +404,7 @@ export function OrderClient({
         <ReviewSheet
           lines={cartLines}
           total={cartTotal}
+          variant={style.variant}
           submitting={submitting}
           onConfirm={async () => {
             await placeOrder();
@@ -456,6 +417,7 @@ export function OrderClient({
       {detailItem && (
         <ItemDetailOverlay
           item={detailItem}
+          variant={style.variant}
           quantity={cart[detailItem.id] ?? 0}
           onChangeQty={(qty) => setQty(detailItem.id, qty)}
           onClose={() => setDetailItem(null)}
@@ -470,28 +432,45 @@ export function OrderClient({
   );
 }
 
-function ReviewSheet({
-  lines,
-  total,
-  submitting,
-  onConfirm,
-  onClose,
-}: {
-  lines: CartLine[];
-  total: number;
-  submitting: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
+function ReviewSheet({ lines, total, variant, submitting, onConfirm, onClose }: { lines: CartLine[]; total: number; variant: "default" | "nordic" | "botanical"; submitting: boolean; onConfirm: () => void; onClose: () => void }) {
+  const priceClass = variant === "nordic" ? "font-mono" : "";
+
+  // DESIGN.md's own "Floating Bill / Order Tray" spec: frosted linen blur,
+  // rounded-xl top corners, a prominent Forest Sage checkout trigger.
+  if (variant === "botanical") {
+    return (
+      <div className="fixed inset-0 z-20 flex items-end justify-center bg-foreground/40" onClick={onClose}>
+        <div role="dialog" aria-modal="true" aria-label="Review your order" onClick={(e) => e.stopPropagation()} className="w-full max-w-md overscroll-contain rounded-t-2xl bg-card/95 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-md">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" aria-hidden />
+          <h2 className="mb-3 text-lg font-semibold tracking-tight">Review your order</h2>
+          <ul className="flex flex-col gap-2.5 text-sm">
+            {lines.map((line) => (
+              <li key={line.item.id} className="flex justify-between gap-3">
+                <span className="min-w-0 truncate text-foreground/90">
+                  {line.item.name} × {line.quantity}
+                </span>
+                <span className="shrink-0 font-medium text-foreground tabular-nums">{formatPeso(line.item.price * line.quantity)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex justify-between border-t border-border pt-3 font-semibold">
+            <span>Total</span>
+            <span className="text-brand">{formatPeso(total)}</span>
+          </div>
+          <button onClick={onConfirm} disabled={submitting} className="mt-4 w-full rounded-lg bg-brand py-3.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60">
+            {submitting ? "Placing order…" : "Send Order"}
+          </button>
+          <button onClick={onClose} className="mt-2 w-full text-center text-sm text-muted underline">
+            Back to menu
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/45" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Review your order"
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md overscroll-contain rounded-t-3xl bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg"
-      >
+      <div role="dialog" aria-modal="true" aria-label="Review your order" onClick={(e) => e.stopPropagation()} className="w-full max-w-md overscroll-contain rounded-t-3xl bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg">
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-border" aria-hidden />
         <h2 className="mb-3 font-semibold">Review your order</h2>
         <ul className="flex flex-col gap-2 text-sm">
@@ -500,20 +479,16 @@ function ReviewSheet({
               <span className="min-w-0 truncate">
                 {line.item.name} × {line.quantity}
               </span>
-              <span className="shrink-0 tabular-nums">{formatPeso(line.item.price * line.quantity)}</span>
+              <span className={`shrink-0 tabular-nums ${priceClass}`}>{formatPeso(line.item.price * line.quantity)}</span>
             </li>
           ))}
         </ul>
         <div className="mt-3 flex justify-between border-t border-border pt-3 font-semibold">
           <span>Total</span>
-          <span>{formatPeso(total)}</span>
+          <span className={priceClass}>{formatPeso(total)}</span>
         </div>
-        <button
-          onClick={onConfirm}
-          disabled={submitting}
-          className="mt-4 w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-        >
-          {submitting ? "Placing order…" : "Check Out"}
+        <button onClick={onConfirm} disabled={submitting} className={variant === "nordic" ? "mt-4 w-full rounded bg-brand py-3.5 text-xs font-bold tracking-wider text-brand-foreground uppercase transition-opacity hover:opacity-90 disabled:opacity-60" : "mt-4 w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"}>
+          {submitting ? "Placing order…" : "Send Order"}
         </button>
         <button onClick={onClose} className="mt-2 w-full text-center text-sm text-muted underline">
           Back to menu
@@ -523,64 +498,202 @@ function ReviewSheet({
   );
 }
 
-function RowCard({ item, onClick }: { item: MenuItem; onClick: () => void }) {
+function RowCard({ item, onClick, variant, eyebrow }: { item: MenuItem; onClick: () => void; variant: "default" | "nordic" | "botanical"; eyebrow?: string }) {
+  if (variant === "nordic") {
+    return (
+      <button onClick={onClick} className="flex w-36 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card text-left transition-colors hover:border-brand">
+        <div className="relative h-24 w-full overflow-hidden bg-background">{item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="144px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">Menuko</span>}</div>
+        <div className="flex flex-1 flex-col justify-between p-2.5">
+          <div>
+            {eyebrow && <p className="mb-1 font-mono text-[10px] text-muted">{eyebrow}</p>}
+            <p className="truncate text-xs font-bold text-foreground">{item.name}</p>
+          </div>
+          <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
+            <span className="font-mono text-xs font-semibold text-foreground">{formatPeso(item.price)}</span>
+            <span aria-hidden className="flex h-5 w-5 items-center justify-center rounded bg-border text-[11px] font-bold text-foreground">
+              +
+            </span>
+          </div>
+        </div>
+      </button>
+    );
+  }
+
+  if (variant === "botanical") {
+    // DESIGN.md's "Cards (Menu Items)" spec: Surface 1 fill, ultra-fine
+    // border, rounded-lg, price in a plain accent line under the title
+    // (not an overlapping badge) — the "restrained editorial" tone.
+    return (
+      <button onClick={onClick} className="w-36 shrink-0 overflow-hidden rounded-lg border border-border bg-card text-left transition-colors hover:border-brand">
+        <div className="relative h-24 w-full overflow-hidden bg-background">{item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="144px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">Menuko</span>}</div>
+        <div className="flex flex-col gap-1 p-2.5">
+          <p className="truncate text-xs font-semibold text-foreground">{item.name}</p>
+          <p className="text-xs font-semibold text-brand">{formatPeso(item.price)}</p>
+        </div>
+      </button>
+    );
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className="w-36 shrink-0 overflow-visible rounded-xl border border-border bg-card text-left transition-colors hover:border-brand"
-    >
-      <div className="relative h-24 w-full overflow-hidden rounded-t-xl bg-background">
-        {item.photo_url ? (
-          <Image src={item.photo_url} alt="" fill sizes="144px" className="object-cover" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">
-            Menuko
-          </span>
-        )}
-      </div>
+    <button onClick={onClick} className="w-36 shrink-0 overflow-visible rounded-xl border border-border bg-card text-left transition-colors hover:border-brand">
+      <div className="relative h-24 w-full overflow-hidden rounded-t-xl bg-background">{item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="144px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">Menuko</span>}</div>
       <div className="relative px-2 pb-2 pt-3">
-        <span className="absolute -top-2 left-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-brand-foreground shadow">
-          {formatPeso(item.price)}
-        </span>
+        <span className="absolute -top-2 left-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-brand-foreground shadow">{formatPeso(item.price)}</span>
         <p className="truncate text-xs font-medium text-foreground">{item.name}</p>
       </div>
     </button>
   );
 }
 
-function ItemDetailOverlay({
-  item,
-  quantity,
-  onChangeQty,
-  onClose,
-  canCheckout,
-  onGoToCheckout,
-}: {
-  item: MenuItem;
-  quantity: number;
-  onChangeQty: (quantity: number) => void;
-  onClose: () => void;
-  canCheckout: boolean;
-  onGoToCheckout: () => void;
-}) {
+function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canCheckout, onGoToCheckout }: { item: MenuItem; variant: "default" | "nordic" | "botanical"; quantity: number; onChangeQty: (quantity: number) => void; onClose: () => void; canCheckout: boolean; onGoToCheckout: () => void }) {
+  if (variant === "botanical") {
+    return (
+      <div role="dialog" aria-modal="true" aria-label={item.name} className="fixed inset-0 z-30 flex items-end justify-center bg-foreground/40 sm:items-center sm:p-4" onClick={onClose}>
+        {/* Full-width bottom sheet on a phone (DESIGN.md's own mobile spec:
+            rounded top corners, edge-to-edge) — becomes the DESIGN.md
+            flipbook's landscape framed card, centered with room to breathe,
+            once the screen is wide enough for a side-by-side layout. */}
+        <div onClick={(e) => e.stopPropagation()} className="relative flex max-h-[92vh] w-full flex-col overflow-y-auto rounded-t-2xl bg-card shadow-2xl sm:max-h-[85vh] sm:max-w-2xl sm:grid sm:grid-cols-2 sm:overflow-hidden sm:rounded-2xl">
+          <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
+          <button onClick={onClose} aria-label="Close" className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-brand shadow-sm backdrop-blur-md transition-colors hover:bg-background">
+            ×
+          </button>
+
+          <div className="relative h-72 w-full shrink-0 bg-background sm:h-full sm:min-h-[300px]">
+            {item.photo_url ? <Image src={item.photo_url} alt="" fill priority className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>}
+            {item.cook_time_minutes && <span className="absolute right-3 bottom-3 rounded-full bg-background/85 px-3 py-1 text-[11px] font-medium text-foreground shadow-sm backdrop-blur-md">{item.cook_time_minutes} min</span>}
+          </div>
+
+          <div className="flex flex-1 flex-col gap-3 p-5 sm:overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 pr-6">
+              <h2 className="text-xl font-semibold tracking-tight text-balance">{item.name}</h2>
+              <span className="shrink-0 text-lg font-semibold whitespace-nowrap text-brand">{formatPeso(item.price)}</span>
+            </div>
+            {item.description && <p className="text-sm leading-relaxed text-foreground/80">{item.description}</p>}
+
+            {(item.ingredients || item.allergy_info) && (
+              <div className="mt-1 flex flex-col gap-2.5 rounded-lg border border-border border-l-4 border-l-brand bg-background p-3.5">
+                {item.ingredients && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] font-semibold tracking-wide text-muted uppercase">Ingredients</span>
+                    <span className="text-sm text-foreground">{item.ingredients}</span>
+                  </div>
+                )}
+                {item.allergy_info && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] font-semibold tracking-wide text-muted uppercase">Allergy</span>
+                    <span className="text-sm text-foreground">{item.allergy_info}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="mt-auto flex flex-col gap-2 pt-6">
+              {quantity === 0 ? (
+                <button onClick={() => onChangeQty(1)} className="w-full rounded-lg bg-brand py-3.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90">
+                  Add to Order
+                </button>
+              ) : (
+                <div className="flex items-center justify-between rounded-lg border border-border bg-background p-3">
+                  <span className="text-sm font-medium text-foreground">Quantity</span>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => onChangeQty(quantity - 1)} aria-label="Decrease quantity" className="touch-manipulation flex h-8 w-8 items-center justify-center rounded-md border border-border text-base transition-colors hover:border-brand hover:text-brand">
+                      −
+                    </button>
+                    <span className="w-5 text-center text-sm font-semibold tabular-nums">{quantity}</span>
+                    <button onClick={() => onChangeQty(quantity + 1)} aria-label="Increase quantity" className="touch-manipulation flex h-8 w-8 items-center justify-center rounded-md bg-brand text-base text-brand-foreground transition-colors hover:opacity-90">
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+              {canCheckout && (
+                <button onClick={onGoToCheckout} className="py-1 text-center text-sm text-muted underline hover:text-foreground">
+                  Review Order
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "nordic") {
+    return (
+      <div role="dialog" aria-modal="true" aria-label={item.name} className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-5 py-3 backdrop-blur">
+          <button onClick={onClose} className="flex items-center gap-1.5 text-xs font-semibold text-foreground transition-colors hover:text-brand">
+            <span aria-hidden>←</span>
+            <span>Back to Menu</span>
+          </button>
+          <span className="font-mono text-[11px] text-muted">DISH SPECIFICATION</span>
+        </div>
+
+        <div className="relative h-64 shrink-0 bg-background">
+          {item.photo_url ? <Image src={item.photo_url} alt="" fill priority className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>}
+          {item.cook_time_minutes && <span className="absolute right-3 bottom-3 rounded bg-black/70 px-2.5 py-1 font-mono text-[11px] text-white">{item.cook_time_minutes} min prep</span>}
+        </div>
+
+        <div className="flex flex-1 flex-col gap-3 p-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xl font-bold tracking-tight text-balance">{item.name}</h2>
+            <span className="font-mono text-lg font-bold whitespace-nowrap text-foreground">{formatPeso(item.price)}</span>
+          </div>
+          {item.description && <p className="text-xs leading-relaxed text-muted">{item.description}</p>}
+
+          {(item.ingredients || item.allergy_info) && (
+            <div className="mt-2 divide-y divide-border rounded-lg border border-border text-xs">
+              {item.ingredients && (
+                <div className="flex justify-between gap-3 p-3">
+                  <span className="shrink-0 text-muted">Ingredients</span>
+                  <span className="text-right font-medium text-foreground">{item.ingredients}</span>
+                </div>
+              )}
+              {item.allergy_info && (
+                <div className="flex justify-between gap-3 p-3">
+                  <span className="shrink-0 text-muted">Allergy</span>
+                  <span className="text-right font-medium text-foreground">{item.allergy_info}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-auto flex flex-col gap-2 pt-6">
+            {quantity === 0 ? (
+              <button onClick={() => onChangeQty(1)} className="w-full rounded bg-brand py-3.5 text-xs font-bold tracking-wider text-brand-foreground uppercase transition-opacity hover:opacity-90">
+                Add to Table Order
+              </button>
+            ) : (
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3.5">
+                <span className="text-xs font-bold tracking-wider text-foreground uppercase">Order Quantity</span>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => onChangeQty(quantity - 1)} aria-label="Decrease quantity" className="touch-manipulation flex h-7 w-7 items-center justify-center rounded border border-border text-sm font-bold transition-colors hover:bg-border">
+                    −
+                  </button>
+                  <span className="w-4 text-center font-mono text-sm font-bold tabular-nums">{quantity}</span>
+                  <button onClick={() => onChangeQty(quantity + 1)} aria-label="Increase quantity" className="touch-manipulation flex h-7 w-7 items-center justify-center rounded bg-brand text-sm font-bold text-brand-foreground transition-colors hover:opacity-90">
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+            {canCheckout && (
+              <button onClick={onGoToCheckout} className="py-1 text-center text-xs text-muted underline hover:text-foreground">
+                Review Order
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={item.name}
-      className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card"
-    >
+    <div role="dialog" aria-modal="true" aria-label={item.name} className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card">
       <div className="relative h-64 shrink-0 bg-background">
-        {item.photo_url ? (
-          <Image src={item.photo_url} alt="" fill priority className="object-cover" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>
-        )}
-        <button
-          onClick={onClose}
-          aria-label="Back to menu"
-          className="absolute top-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-lg text-white transition-colors hover:bg-black/60"
-        >
+        {item.photo_url ? <Image src={item.photo_url} alt="" fill priority className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>}
+        <button onClick={onClose} aria-label="Back to menu" className="absolute top-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-lg text-white transition-colors hover:bg-black/60">
           ←
         </button>
       </div>
@@ -610,34 +723,23 @@ function ItemDetailOverlay({
 
         <div className="mt-auto flex flex-col items-center gap-3 pt-6">
           {quantity === 0 ? (
-            <button
-              onClick={() => onChangeQty(1)}
-              className="w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90"
-            >
-              Add to Cart
+            <button onClick={() => onChangeQty(1)} className="w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90">
+              Add to Order
             </button>
           ) : (
             <div className="flex items-center gap-5">
-              <button
-                onClick={() => onChangeQty(quantity - 1)}
-                aria-label="Decrease quantity"
-                className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand"
-              >
+              <button onClick={() => onChangeQty(quantity - 1)} aria-label="Decrease quantity" className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand">
                 −
               </button>
               <span className="w-6 text-center text-lg tabular-nums">{quantity}</span>
-              <button
-                onClick={() => onChangeQty(quantity + 1)}
-                aria-label="Increase quantity"
-                className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand"
-              >
+              <button onClick={() => onChangeQty(quantity + 1)} aria-label="Increase quantity" className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand">
                 +
               </button>
             </div>
           )}
           {canCheckout && (
             <button onClick={onGoToCheckout} className="text-sm text-muted underline">
-              Go to Checkout
+              Review Order
             </button>
           )}
         </div>
@@ -646,50 +748,15 @@ function ItemDetailOverlay({
   );
 }
 
-function ConfirmationView({
-  restaurant,
-  table,
-  confirmation,
-  status,
-  ad,
-  changeRequest,
-  dismissedRequestId,
-  onDismissChangeRequest,
-  requestingCancel,
-  onRequestCancel,
-  onStartEdit,
-  onOrderMore,
-  callingServer,
-  serverCalled,
-  onCallServer,
-}: {
-  restaurant: Restaurant;
-  table: { id: string; label: string };
-  confirmation: Confirmation;
-  status: OrderStatus;
-  ad: AdContent | null;
-  changeRequest: ChangeRequest | null;
-  dismissedRequestId: string | null;
-  onDismissChangeRequest: () => void;
-  requestingCancel: boolean;
-  onRequestCancel: () => void;
-  onStartEdit: () => void;
-  onOrderMore: () => void;
-  callingServer: boolean;
-  serverCalled: boolean;
-  onCallServer: () => void;
-}) {
+function ConfirmationView({ restaurant, table, menuTemplate, confirmation, status, ad, changeRequest, dismissedRequestId, onDismissChangeRequest, requestingCancel, onRequestCancel, onStartEdit, onOrderMore, callingServer, serverCalled, onCallServer }: { restaurant: Restaurant; table: { id: string; label: string }; menuTemplate: MenuTemplateId; confirmation: Confirmation; status: OrderStatus; ad: AdContent | null; changeRequest: ChangeRequest | null; dismissedRequestId: string | null; onDismissChangeRequest: () => void; requestingCancel: boolean; onRequestCancel: () => void; onStartEdit: () => void; onOrderMore: () => void; callingServer: boolean; serverCalled: boolean; onCallServer: () => void }) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const isFinal = status === "paid" || status === "cancelled";
   const hasPendingRequest = changeRequest?.status === "pending";
   const showRequestActions = !isFinal && !hasPendingRequest;
-  const showResolvedBanner =
-    changeRequest &&
-    changeRequest.status !== "pending" &&
-    changeRequest.id !== dismissedRequestId;
+  const showResolvedBanner = changeRequest && changeRequest.status !== "pending" && changeRequest.id !== dismissedRequestId;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4">
+    <div data-menu-theme={menuTemplate} className="flex flex-1 flex-col gap-6 bg-background p-4 text-foreground">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h1 className="font-bold text-brand">{restaurant.name}</h1>
@@ -698,28 +765,11 @@ function ConfirmationView({
         <CallServerButton calling={callingServer} called={serverCalled} onCall={onCallServer} />
       </header>
 
-      {hasPendingRequest && (
-        <div className="rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm text-brand">
-          {changeRequest.kind === "cancel" ? "Cancellation requested" : "Change requested"} — staff
-          will confirm with the kitchen shortly.
-        </div>
-      )}
+      {hasPendingRequest && <div className="rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm text-brand">{changeRequest.kind === "cancel" ? "Cancellation requested" : "Change requested"} — staff will confirm with the kitchen shortly.</div>}
 
       {showResolvedBanner && (
-        <div
-          className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${
-            changeRequest!.status === "approved"
-              ? "border-brand/30 bg-brand/10 text-brand"
-              : "border-border bg-background text-foreground"
-          }`}
-        >
-          <span>
-            {changeRequest!.status === "approved"
-              ? changeRequest!.kind === "cancel"
-                ? "Your cancellation was approved."
-                : "Your change was approved."
-              : `Your request was declined.${changeRequest!.denyReason ? ` ${changeRequest!.denyReason}` : ""}`}
-          </span>
+        <div className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${changeRequest!.status === "approved" ? "border-brand/30 bg-brand/10 text-brand" : "border-border bg-background text-foreground"}`}>
+          <span>{changeRequest!.status === "approved" ? (changeRequest!.kind === "cancel" ? "Your cancellation was approved." : "Your change was approved.") : `Your request was declined.${changeRequest!.denyReason ? ` ${changeRequest!.denyReason}` : ""}`}</span>
           <button onClick={onDismissChangeRequest} className="shrink-0 text-xs underline">
             Dismiss
           </button>
@@ -729,9 +779,7 @@ function ConfirmationView({
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">{status === "cancelled" ? "Order cancelled" : "Order received"}</h2>
-          <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
-            {ORDER_STATUS_LABEL[status] ?? status}
-          </span>
+          <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand">{ORDER_STATUS_LABEL[status] ?? status}</span>
         </div>
         <ul className="flex flex-col gap-2 text-sm">
           {confirmation.lines.map((line) => (
@@ -755,11 +803,7 @@ function ConfirmationView({
             <div className="flex flex-1 items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
               <span className="text-muted">Cancel this order?</span>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmingCancel(false)}
-                  className="text-muted underline"
-                  disabled={requestingCancel}
-                >
+                <button onClick={() => setConfirmingCancel(false)} className="text-muted underline" disabled={requestingCancel}>
                   No
                 </button>
                 <button
@@ -792,22 +836,9 @@ function ConfirmationView({
       {status !== "cancelled" && (restaurant.payment_qr_url || restaurant.payment_link) && (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted">Please pay at the cashier</p>
-          {restaurant.payment_qr_url && (
-            <Image
-              src={restaurant.payment_qr_url}
-              alt="Payment QR"
-              width={180}
-              height={180}
-              className="rounded"
-            />
-          )}
+          {restaurant.payment_qr_url && <Image src={restaurant.payment_qr_url} alt="Payment QR" width={180} height={180} className="rounded" />}
           {restaurant.payment_link && (
-            <a
-              href={restaurant.payment_link}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm text-brand underline"
-            >
+            <a href={restaurant.payment_link} target="_blank" rel="noreferrer" className="text-sm text-brand underline">
               Open payment link
             </a>
           )}
@@ -815,10 +846,7 @@ function ConfirmationView({
         </div>
       )}
 
-      <button
-        onClick={onOrderMore}
-        className="rounded-full border border-brand px-5 py-3 text-center font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground"
-      >
+      <button onClick={onOrderMore} className="rounded-full border border-brand px-5 py-3 text-center font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground">
         Add more from the menu
       </button>
     </div>
@@ -826,10 +854,7 @@ function ConfirmationView({
 }
 
 function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessToken: string }) {
-  const [state, formAction, pending] = useActionState<UploadPaymentProofState, FormData>(
-    uploadPaymentProof,
-    { error: null, url: null },
-  );
+  const [state, formAction, pending] = useActionState<UploadPaymentProofState, FormData>(uploadPaymentProof, { error: null, url: null });
   const [preview, setPreview] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -857,18 +882,10 @@ function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessT
 
   return (
     <div className="mt-2 flex w-full flex-col items-center gap-2 border-t border-border pt-3">
-      <p className="text-xs text-muted">
-        Already paid? Upload a screenshot so the cashier can confirm before you leave.
-      </p>
+      <p className="text-xs text-muted">Already paid? Upload a screenshot so the cashier can confirm before you leave.</p>
       {shownImage && (
         // eslint-disable-next-line @next/next/no-img-element -- local blob preview before the real URL lands
-        <img
-          src={shownImage}
-          alt="Payment proof"
-          width={96}
-          height={96}
-          className="h-24 w-24 rounded object-cover"
-        />
+        <img src={shownImage} alt="Payment proof" width={96} height={96} className="h-24 w-24 rounded object-cover" />
       )}
       <input
         ref={fileRef}
@@ -882,17 +899,8 @@ function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessT
           e.target.value = "";
         }}
       />
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={compressing || pending}
-        className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-60"
-      >
-        {compressing || pending
-          ? "Uploading…"
-          : state.url
-            ? "Replace screenshot"
-            : "Upload payment screenshot"}
+      <button type="button" onClick={() => fileRef.current?.click()} disabled={compressing || pending} className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-60">
+        {compressing || pending ? "Uploading…" : state.url ? "Replace screenshot" : "Upload payment screenshot"}
       </button>
       {state.error && (
         <p role="alert" aria-live="polite" className="text-xs text-red-600">

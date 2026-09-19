@@ -27,48 +27,48 @@ export function AdBanner({ ad }: { ad: AdContent }) {
 
 function AdBannerBody({ ad }: { ad: AdContent }) {
   switch (ad.templateId) {
-    case "warm":
+    case "heritage":
       return (
-        <div className="flex items-center gap-3 rounded-2xl bg-[#fff3e6] p-4">
+        <div className="flex items-center gap-3 rounded-lg border border-brand/40 bg-card p-4">
           {ad.imageUrl && (
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full">
               <Image src={ad.imageUrl} alt="" fill className="object-cover" />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-brand">
+            <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-brand">
               Recommended by {ad.advertiserName}
             </p>
-            <p className="truncate font-serif text-base font-bold text-brand">{ad.headline}</p>
-            {ad.subcopy && <p className="truncate text-sm text-brand/80">{ad.subcopy}</p>}
+            <p className="truncate text-base font-bold text-foreground">{ad.headline}</p>
+            {ad.subcopy && <p className="truncate text-sm text-muted">{ad.subcopy}</p>}
           </div>
         </div>
       );
-    case "minimal":
+    case "nordic":
       return (
-        <div className="flex items-center gap-3 border border-black p-4">
+        <div className="flex items-center gap-3 border border-border p-4">
           {ad.imageUrl && (
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden grayscale">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden">
               <Image src={ad.imageUrl} alt="" fill className="object-cover" />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-black/50">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted">
               {ad.advertiserName}
             </p>
-            <p className="truncate text-base font-semibold uppercase tracking-wide text-black">
+            <p className="truncate text-base font-semibold uppercase tracking-wide text-foreground">
               {ad.headline}
             </p>
-            {ad.subcopy && <p className="truncate text-sm text-black/60">{ad.subcopy}</p>}
+            {ad.subcopy && <p className="truncate text-sm text-muted">{ad.subcopy}</p>}
           </div>
         </div>
       );
-    case "classic":
+    case "terracotta":
     default:
       return (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-sm">
           {ad.imageUrl && (
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
               <Image src={ad.imageUrl} alt="" fill className="object-cover" />
             </div>
           )}

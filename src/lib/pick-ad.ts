@@ -33,5 +33,5 @@ export function pickCrossPromoAd(
 }
 
 export function adTemplateId(ad: AdCandidate): MenuTemplateId {
-  return ad.template_id === "warm" || ad.template_id === "minimal" ? ad.template_id : "classic";
+  return ad.template_id === "heritage" || ad.template_id === "nordic" ? ad.template_id : "terracotta";
 }
