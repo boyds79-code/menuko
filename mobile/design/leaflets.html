@@ -1,0 +1,590 @@
+<title>Menuko Leaflets</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #fffaf3;
+    --cream-dim: #f3e9d8;
+    --ink: #231f1a;
+    --muted: #6f6252;
+    --orange: #ea7c1f;
+    --orange-dark: #c96612;
+    --border: #ece2d3;
+    --page-bg: #ece5d6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    padding: 28px 0 80px;
+  }
+
+  .toolbar {
+    max-width: 210mm;
+    margin: 0 auto 22px;
+    padding: 0 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .toolbar h1 { font-size: 16px; margin: 0; font-weight: 800; }
+  .toolbar p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+  .print-btn {
+    border: none;
+    background: var(--orange);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .print-btn:hover { background: var(--orange-dark); }
+
+  .sheet {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 28px;
+    background: var(--cream);
+    box-shadow: 0 12px 30px -14px rgba(0,0,0,0.35);
+    position: relative;
+    overflow: hidden;
+    padding: 16mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet-label {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .brandline { display: flex; align-items: center; gap: 10px; }
+  .mark { width: 34px; height: 34px; flex-shrink: 0; }
+  .wordmark { font-weight: 800; font-size: 20px; letter-spacing: -0.01em; }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--orange-dark);
+    margin-bottom: 6px;
+  }
+  h2.headline { font-size: 30px; line-height: 1.18; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.01em; }
+  p.lede { font-size: 13.5px; line-height: 1.55; color: #3d352a; max-width: 62ch; margin: 0 0 4px; }
+
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* ---------- Page 1: Features ---------- */
+  .role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .role-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .role-card .role-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--orange-dark);
+    margin-bottom: 8px;
+  }
+  .role-card ul { margin: 0; padding-left: 16px; font-size: 12.5px; line-height: 1.65; color: #3d352a; }
+  .role-card li { margin-bottom: 2px; }
+
+  .feat-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  .feat-footer .tagline { font-size: 12.5px; color: var(--muted); max-width: 40ch; }
+
+  /* ---------- Page 2: Marketing ---------- */
+  .sheet.marketing { background: var(--ink); color: var(--cream); }
+  .sheet.marketing .eyebrow { color: #f2b479; }
+  .sheet.marketing p.lede { color: #e7dfd0; }
+  .sheet.marketing h2.headline { color: #fff; }
+  .hero-headline { font-size: 42px; line-height: 1.1; font-weight: 800; letter-spacing: -0.015em; margin: 18px 0 14px; max-width: 15ch; }
+  .pain-row { display: flex; gap: 10px; margin: 18px 0 22px; }
+  .pain-chip {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #e7dfd0;
+  }
+  .pain-chip strong { display: block; color: #fff; font-size: 13px; margin-bottom: 3px; }
+  .diff-list { display: flex; flex-direction: column; gap: 12px; margin: 6px 0 24px; }
+  .diff-item { display: flex; gap: 12px; align-items: flex-start; }
+  .diff-num {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 999px;
+    background: var(--orange);
+    color: #241a10;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .diff-item p { margin: 0; font-size: 13px; line-height: 1.55; color: #e7dfd0; }
+  .diff-item strong { color: #fff; }
+  .cta-band {
+    margin-top: auto;
+    background: var(--orange);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-band .cta-copy strong { display: block; font-size: 16px; color: #241a10; }
+  .cta-band .cta-copy span { font-size: 12px; color: #4a3418; }
+  .cta-scan {
+    width: 74px; height: 74px;
+    background: #fffaf3;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Page 3: Manual ---------- */
+  .steps { display: flex; flex-direction: column; gap: 0; margin-top: 6px; }
+  .step { display: flex; gap: 16px; padding: 14px 0; }
+  .step + .step { border-top: 1px dashed var(--border); }
+  .step-num {
+    flex-shrink: 0;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--cream);
+    font-weight: 800;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-body strong { display: block; font-size: 14.5px; margin-bottom: 2px; }
+  .step-body p { margin: 0; font-size: 12.5px; line-height: 1.55; color: #3d352a; max-width: 58ch; }
+  .tip-box {
+    margin-top: 16px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #3d352a;
+  }
+  .tip-box strong { color: var(--orange-dark); }
+
+  /* ---------- Page 4: Table card ---------- */
+  .sheet.tablecard { align-items: center; text-align: center; justify-content: space-between; }
+  .tc-top { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 10mm; }
+  .tc-scan-headline { font-size: 54px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+  .tc-sub { font-size: 15px; color: var(--muted); margin-top: 6px; }
+  .qr-frame {
+    width: 66mm; height: 66mm;
+    margin: 14mm auto;
+    border: 3px dashed var(--orange);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #fff;
+  }
+  .qr-frame .mark { width: 44px; height: 44px; }
+  .qr-frame span { font-size: 11px; color: var(--muted); max-width: 40mm; line-height: 1.4; }
+  .tc-steps {
+    display: flex;
+    gap: 18px;
+    margin-top: 4mm;
+  }
+  .tc-step { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 42mm; }
+  .tc-step .tc-step-num {
+    width: 30px; height: 30px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--cream);
+    font-weight: 800;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tc-step p { margin: 0; font-size: 11.5px; line-height: 1.4; color: #3d352a; }
+  .tc-footer { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 6mm; }
+  .tc-footer .brandline { justify-content: center; }
+  .tc-footer small { font-size: 10.5px; color: var(--muted); }
+
+  /* ---------- Page 5: FAQ ---------- */
+  .faq-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+    margin-top: 10px;
+  }
+  .faq-item {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .faq-item .q {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 5px;
+  }
+  .faq-item .q .qmark {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    border-radius: 999px;
+    background: var(--orange);
+    color: #fff;
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .faq-item p.a { margin: 0; font-size: 12px; line-height: 1.55; color: #3d352a; padding-left: 28px; }
+
+  .faq-contact {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  .faq-contact .tagline { font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none; }
+    .sheet { box-shadow: none; margin: 0; width: auto; min-height: auto; page-break-after: always; }
+    .sheet:last-child { page-break-after: auto; }
+    .sheet-label { display: none; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+
+<div class="toolbar">
+  <div>
+    <h1>Menuko — 5 leaflets</h1>
+    <p>Features · Marketing · Setup Manual · Customer table card · FAQ — A4, ready to print</p>
+  </div>
+  <button class="print-btn" onclick="window.print()">Print all 5 pages</button>
+</div>
+
+<!-- ============ PAGE 1 — FEATURES ============ -->
+<div class="sheet">
+  <span class="sheet-label">1 / 4 — FEATURES</span>
+  <div class="brandline">
+    <svg class="mark" viewBox="0 0 100 100" fill="none">
+      <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <rect x="41" y="41" width="18" height="18" rx="5" fill="#ea7c1f"/>
+    </svg>
+    <span class="wordmark">Menuko</span>
+  </div>
+
+  <div style="margin-top:20px;">
+    <span class="eyebrow">What's included</span>
+    <h2 class="headline">Everything your restaurant needs to take orders — from the table to the kitchen.</h2>
+    <p class="lede">One QR code per table. No app for customers to download, no extra hardware, no commission on your sales.</p>
+  </div>
+
+  <div class="role-grid">
+    <div class="role-card">
+      <span class="role-tag">For customers</span>
+      <ul>
+        <li>Scan the table's QR code — opens straight in their phone's browser</li>
+        <li>Browse a photo menu with your featured "Our Best" picks up top</li>
+        <li>Add items, check out, and the order goes straight to your kitchen</li>
+        <li>Tap "Call Server" instead of waving someone down</li>
+        <li>Request a change or cancellation after ordering, right from their phone</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <span class="role-tag">Kitchen</span>
+      <ul>
+        <li>New orders appear instantly — no shouting across the pass</li>
+        <li>Move items from preparing → served with a tap</li>
+        <li>Dine-in, delivery, and takeout orders in one queue</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <span class="role-tag">Cashier</span>
+      <ul>
+        <li>See every table's status and total at a glance</li>
+        <li>Confirm payment against the order — cash, GCash, Maya, however you already take it</li>
+        <li>Approve or deny a customer's change/cancel request</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <span class="role-tag">Owner</span>
+      <ul>
+        <li>Manage menu, categories, and photos from your phone or a computer</li>
+        <li>Pick from ready-made menu designs — Terracotta, Heritage, or Nordic</li>
+        <li>Print every table's QR code, or your full menu, in one click</li>
+        <li>See today's sales and what's selling well</li>
+        <li>Invite kitchen/cashier staff with their own logins</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="feat-footer">
+    <span class="tagline">Menuko never touches your money — payment still happens your way, in person.</span>
+    <span style="font-size:11px; font-weight:700; color:var(--orange-dark);">menuko.ph</span>
+  </div>
+</div>
+
+<!-- ============ PAGE 2 — MARKETING ============ -->
+<div class="sheet marketing">
+  <span class="sheet-label" style="color:#8a7c68;">2 / 4 — MARKETING</span>
+  <div class="brandline">
+    <svg class="mark" viewBox="0 0 100 100" fill="none">
+      <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <rect x="41" y="41" width="18" height="18" rx="5" fill="#ea7c1f"/>
+    </svg>
+    <span class="wordmark" style="color:#fff;">Menuko</span>
+  </div>
+
+  <span class="eyebrow" style="margin-top:22px;">For Cebu's restaurants &amp; cafes</span>
+  <h1 class="hero-headline">Your customers are already on their phones.<br>Let them order from there too.</h1>
+  <p class="lede">Menuko turns any table into a self-order counter. A customer scans, browses a photo menu, and orders straight to your kitchen — no app, no commission, no waiting to flag someone down.</p>
+
+  <div class="pain-row">
+    <div class="pain-chip"><strong>Long queues</strong>Customers wait just to place an order or ask for the bill.</div>
+    <div class="pain-chip"><strong>Lost in translation</strong>Handwritten orders get mixed up between hall and kitchen.</div>
+    <div class="pain-chip"><strong>Printed menus</strong>A price change means reprinting every menu in the shop.</div>
+  </div>
+
+  <div class="diff-list">
+    <div class="diff-item">
+      <span class="diff-num">1</span>
+      <p><strong>No commission, ever.</strong> You keep 100% of every sale — payment still happens your way, cash or GCash/Maya.</p>
+    </div>
+    <div class="diff-item">
+      <span class="diff-num">2</span>
+      <p><strong>Built for small places, not chains.</strong> Set up your whole menu in about 15 minutes — no IT staff, no contract.</p>
+    </div>
+    <div class="diff-item">
+      <span class="diff-num">3</span>
+      <p><strong>A design that fits your place.</strong> Choose a warm bistro look, a refined fine-dining look, or a clean minimal cafe look — no design skill needed.</p>
+    </div>
+    <div class="diff-item">
+      <span class="diff-num">4</span>
+      <p><strong>Your kitchen &amp; cashier get their own free app.</strong> Real-time orders, table status, and change requests — no more running back and forth.</p>
+    </div>
+  </div>
+
+  <div class="cta-band">
+    <div class="cta-copy">
+      <strong>Free to start — today.</strong>
+      <span>Scan to see a live demo menu on your own phone.</span>
+    </div>
+    <div class="cta-scan">
+      <svg width="44" height="44" viewBox="0 0 100 100" fill="none">
+        <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#231f1a" stroke-width="8" stroke-linecap="round"/>
+        <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#231f1a" stroke-width="8" stroke-linecap="round"/>
+        <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#231f1a" stroke-width="8" stroke-linecap="round"/>
+        <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#231f1a" stroke-width="8" stroke-linecap="round"/>
+        <rect x="41" y="41" width="18" height="18" rx="5" fill="#231f1a"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE 3 — MANUAL ============ -->
+<div class="sheet">
+  <span class="sheet-label">3 / 4 — SETUP MANUAL</span>
+  <div class="brandline">
+    <svg class="mark" viewBox="0 0 100 100" fill="none">
+      <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <rect x="41" y="41" width="18" height="18" rx="5" fill="#ea7c1f"/>
+    </svg>
+    <span class="wordmark">Menuko</span>
+  </div>
+
+  <div style="margin-top:20px;">
+    <span class="eyebrow">Getting started</span>
+    <h2 class="headline">Get your restaurant live on Menuko in 6 steps</h2>
+    <p class="lede">Most owners finish this in under half an hour — the menu is usually what takes the longest.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <span class="step-num">1</span>
+      <div class="step-body"><strong>Sign up</strong><p>Create your owner account with your restaurant's name, address, and business type.</p></div>
+    </div>
+    <div class="step">
+      <span class="step-num">2</span>
+      <div class="step-body"><strong>Add your menu</strong><p>Create categories, then add items with a price and a photo — snap it right from your phone. Mark your 1–3 best sellers as "Our Best" so they show up first.</p></div>
+    </div>
+    <div class="step">
+      <span class="step-num">3</span>
+      <div class="step-body"><strong>Pick a design</strong><p>Choose Terracotta, Heritage, or Nordic in Settings → Menu design, and preview it before you commit to it.</p></div>
+    </div>
+    <div class="step">
+      <span class="step-num">4</span>
+      <div class="step-body"><strong>Print your table QR codes</strong><p>Settings → Tables → Print all QR codes. Cut along the borders and tape one to each table.</p></div>
+    </div>
+    <div class="step">
+      <span class="step-num">5</span>
+      <div class="step-body"><strong>Invite your team</strong><p>Add a kitchen and a cashier login from Settings so they can start managing orders on their own phones.</p></div>
+    </div>
+    <div class="step">
+      <span class="step-num">6</span>
+      <div class="step-body"><strong>You're live</strong><p>A customer scans, orders, and it shows up in your kitchen in real time. That's it.</p></div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <strong>Good to know:</strong> the free plan includes 1 owner + 1 kitchen + 1 cashier login and full access to ordering, kitchen, cashier, and today's sales. Need more staff seats or deeper sales analytics? Try Premium — the first 2 months are free.
+  </div>
+</div>
+
+<!-- ============ PAGE 4 — CUSTOMER TABLE CARD ============ -->
+<div class="sheet tablecard">
+  <span class="sheet-label">4 / 5 — TABLE CARD (customer-facing)</span>
+
+  <div class="tc-top">
+    <div class="tc-scan-headline">SCAN TO<br>ORDER</div>
+    <div class="tc-sub">No app needed — order straight from your phone</div>
+  </div>
+
+  <div class="qr-frame">
+    <svg class="mark" viewBox="0 0 100 100" fill="none">
+      <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+      <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+      <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+      <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+      <rect x="41" y="41" width="18" height="18" rx="5" fill="#ea7c1f"/>
+    </svg>
+    <span>Your table's QR code goes here — print it from Settings → Tables</span>
+  </div>
+
+  <div class="tc-steps">
+    <div class="tc-step">
+      <span class="tc-step-num">1</span>
+      <p>Open your camera and scan the code above</p>
+    </div>
+    <div class="tc-step">
+      <span class="tc-step-num">2</span>
+      <p>Browse the menu and add what you'd like</p>
+    </div>
+    <div class="tc-step">
+      <span class="tc-step-num">3</span>
+      <p>Send your order — it goes straight to the kitchen</p>
+    </div>
+  </div>
+
+  <div class="tc-footer">
+    <div class="brandline">
+      <svg class="mark" style="width:22px;height:22px;" viewBox="0 0 100 100" fill="none">
+        <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+        <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+        <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+        <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+        <rect x="41" y="41" width="18" height="18" rx="5" fill="#ea7c1f"/>
+      </svg>
+      <span class="wordmark" style="font-size:14px;">Menuko</span>
+    </div>
+    <small>Need help? Just ask our staff.</small>
+  </div>
+</div>
+
+<!-- ============ PAGE 5 — FAQ ============ -->
+<div class="sheet">
+  <span class="sheet-label">5 / 5 — FAQ</span>
+  <div class="brandline">
+    <svg class="mark" viewBox="0 0 100 100" fill="none">
+      <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" stroke-width="8" stroke-linecap="round"/>
+      <rect x="41" y="41" width="18" height="18" rx="5" fill="#ea7c1f"/>
+    </svg>
+    <span class="wordmark">Menuko</span>
+  </div>
+
+  <div style="margin-top:20px;">
+    <span class="eyebrow">Frequently asked</span>
+    <h2 class="headline">Questions owners ask us before switching</h2>
+    <p class="lede">The honest answers — including the couple of things Menuko doesn't do yet.</p>
+  </div>
+
+  <div class="faq-grid">
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>Does Menuko take a cut of my sales?</div>
+      <p class="a">No commission, ever. Payment still happens your way — cash, GCash, Maya — Menuko never touches your money.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>Do I need to buy any special hardware?</div>
+      <p class="a">No. Customers use their own phone's camera and browser; your kitchen and cashier can use any phone, tablet, or computer you already have.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>Does it connect to my existing POS?</div>
+      <p class="a">Not yet — Menuko currently runs on its own, separate from other POS or accounting software.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>What if the internet drops?</div>
+      <p class="a">A brief drop is fine — the kitchen and cashier apps queue up "served" and "paid" updates and sync once you're back online. Placing a new order always needs a live connection (yours or the customer's), so we recommend offering customer WiFi.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>How much does it cost?</div>
+      <p class="a">Ordering, kitchen, cashier, and today's sales are free — 1 owner + 1 kitchen + 1 cashier login included. Need more seats or deeper analytics? Try Premium, free for your first 2 months.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>Can customers pay inside the app?</div>
+      <p class="a">No — Menuko can show your GCash/Maya QR or payment link, but the actual payment is confirmed with your cashier, same as today.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>Can a customer cancel or change an order?</div>
+      <p class="a">They can request it right from their phone; your cashier (or you, if you're at the restaurant) approves or denies it.</p>
+    </div>
+    <div class="faq-item">
+      <div class="q"><span class="qmark">Q</span>Is my data secure?</div>
+      <p class="a">Yes — encrypted connections and access-controlled data. Full details at menuko.ph/privacy.</p>
+    </div>
+  </div>
+
+  <div class="faq-contact">
+    <span class="tagline">Still have a question we didn't cover?</span>
+    <span style="font-size:11px; font-weight:700; color:var(--orange-dark);">[CONTACT EMAIL] · menuko.ph</span>
+  </div>
+</div>

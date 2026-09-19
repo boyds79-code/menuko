@@ -1,0 +1,380 @@
+<title>Menuko Staff — Icon &amp; Splash</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #231f1a;
+    --muted: #8a7c68;
+    --cream: #fffaf3;
+    --cream-dim: #f3e9d8;
+    --orange: #ea7c1f;
+    --orange-dark: #c96612;
+    --border: #ece2d3;
+    --page-bg: #fbf8f2;
+    --card-bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #f3ede1;
+      --muted: #b8ab93;
+      --border: #3a3226;
+      --page-bg: #1c1712;
+      --card-bg: #262019;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #f3ede1;
+    --muted: #b8ab93;
+    --border: #3a3226;
+    --page-bg: #1c1712;
+    --card-bg: #262019;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    padding: 28px 20px 60px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { margin-bottom: 36px; }
+  h1 { font-size: 22px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 60ch; line-height: 1.5; }
+  h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange-dark);
+    margin: 0 0 4px;
+  }
+  .section-hint { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  section + section { margin-top: 48px; }
+
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  .icon-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .icon-label { font-size: 12px; font-weight: 700; text-align: center; }
+  .icon-sub { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.4; }
+  .icon-tile {
+    width: 96px;
+    height: 96px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px -8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    overflow: hidden;
+  }
+  .icon-tile.bg-cream { background: linear-gradient(160deg, var(--cream), var(--cream-dim)); }
+  .icon-tile.bg-orange { background: linear-gradient(160deg, var(--orange), var(--orange-dark)); }
+  .icon-tile svg { width: 58%; height: 58%; }
+  .home-row {
+    display: flex;
+    gap: 22px;
+    align-items: flex-end;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .home-icon { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 2px 5px -2px rgba(0,0,0,0.4); }
+  .home-icon svg { width: 100%; height: 100%; }
+  .home-caption { font-size: 9px; color: var(--muted); }
+
+  .splash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 18px;
+  }
+  .splash-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .phone {
+    width: 172px;
+    height: 372px;
+    border-radius: 30px;
+    border: 6px solid #171310;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 10px 24px -12px rgba(0,0,0,0.45);
+  }
+  .phone .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 16px;
+    background: #171310;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+  .phone-mark { width: 64px; height: 64px; }
+  .phone-word {
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+  .phone-tag {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-top: -10px;
+  }
+  .splash-label { font-size: 12px; font-weight: 700; }
+  .splash-sub { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.4; }
+
+  footer { margin-top: 52px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 16px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Menuko Staff — 아이콘 &amp; 스플래시 후보</h1>
+    <p>지금 앱의 브랜드 컬러(오렌지 #ea7c1f · 크림 #fffaf3)를 기준으로 5가지 아이콘 방향과 5가지 스플래시 화면을 만들었습니다. 마음에 드는 번호를 알려주시면 실제 에셋으로 제작해드릴게요.</p>
+  </header>
+
+  <section>
+    <h2>아이콘 후보 (5)</h2>
+    <p class="section-hint">각 카드 아래에 홈 화면에 실제로 깔렸을 때 크기 예시도 함께 뒀습니다.</p>
+    <div class="icon-grid">
+
+      <div class="icon-card">
+        <div class="icon-tile bg-cream">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M14 34V18a4 4 0 0 1 4-4h16" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M86 34V18a4 4 0 0 0-4-4H66" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M14 66v16a4 4 0 0 0 4 4h16" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M86 66v16a4 4 0 0 1-4 4H66" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <rect x="42" y="42" width="16" height="16" rx="3" fill="#ea7c1f"/>
+          </svg>
+        </div>
+        <div class="icon-label">1 · 스캔 프레임</div>
+        <div class="icon-sub">QR 스캔 뷰파인더 모티브 — "QR 주문"을 가장 직접적으로 표현</div>
+        <div class="home-row">
+          <div>
+            <div class="home-icon bg-cream" style="background:linear-gradient(160deg,#fffaf3,#f3e9d8)">
+              <svg viewBox="0 0 100 100" fill="none">
+                <path d="M14 34V18a4 4 0 0 1 4-4h16" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+                <path d="M86 34V18a4 4 0 0 0-4-4H66" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+                <path d="M14 66v16a4 4 0 0 0 4 4h16" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+                <path d="M86 66v16a4 4 0 0 1-4 4H66" stroke="#ea7c1f" stroke-width="9" stroke-linecap="round"/>
+                <rect x="40" y="40" width="20" height="20" rx="4" fill="#ea7c1f"/>
+              </svg>
+            </div>
+          </div>
+          <div class="home-caption">홈 화면 크기</div>
+        </div>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-tile bg-orange">
+          <svg viewBox="0 0 100 100">
+            <text x="50" y="70" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="66" fill="#fffaf3">M</text>
+          </svg>
+        </div>
+        <div class="icon-label">2 · 볼드 모노그램</div>
+        <div class="icon-sub">"M" 이니셜 — 작은 사이즈에서 가장 잘 읽히는 클래식한 방식</div>
+        <div class="home-row">
+          <div class="home-icon bg-orange" style="background:linear-gradient(160deg,#ea7c1f,#c96612)">
+            <svg viewBox="0 0 100 100">
+              <text x="50" y="70" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="66" fill="#fffaf3">M</text>
+            </svg>
+          </div>
+          <div class="home-caption">홈 화면 크기</div>
+        </div>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-tile bg-cream">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M28 14h44a4 4 0 0 1 4 4v54l-6-5-6 5-6-5-6 5-6-5-6 5-6-5-6 5V18a4 4 0 0 1 4-4Z" fill="#ea7c1f"/>
+            <path d="M38 34h24M38 46h24" stroke="#fffaf3" stroke-width="4" stroke-linecap="round"/>
+            <path d="M39 60l6 6 12-13" stroke="#fffaf3" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="icon-label">3 · 주문 티켓</div>
+        <div class="icon-sub">주방 주문서(order ticket) 모티브 + 체크 표시 — 주방/캐셔 앱 성격 강조</div>
+        <div class="home-row">
+          <div class="home-icon bg-cream" style="background:linear-gradient(160deg,#fffaf3,#f3e9d8)">
+            <svg viewBox="0 0 100 100" fill="none">
+              <path d="M28 14h44a4 4 0 0 1 4 4v54l-6-5-6 5-6-5-6 5-6-5-6 5-6-5-6 5V18a4 4 0 0 1 4-4Z" fill="#ea7c1f"/>
+              <path d="M38 34h24M38 46h24" stroke="#fffaf3" stroke-width="4" stroke-linecap="round"/>
+              <path d="M39 60l6 6 12-13" stroke="#fffaf3" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="home-caption">홈 화면 크기</div>
+        </div>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-tile bg-cream">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M30 40q6-8 5-16" stroke="#ea7c1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M50 40q6-10 3-20" stroke="#ea7c1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M70 40q6-8 5-16" stroke="#ea7c1f" stroke-width="5" stroke-linecap="round"/>
+            <path d="M18 46h64a2 2 0 0 1 2 2c0 18-15 30-34 30S16 66 16 48a2 2 0 0 1 2-2Z" fill="#ea7c1f"/>
+            <rect x="12" y="72" width="76" height="8" rx="4" fill="#ea7c1f"/>
+          </svg>
+        </div>
+        <div class="icon-label">4 · 온기 담긴 그릇</div>
+        <div class="icon-sub">따뜻한 음식 + 김 모락모락 — 세부 로컬 식당의 정서적 톤</div>
+        <div class="home-row">
+          <div class="home-icon bg-cream" style="background:linear-gradient(160deg,#fffaf3,#f3e9d8)">
+            <svg viewBox="0 0 100 100" fill="none">
+              <path d="M30 40q6-8 5-16" stroke="#ea7c1f" stroke-width="6" stroke-linecap="round"/>
+              <path d="M50 40q6-10 3-20" stroke="#ea7c1f" stroke-width="6" stroke-linecap="round"/>
+              <path d="M70 40q6-8 5-16" stroke="#ea7c1f" stroke-width="6" stroke-linecap="round"/>
+              <path d="M18 46h64a2 2 0 0 1 2 2c0 18-15 30-34 30S16 66 16 48a2 2 0 0 1 2-2Z" fill="#ea7c1f"/>
+              <rect x="12" y="72" width="76" height="8" rx="4" fill="#ea7c1f"/>
+            </svg>
+          </div>
+          <div class="home-caption">홈 화면 크기</div>
+        </div>
+      </div>
+
+      <div class="icon-card">
+        <div class="icon-tile bg-orange">
+          <svg viewBox="0 0 100 100" fill="none">
+            <path d="M50 20c-14 0-24 11-24 26v10l-6 10h60l-6-10V46c0-15-10-26-24-26Z" fill="#fffaf3"/>
+            <rect x="44" y="14" width="12" height="8" rx="4" fill="#fffaf3"/>
+            <rect x="38" y="70" width="24" height="8" rx="4" fill="#fffaf3"/>
+          </svg>
+        </div>
+        <div class="icon-label">5 · 콜벨</div>
+        <div class="icon-sub">"직원 호출" 벨 아이콘 — 손님 응대라는 직원용 앱 정체성</div>
+        <div class="home-row">
+          <div class="home-icon bg-orange" style="background:linear-gradient(160deg,#ea7c1f,#c96612)">
+            <svg viewBox="0 0 100 100" fill="none">
+              <path d="M50 20c-14 0-24 11-24 26v10l-6 10h60l-6-10V46c0-15-10-26-24-26Z" fill="#fffaf3"/>
+              <rect x="44" y="14" width="12" height="8" rx="4" fill="#fffaf3"/>
+              <rect x="38" y="70" width="24" height="8" rx="4" fill="#fffaf3"/>
+            </svg>
+          </div>
+          <div class="home-caption">홈 화면 크기</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>스플래시 화면 후보 (5)</h2>
+    <p class="section-hint">앱 실행 시 잠깐 뜨는 시작 화면입니다. 폰 비율(390×844)로 미리 봤습니다.</p>
+    <div class="splash-grid">
+
+      <div class="splash-card">
+        <div class="phone" style="background:#fffaf3;">
+          <div class="notch"></div>
+          <svg class="phone-mark" viewBox="0 0 100 100" fill="none">
+            <path d="M14 34V18a4 4 0 0 1 4-4h16" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M86 34V18a4 4 0 0 0-4-4H66" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M14 66v16a4 4 0 0 0 4 4h16" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <path d="M86 66v16a4 4 0 0 1-4 4H66" stroke="#ea7c1f" stroke-width="7" stroke-linecap="round"/>
+            <rect x="42" y="42" width="16" height="16" rx="3" fill="#ea7c1f"/>
+          </svg>
+          <div class="phone-word" style="color:#231f1a;">Menuko</div>
+          <div class="phone-tag" style="color:#8a7c68;">Staff</div>
+        </div>
+        <div class="splash-label">A · 크림 바탕 + 스캔 마크</div>
+        <div class="splash-sub">가장 무난하고 밝은 기본형. 지금 앱 톤과 가장 가까움</div>
+      </div>
+
+      <div class="splash-card">
+        <div class="phone" style="background:linear-gradient(160deg,#ea7c1f,#c96612);">
+          <div class="notch"></div>
+          <svg class="phone-mark" viewBox="0 0 100 100">
+            <text x="50" y="70" text-anchor="middle" font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="66" fill="#fffaf3">M</text>
+          </svg>
+          <div class="phone-word" style="color:#fffaf3;">Menuko</div>
+          <div class="phone-tag" style="color:rgba(255,250,243,0.75);">Staff</div>
+        </div>
+        <div class="splash-label">B · 오렌지 바탕 + 모노그램</div>
+        <div class="splash-sub">임팩트 있는 반전 버전. 실행 순간 브랜드가 확실히 각인됨</div>
+      </div>
+
+      <div class="splash-card">
+        <div class="phone" style="background:#fffaf3;">
+          <div class="notch"></div>
+          <svg class="phone-mark" viewBox="0 0 100 100" fill="none">
+            <path d="M50 24c-12 0-21 10-21 23v9l-5 9h52l-5-9v-9c0-13-9-23-21-23Z" stroke="#ea7c1f" stroke-width="4"/>
+            <rect x="45" y="18" width="10" height="7" rx="3.5" fill="#ea7c1f"/>
+          </svg>
+          <div class="phone-word" style="color:#231f1a; font-weight:600;">Menuko</div>
+          <div class="phone-tag" style="color:#8a7c68;">Staff</div>
+        </div>
+        <div class="splash-label">C · 미니멀 아웃라인 벨</div>
+        <div class="splash-sub">가는 선으로 그린 조용한 버전. 절제된 인상</div>
+      </div>
+
+      <div class="splash-card">
+        <div class="phone" style="background:radial-gradient(circle at 50% 42%, #ffe6c9 0%, #fffaf3 60%);">
+          <div class="notch"></div>
+          <svg class="phone-mark" viewBox="0 0 100 100" fill="none">
+            <path d="M28 14h44a4 4 0 0 1 4 4v54l-6-5-6 5-6-5-6 5-6-5-6 5-6-5-6 5V18a4 4 0 0 1 4-4Z" fill="#ea7c1f"/>
+            <path d="M38 34h24M38 46h24" stroke="#fffaf3" stroke-width="4" stroke-linecap="round"/>
+            <path d="M39 60l6 6 12-13" stroke="#fffaf3" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="phone-word" style="color:#231f1a;">Menuko</div>
+          <div class="phone-tag" style="color:#8a7c68;">Staff</div>
+        </div>
+        <div class="splash-label">D · 은은한 글로우 + 티켓 마크</div>
+        <div class="splash-sub">배경에 부드러운 오렌지 글로우를 깔아 살짝 입체감을 줌</div>
+      </div>
+
+      <div class="splash-card">
+        <div class="phone" style="background:linear-gradient(160deg,#ea7c1f,#c96612); justify-content:center;">
+          <div class="notch"></div>
+          <svg style="position:absolute; top:22px; left:22px; width:34px; height:34px;" viewBox="0 0 100 100" fill="none">
+            <path d="M14 50V18a4 4 0 0 1 4-4h32" stroke="#fffaf3" stroke-width="8" stroke-linecap="round"/>
+          </svg>
+          <svg style="position:absolute; top:22px; right:22px; width:34px; height:34px;" viewBox="0 0 100 100" fill="none">
+            <path d="M86 50V18a4 4 0 0 0-4-4H50" stroke="#fffaf3" stroke-width="8" stroke-linecap="round"/>
+          </svg>
+          <svg style="position:absolute; bottom:22px; left:22px; width:34px; height:34px;" viewBox="0 0 100 100" fill="none">
+            <path d="M14 50v32a4 4 0 0 0 4 4h32" stroke="#fffaf3" stroke-width="8" stroke-linecap="round"/>
+          </svg>
+          <svg style="position:absolute; bottom:22px; right:22px; width:34px; height:34px;" viewBox="0 0 100 100" fill="none">
+            <path d="M86 50v32a4 4 0 0 1-4 4H50" stroke="#fffaf3" stroke-width="8" stroke-linecap="round"/>
+          </svg>
+          <div class="phone-word" style="color:#fffaf3;">Menuko</div>
+          <div class="phone-tag" style="color:rgba(255,250,243,0.75);">Staff</div>
+        </div>
+        <div class="splash-label">E · 화면 전체를 스캔 프레임으로</div>
+        <div class="splash-sub">화면 네 모서리를 QR 스캔 브라켓으로 감싼 가장 임팩트 있는 버전</div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    번호(1~5, A~E)로 골라서 알려주시면 그 방향으로 실제 앱 아이콘(1024×1024)과 스플래시 에셋을 만들어서 <code>mobile/assets/</code>에 반영해드릴게요. 아이콘과 스플래시는 꼭 같은 번호끼리 짝지을 필요 없이 자유롭게 조합하셔도 됩니다.
+  </footer>
+</div>
