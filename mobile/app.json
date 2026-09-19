@@ -15,7 +15,7 @@
     "android": {
       "package": "ph.menuko.staff",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#fffaf3",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -39,6 +39,15 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Menuko uses your location only while the app is open, to confirm you're at the restaurant before approving a customer's cancel/change request."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#fffaf3"
         }
       ]
     ],
