@@ -30,6 +30,18 @@ const PRESENCE_PING_MS = 5 * 60 * 1000;
 const ORDER_SELECT =
   "id, status, channel, note, payment_proof_url, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
 
+// Same Asia/Manila day-boundary logic as AnalyticsSection.tsx / the web
+// app's src/lib/manila-time.ts.
+function startOfTodayManila(): Date {
+  const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+  const now = new Date();
+  const shifted = new Date(now.getTime() + MANILA_OFFSET_MS);
+  const y = shifted.getUTCFullYear();
+  const m = shifted.getUTCMonth();
+  const d = shifted.getUTCDate();
+  return new Date(Date.UTC(y, m, d, 0, 0, 0) - MANILA_OFFSET_MS);
+}
+
 type SettlePayload = { orderIds: string[] };
 
 type TableGroup = {
@@ -71,8 +83,8 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [paymentQrUrl, setPaymentQrUrl] = useState<string | null>(null);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [todayOrders, setTodayOrders] = useState<OrderView[]>([]);
 
   const queueRef = useRef(
     createMutationQueue<SettlePayload>("menuko:queue:cashier", async ({ orderIds }) => {
@@ -96,6 +108,23 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
       if (cacheKey) writeCache(cacheKey, next);
     }
   }, [restaurantId, cacheKey]);
+
+  const fetchTodayStats = useCallback(async () => {
+    if (!restaurantId) return;
+    const { data } = await supabase
+      .from("orders")
+      .select(ORDER_SELECT)
+      .eq("restaurant_id", restaurantId)
+      .gte("created_at", startOfTodayManila().toISOString())
+      .order("created_at", { ascending: true });
+    setTodayOrders(((data ?? []) as unknown as RawOrderRow[]).map(toOrderView));
+  }, [restaurantId]);
+
+  useEffect(() => {
+    // Same documented fetch-in-effect pattern as fetchOrders below.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTodayStats();
+  }, [fetchTodayStats]);
 
   useEffect(() => {
     if (!cacheKey) return;
@@ -187,19 +216,25 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurantId}` },
-        () => fetchOrders(),
+        () => {
+          fetchOrders();
+          fetchTodayStats();
+        },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "order_items", filter: `restaurant_id=eq.${restaurantId}` },
-        () => fetchOrders(),
+        () => {
+          fetchOrders();
+          fetchTodayStats();
+        },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [restaurantId, fetchOrders]);
+  }, [restaurantId, fetchOrders, fetchTodayStats]);
 
   useEffect(() => {
     if (session?.user.id) registerForPushNotifications(session.user.id);
@@ -243,11 +278,11 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
   // order (or one dine-in order mid-meal) doesn't reset a still-active table.
   async function settle(group: TableGroup, orderIds: string[]) {
     setOrders((prev) => prev.filter((o) => !orderIds.includes(o.id)));
-    if (orderIds.length === group.orders.length) setExpanded(null);
     await queueRef.current.enqueue({ orderIds });
     if (orderIds.length === group.orders.length) {
       await supabase.rpc("free_table", { p_table_id: group.tableId });
     }
+    fetchTodayStats();
   }
 
   async function seatTable(tableId: string) {
@@ -264,7 +299,7 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
 
   async function onRefresh() {
     setRefreshing(true);
-    await fetchOrders();
+    await Promise.all([fetchOrders(), fetchTodayStats(), fetchTables()]);
     setRefreshing(false);
   }
 
@@ -276,7 +311,11 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
       acc[key].total += orderTotal(order);
       return acc;
     }, {}),
-  ).sort((a, b) => a.tableLabel.localeCompare(b.tableLabel));
+  );
+  const groupsByTable = new Map(groups.map((g) => [g.tableId, g]));
+
+  const revenueToday = todayOrders.filter((o) => o.status === "paid").reduce((s, o) => s + orderTotal(o), 0);
+  const tablesServedToday = new Set(todayOrders.map((o) => o.table_id)).size;
 
   return (
     <SafeAreaView style={styles.safe} edges={embedded ? [] : ["top"]}>
@@ -293,61 +332,15 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
         </View>
       )}
 
-      <View style={styles.tablesSection}>
-        <Text style={styles.tablesTitle}>Tables</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableChipRow}>
-          {tables.map((table) => {
-            const isFree = !table.occupied_since;
-            const isOrdering = !!table.first_order_at;
-            const waitingMinutes = table.occupied_since
-              ? Math.floor((nowTick - new Date(table.occupied_since).getTime()) / 60_000)
-              : 0;
-            const isStalled = !isFree && !isOrdering && waitingMinutes >= STALL_MINUTES;
-            const busy = tableBusyId === table.id;
-
-            return (
-              <View
-                key={table.id}
-                style={[
-                  styles.tableChip,
-                  isFree && styles.tableChipFree,
-                  isStalled && styles.tableChipStalled,
-                  !isFree && !isStalled && !isOrdering && styles.tableChipWaiting,
-                ]}
-              >
-                <Text style={styles.tableChipLabel}>{table.label}</Text>
-                <Text style={styles.tableChipSeats}>· {table.capacity} seats</Text>
-                {isFree ? (
-                  <>
-                    <Text style={styles.tableChipStatus}>Free</Text>
-                    <TouchableOpacity
-                      onPress={() => seatTable(table.id)}
-                      disabled={busy}
-                      style={styles.tableChipAction}
-                    >
-                      <Text style={styles.tableChipActionText}>Seat</Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.tableChipStatus}>
-                      {table.occupied_source === "qr_scan" ? "📷 " : "✋ "}
-                      {isOrdering ? "Ordering" : isStalled ? "⚠ No order" : `Waiting ${waitingMinutes}m`}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => freeTable(table.id)}
-                      disabled={busy}
-                      style={styles.tableChipActionOutline}
-                    >
-                      <Text style={styles.tableChipActionOutlineText}>Free</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            );
-          })}
-          {tables.length === 0 && <Text style={styles.empty}>No tables yet.</Text>}
-        </ScrollView>
+      <View style={styles.todayStatsRow}>
+        <View style={styles.todayStat}>
+          <Text style={styles.todayStatValue}>{tablesServedToday}</Text>
+          <Text style={styles.todayStatLabel}>Tables today</Text>
+        </View>
+        <View style={styles.todayStat}>
+          <Text style={styles.todayStatValue}>{formatPeso(revenueToday)}</Text>
+          <Text style={styles.todayStatLabel}>Revenue today</Text>
+        </View>
       </View>
 
       <ServerCallsPanel restaurantId={restaurantId ?? ""} />
@@ -359,20 +352,59 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {groups.length === 0 && <Text style={styles.empty}>No unpaid tables.</Text>}
-        {groups.map((group) => {
-          const isExpanded = expanded === group.tableId;
-          return (
-            <View key={group.tableId} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTable}>{group.tableLabel}</Text>
-                <Text style={styles.cardTotal}>{formatPeso(group.total)}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setExpanded(isExpanded ? null : group.tableId)}>
-                <Text style={styles.link}>{isExpanded ? "Hide details" : "Show details"}</Text>
-              </TouchableOpacity>
+        <Text style={styles.tablesTitle}>Tables</Text>
+        {tables.length === 0 && <Text style={styles.empty}>No tables yet.</Text>}
+        {tables.map((table) => {
+          const isFree = !table.occupied_since;
+          const isOrdering = !!table.first_order_at;
+          const waitingMinutes = table.occupied_since
+            ? Math.floor((nowTick - new Date(table.occupied_since).getTime()) / 60_000)
+            : 0;
+          const isStalled = !isFree && !isOrdering && waitingMinutes >= STALL_MINUTES;
+          const busy = tableBusyId === table.id;
+          const group = groupsByTable.get(table.id);
 
-              {isExpanded && (
+          // Free tables show nothing but their label/seat count and a Seat
+          // button — no order info, since there's nothing to show.
+          if (isFree) {
+            return (
+              <View key={table.id} style={[styles.card, styles.cardFree]}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTable}>
+                    {table.label} <Text style={styles.cardSeats}>· {table.capacity} seats</Text>
+                  </Text>
+                  <Text style={styles.freeLabel}>Free</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => seatTable(table.id)}
+                  disabled={busy}
+                  style={styles.seatButton}
+                >
+                  <Text style={styles.seatButtonText}>Seat</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+
+          return (
+            <View key={table.id} style={[styles.card, isStalled && styles.cardStalled]}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTable}>
+                  {table.label} <Text style={styles.cardSeats}>· {table.capacity} seats</Text>
+                </Text>
+                {group && <Text style={styles.cardTotal}>{formatPeso(group.total)}</Text>}
+              </View>
+              <View style={styles.occupiedRow}>
+                <Text style={styles.occupiedStatus}>
+                  {table.occupied_source === "qr_scan" ? "📷 " : "✋ "}
+                  {isOrdering ? "🟢 Occupied — ordering" : isStalled ? "⚠ Seated, no order yet" : `🟡 Seated ${waitingMinutes}m ago`}
+                </Text>
+                <TouchableOpacity onPress={() => freeTable(table.id)} disabled={busy}>
+                  <Text style={styles.link}>Free table</Text>
+                </TouchableOpacity>
+              </View>
+
+              {group ? (
                 <View style={{ gap: 10 }}>
                   {group.orders.map((order) => (
                     <View key={order.id}>
@@ -432,6 +464,8 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
                     </Text>
                   </TouchableOpacity>
                 </View>
+              ) : (
+                <Text style={styles.hint}>Seated — no order placed yet.</Text>
               )}
             </View>
           );
@@ -456,37 +490,22 @@ const styles = StyleSheet.create({
   headerTitle: { fontWeight: "700", color: "#ea7c1f" },
   headerSubtitle: { fontSize: 12, color: "#8a7c68" },
   signOut: { fontSize: 13, color: "#8a7c68" },
-  tablesSection: {
+  todayStatsRow: {
+    flexDirection: "row",
+    gap: 10,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
     borderBottomColor: "#ece2d3",
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  tablesTitle: { fontSize: 12, fontWeight: "600", color: "#8a7c68", paddingHorizontal: 16, marginBottom: 6 },
-  tableChipRow: { paddingHorizontal: 16, gap: 8 },
-  tableChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  tableChipFree: { backgroundColor: "#ffffff", borderColor: "#ece2d3" },
-  tableChipWaiting: { backgroundColor: "#fef3e2", borderColor: "#f3ca8e" },
-  tableChipStalled: { backgroundColor: "#fee2e2", borderColor: "#fca5a5" },
-  tableChipLabel: { fontSize: 12, fontWeight: "700" },
-  tableChipSeats: { fontSize: 11, color: "#8a7c68" },
-  tableChipStatus: { fontSize: 11, color: "#5b5142" },
-  tableChipAction: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  tableChipActionText: { fontSize: 10, fontWeight: "700", color: "#ffffff" },
-  tableChipActionOutline: { borderWidth: 1, borderColor: "#8a7c68", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  tableChipActionOutlineText: { fontSize: 10, fontWeight: "700", color: "#5b5142" },
+  todayStat: { flex: 1, backgroundColor: "#fffaf3", borderRadius: 10, padding: 10, gap: 2 },
+  todayStatValue: { fontSize: 16, fontWeight: "700", color: "#ea7c1f" },
+  todayStatLabel: { fontSize: 10, color: "#8a7c68" },
+  tablesTitle: { fontSize: 12, fontWeight: "600", color: "#8a7c68", marginBottom: 2 },
   content: { padding: 16, gap: 10 },
   empty: { fontSize: 13, color: "#8a7c68" },
+  hint: { fontSize: 12, color: "#8a7c68" },
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 14,
@@ -495,9 +514,24 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between" },
+  cardFree: { opacity: 0.85 },
+  cardStalled: { borderColor: "#fca5a5", backgroundColor: "#fff8f8" },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardTable: { fontWeight: "700" },
+  cardSeats: { fontWeight: "400", color: "#8a7c68" },
   cardTotal: { fontWeight: "700", color: "#ea7c1f" },
+  freeLabel: { fontSize: 12, color: "#8a7c68", fontWeight: "600" },
+  seatButton: {
+    backgroundColor: "#ea7c1f",
+    borderRadius: 999,
+    paddingVertical: 6,
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+  },
+  seatButtonText: { fontSize: 12, fontWeight: "700", color: "#ffffff" },
+  occupiedRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  occupiedStatus: { fontSize: 12, color: "#5b5142", fontWeight: "600" },
   link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
   orderStatusRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 },
   orderStatus: { fontSize: 11, color: "#8a7c68", flex: 1 },
