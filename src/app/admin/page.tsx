@@ -23,21 +23,10 @@ export default async function AdminMenuPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Menu</h1>
-        <a
-          href={`/print/${ctx.restaurantId}`}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-full border border-border px-4 py-2 text-sm text-muted transition hover:border-brand hover:text-brand"
-        >
-          Open printable menu
-        </a>
-      </div>
+      <h1 className="text-lg font-semibold">Menu</h1>
       <p className="-mt-2 text-xs text-muted">
-        Enter your menu, prices, and photos and both the customer-facing web menu and the
-        printable menu are generated from the same data automatically. Pick a design under
-        &ldquo;Open printable menu&rdquo; — it applies to the web menu too.
+        Enter your menu, prices, and photos — customers see it on the web order page the
+        moment they scan a table&apos;s QR code. Pick a design under Settings.
       </p>
       <MenuManager
         restaurantId={ctx.restaurantId}

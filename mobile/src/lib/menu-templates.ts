@@ -1,16 +1,18 @@
 // RN counterpart to the web app's src/lib/menu-templates.ts DIGITAL_TEMPLATE_STYLES
-// — same 3 templates, same intent (Classic/Warm/Minimal tone), but as plain
-// style objects since RN has no Tailwind classes. Kept deliberately
-// lightweight (not a 1:1 port of every web class) — just enough for the
-// Settings > Menu design swatch and the full-screen preview to actually
-// look different per template, not pixel-identical to the real web menu.
+// — same 4 templates, same intent (Terracotta/Heritage/Nordic/Botanical tone
+// + palette), but as plain style objects since RN has no CSS cascade. Kept
+// deliberately lightweight (not a 1:1 port of every web class) — just enough
+// for the Settings > Menu design swatch and the full-screen preview to
+// actually look different per template, not pixel-identical to the real web
+// menu.
 
-export type MobileMenuTemplateId = "classic" | "warm" | "minimal";
+export type MobileMenuTemplateId = "terracotta" | "heritage" | "nordic" | "botanical";
 
 export const MOBILE_MENU_TEMPLATES: { id: MobileMenuTemplateId; label: string }[] = [
-  { id: "classic", label: "Classic" },
-  { id: "warm", label: "Warm" },
-  { id: "minimal", label: "Minimal" },
+  { id: "terracotta", label: "Terracotta Bistro" },
+  { id: "heritage", label: "Heritage Dining" },
+  { id: "nordic", label: "Nordic Minimal" },
+  { id: "botanical", label: "Botanical Linen" },
 ];
 
 export type MobileTemplateStyle = {
@@ -34,56 +36,81 @@ export type MobileTemplateStyle = {
   addButtonRadius: number;
 };
 
+// Colors here are kept in sync with the [data-menu-theme] blocks in
+// src/app/globals.css (web) — both trace back to the same Stitch
+// interactive-prototype exports (see the code.html files in
+// ~/Downloads/stitch_menuko_qr_restaurant_menu_app*), so a color change on
+// one side should always be mirrored on the other.
 export const MOBILE_TEMPLATE_STYLES: Record<MobileMenuTemplateId, MobileTemplateStyle> = {
-  classic: {
-    pageBackground: "#ffffff",
-    cardBackground: "#ffffff",
-    cardBorderColor: "#ece2d3",
+  terracotta: {
+    pageBackground: "#fff8f5",
+    cardBackground: "#fff1ea",
+    cardBorderColor: "#e9d6cd",
     cardBorderWidth: 1,
-    cardBorderRadius: 12,
-    photoShape: 10,
-    photoBackground: "#ffffff",
-    categoryLabelColor: "#231f1a",
-    categoryUnderline: true,
-    itemNameColor: "#231f1a",
-    priceColor: "#8a7c68",
-    addButtonFilled: false,
-    addButtonColor: "#ea7c1f",
-    addButtonRadius: 999,
-  },
-  warm: {
-    pageBackground: "#fff3e6",
-    cardBackground: "#ffffff",
-    cardBorderColor: "#ffe4c2",
-    cardBorderWidth: 0,
-    cardBorderRadius: 20,
-    photoShape: 999,
-    photoBackground: "#fff3e6",
-    categoryLabelColor: "#ea7c1f",
-    categoryLabelBackground: "#ffe4c2",
+    cardBorderRadius: 16,
+    photoShape: 12,
+    photoBackground: "#fff8f5",
+    categoryLabelColor: "#e0623a",
+    categoryLabelBackground: "rgba(224,98,58,0.15)",
     categoryLabelRadius: 999,
-    itemNameColor: "#231f1a",
-    priceColor: "#ea7c1f",
+    itemNameColor: "#2b1b17",
+    priceColor: "#e0623a",
     addButtonFilled: true,
-    addButtonColor: "#ea7c1f",
+    addButtonColor: "#e0623a",
     addButtonRadius: 999,
   },
-  minimal: {
-    pageBackground: "#ffffff",
-    cardBackground: "#ffffff",
-    cardBorderColor: "#000000",
-    cardBorderWidth: 0,
-    cardBorderRadius: 0,
-    photoShape: 0,
-    photoBackground: "#f2f2f2",
-    categoryLabelColor: "#000000",
+  heritage: {
+    pageBackground: "#faf6ef",
+    cardBackground: "#fdfbf7",
+    cardBorderColor: "#dfcebb",
+    cardBorderWidth: 1,
+    cardBorderRadius: 6,
+    photoShape: 4,
+    photoBackground: "#faf6ef",
+    categoryLabelColor: "#c5a880",
     categoryLabelUppercase: true,
     categoryLabelTracked: true,
     categoryUnderline: true,
-    itemNameColor: "#000000",
-    priceColor: "rgba(0,0,0,0.6)",
+    itemNameColor: "#2c251e",
+    priceColor: "#c5a880",
     addButtonFilled: false,
-    addButtonColor: "#000000",
-    addButtonRadius: 0,
+    addButtonColor: "#c5a880",
+    addButtonRadius: 2,
+  },
+  nordic: {
+    pageBackground: "#faf9f7",
+    cardBackground: "#ffffff",
+    cardBorderColor: "#e2e2df",
+    cardBorderWidth: 0,
+    cardBorderRadius: 2,
+    photoShape: 2,
+    photoBackground: "#faf9f7",
+    categoryLabelColor: "#191c1d",
+    categoryLabelUppercase: true,
+    categoryLabelTracked: true,
+    categoryUnderline: true,
+    itemNameColor: "#191c1d",
+    priceColor: "#191c1d",
+    addButtonFilled: false,
+    addButtonColor: "#191c1d",
+    addButtonRadius: 2,
+  },
+  botanical: {
+    pageBackground: "#f7f9f6",
+    cardBackground: "#eff3ee",
+    cardBorderColor: "#e6eae6",
+    cardBorderWidth: 1,
+    cardBorderRadius: 16,
+    photoShape: 12,
+    photoBackground: "#f7f9f6",
+    categoryLabelColor: "#1e3a2b",
+    categoryLabelUppercase: true,
+    categoryLabelTracked: true,
+    categoryUnderline: true,
+    itemNameColor: "#212623",
+    priceColor: "#1e3a2b",
+    addButtonFilled: true,
+    addButtonColor: "#1e3a2b",
+    addButtonRadius: 8,
   },
 };

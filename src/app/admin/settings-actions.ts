@@ -9,6 +9,7 @@ import type { MenuTemplateId } from "@/lib/menu-templates";
 export async function updateRestaurant(input: {
   name?: string;
   address?: string;
+  about?: string;
   businessType?: BusinessType;
   menuTemplate?: MenuTemplateId;
   paymentQrUrl?: string | null;
@@ -22,6 +23,7 @@ export async function updateRestaurant(input: {
     .update({
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.address !== undefined ? { address: input.address } : {}),
+      ...(input.about !== undefined ? { about: input.about } : {}),
       ...(input.businessType !== undefined ? { business_type: input.businessType } : {}),
       ...(input.menuTemplate !== undefined ? { menu_template: input.menuTemplate } : {}),
       ...(input.paymentQrUrl !== undefined ? { payment_qr_url: input.paymentQrUrl } : {}),
@@ -31,5 +33,4 @@ export async function updateRestaurant(input: {
     .eq("id", ctx.restaurantId);
   revalidatePath("/admin/settings");
   revalidatePath("/cashier");
-  revalidatePath(`/print/${ctx.restaurantId}`);
 }

@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import type { MenuTemplateId } from "@/lib/menu-templates";
 
 type Table = { id: string; label: string; qr_token: string };
 
 export function QrPrintView({
   restaurant,
   tables,
+  menuTemplate,
 }: {
   restaurant: { id: string; name: string };
   tables: Table[];
+  menuTemplate: MenuTemplateId;
 }) {
   const [origin, setOrigin] = useState("");
 
@@ -22,7 +25,7 @@ export function QrPrintView({
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 p-6">
+    <div data-menu-theme={menuTemplate} className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 bg-background p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div>
           <h1 className="text-lg font-semibold">{restaurant.name} — Table QR Codes</h1>

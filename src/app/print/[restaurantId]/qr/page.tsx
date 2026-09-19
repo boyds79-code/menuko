@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isMenuTemplateId } from "@/lib/menu-templates";
 import { QrPrintView } from "./qr-print-view";
 
-// Public, same as /print/[restaurantId] (the menu print page) — an owner
-// hands this link to a print shop or opens it on any device, no login
-// needed. The qr_token values aren't secret (they're printed on paper and
-// sit on the table anyway); nothing here can be used to act as the
-// restaurant, just to view its order page.
+// Public — an owner hands this link to a print shop or opens it on any
+// device, no login needed. The qr_token values aren't secret (they're
+// printed on paper and sit on the table anyway); nothing here can be used
+// to act as the restaurant, just to view its order page.
 export default async function PrintQrPage({
   params,
 }: {
@@ -17,7 +17,7 @@ export default async function PrintQrPage({
 
   const { data: restaurant } = await supabase
     .from("restaurants")
-    .select("id, name")
+    .select("id, name, menu_template")
     .eq("id", restaurantId)
     .single();
 
@@ -30,5 +30,7 @@ export default async function PrintQrPage({
     .eq("is_virtual", false)
     .order("label");
 
-  return <QrPrintView restaurant={restaurant} tables={tables ?? []} />;
+  const menuTemplate = isMenuTemplateId(restaurant.menu_template) ? restaurant.menu_template : "terracotta";
+
+  return <QrPrintView restaurant={restaurant} tables={tables ?? []} menuTemplate={menuTemplate} />;
 }
