@@ -122,7 +122,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="11. Contact">
-        <p>Questions about these Terms? Contact us at [SUPPORT CONTACT EMAIL].</p>
+        <p>Questions about these Terms? Contact us at hello@menuko.net.</p>
       </Section>
 
       <p className="mt-4 text-xs text-muted">

@@ -48,6 +48,14 @@ export default function PrivacyPolicyPage() {
           <li>A payment QR code or payment link you upload, if you choose to accept GCash/Maya or similar payments directly</li>
           <li>A logo or ad images you upload, if any</li>
           <li>Push notification device tokens, so we can alert your staff about new orders</li>
+          <li>
+            Your restaurant&apos;s address location, and — for owner accounts only — your device&apos;s
+            precise location at the moment you set that address or approve/deny a customer&apos;s
+            cancel/change request, used to confirm you&apos;re actually at the restaurant. We only
+            request this while the app is open (never in the background), and a periodic
+            &quot;are you currently at the restaurant&quot; check saves only a timestamp, not your
+            coordinates
+          </li>
         </ul>
         <p className="mt-2 font-medium">From Customers, at order time:</p>
         <ul className="list-disc pl-5">
@@ -97,10 +105,11 @@ export default function PrivacyPolicyPage() {
           are used only so your own cashier can confirm payment, and for nothing else.
         </p>
         <p className="mt-2">
-          We also use service providers (such as our hosting and database provider, and our push
-          notification provider) to operate Menuko; they process data on our behalf under their own
-          confidentiality obligations, not as independent third parties who can use it for their own
-          purposes.
+          We also use service providers — our hosting and database provider (Supabase), and our push
+          notification provider (Expo / Expo Application Services, which relays your device&apos;s push
+          token and a notification&apos;s title/body to deliver it) — to operate Menuko; they process
+          data on our behalf under their own confidentiality obligations, not as independent third
+          parties who can use it for their own purposes.
         </p>
       </Section>
 
@@ -122,11 +131,19 @@ export default function PrivacyPolicyPage() {
 
       <Section title="7. Your rights">
         <p>
-          If you are a Restaurant owner, you can access, correct, export, or request deletion of your
-          account data at any time by contacting us at [PRIVACY CONTACT EMAIL]. If you are a
-          resident of the Philippines, you have rights under the Data Privacy Act of 2012 (RA 10173),
-          including the right to be informed, to object, to access, to correct, to erase or block, to
-          data portability, and to file a complaint with the National Privacy Commission.
+          If you are a Restaurant owner, you can delete your entire restaurant account and all
+          associated data at any time directly in the Menuko Staff app (Settings → My Page → Delete
+          account) — this permanently removes your restaurant, its menu and order data, and every
+          staff login tied to it. Kitchen and cashier staff accounts are managed by the Restaurant
+          owner and can be removed by the owner from the same screen; they do not currently have a
+          separate self-service deletion option of their own.
+        </p>
+        <p className="mt-2">
+          For anything else — accessing, correcting, or exporting your account data, or a deletion
+          request not covered above — contact us at hello@menuko.net. If you are a resident of
+          the Philippines, you have rights under the Data Privacy Act of 2012 (RA 10173), including
+          the right to be informed, to object, to access, to correct, to erase or block, to data
+          portability, and to file a complaint with the National Privacy Commission.
         </p>
       </Section>
 
@@ -142,7 +159,7 @@ export default function PrivacyPolicyPage() {
       </Section>
 
       <Section title="10. Contact">
-        <p>Questions about this policy? Contact us at [PRIVACY CONTACT EMAIL].</p>
+        <p>Questions about this policy? Contact us at hello@menuko.net.</p>
       </Section>
 
       <p className="mt-4 text-xs text-muted">

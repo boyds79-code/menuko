@@ -70,7 +70,7 @@ export default async function AdminAnalyticsPage() {
           <h2 className="text-base font-semibold">Deeper analytics</h2>
           <p className="max-w-sm text-sm text-muted">
             Best-selling items, order combos, and your best-selling day/hour over the last week or
-            month — available on the premium plan. The first 2 months of premium are free to try.
+            month — available on the premium plan (₱500/month, coming soon).
           </p>
         </div>
       )}
