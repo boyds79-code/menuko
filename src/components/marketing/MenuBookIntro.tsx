@@ -138,7 +138,11 @@ export function MenuBookIntro() {
           aria-hidden
         />
 
-        <div className="relative h-[76vh] w-[92vw] max-w-md" style={{ perspective: "1800px" }}>
+        {/* A real open book reads as landscape — two portrait-ish pages
+            side by side are together wider than tall. Driven by
+            aspect-ratio (not a fixed vh) so the two-page shape holds at any
+            viewport size, instead of one tall card with a narrow sidebar. */}
+        <div className="relative aspect-[3/2] w-[94vw] max-w-xl" style={{ perspective: "1800px" }}>
           {/* Hardcover chassis — the static book frame everything sits inside.
               Deep layered shadow + a hairline ring gives it real physical weight
               compared to a flat rounded card. */}
@@ -184,15 +188,17 @@ export function MenuBookIntro() {
               aria-hidden
             />
 
-            {/* Final reveal — sits beneath every page, exposed as they flip away */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-[#fffaf3] p-8 text-center">
-              <Mark className="h-16 w-16" />
-              <span className="text-2xl font-extrabold tracking-tight text-[#231f1a]">Menuko</span>
+            {/* Final reveal — sits beneath every page, exposed as they flip
+                away. Sized to comfortably fit the shorter landscape book
+                (aspect-[3/2]), not the taller portrait box this used to be. */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#fffaf3] p-6 text-center">
+              <Mark className="h-11 w-11" />
+              <span className="text-lg font-extrabold tracking-tight text-[#231f1a]">Menuko</span>
               {qrDataUrl && (
                 // eslint-disable-next-line @next/next/no-img-element -- data: URL, not a remote image
-                <img src={qrDataUrl} alt="QR code" width={140} height={140} className="rounded-lg" />
+                <img src={qrDataUrl} alt="QR code" width={104} height={104} className="rounded-lg" />
               )}
-              <span className="text-xs font-bold tracking-[0.2em] text-[#c96612] uppercase">
+              <span className="text-[11px] font-bold tracking-[0.2em] text-[#c96612] uppercase">
                 Scan to Order
               </span>
             </div>
@@ -214,33 +220,39 @@ export function MenuBookIntro() {
                     cuisine (a real book's chapter page), right page is the
                     full-bleed photo. Flips as one rigid unit. */}
                 <div className="absolute inset-0 flex overflow-hidden" style={{ backfaceVisibility: "hidden" }}>
-                  {/* Left page */}
-                  <div className="relative flex w-[36%] shrink-0 flex-col items-center justify-center gap-3 bg-[#fdf8ee] px-2 text-center">
-                    <span className="text-[9px] font-bold tracking-[0.25em] text-[#c96612] uppercase">
+                  {/* Left page — an even half, like the real facing page of
+                      an open book, not a narrow label strip. */}
+                  <div className="relative flex w-1/2 shrink-0 flex-col items-center justify-center gap-3 bg-[#fdf8ee] px-4 text-center">
+                    <span className="text-[10px] font-bold tracking-[0.25em] text-[#c96612] uppercase">
                       On Menuko
                     </span>
-                    <span className="font-serif text-xl leading-tight font-bold text-[#231f1a]">
+                    <span className="font-serif text-2xl leading-tight font-bold text-[#231f1a] sm:text-3xl">
                       {page.cuisine}
                     </span>
-                    <span className="h-px w-6 bg-[#d8c6a8]" aria-hidden />
-                    <span className="text-[9px] tracking-[0.15em] text-[#8a7a68] uppercase">
+                    <span className="h-px w-8 bg-[#d8c6a8]" aria-hidden />
+                    <span className="text-[10px] tracking-[0.15em] text-[#8a7a68] uppercase">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                   </div>
 
-                  {/* Center gutter shadow — sells the two-page illusion */}
+                  {/* Center gutter — a darker valley with a thin highlight
+                      ridge, the shadow two facing pages cast on each other
+                      where they meet at the spine. */}
                   <div
-                    className="pointer-events-none absolute inset-y-0 z-10 w-4 -translate-x-1/2"
+                    className="pointer-events-none absolute inset-y-0 left-1/2 z-10 w-6 -translate-x-1/2"
                     style={{
-                      left: "36%",
                       background:
-                        "linear-gradient(to right, rgba(0,0,0,0.14), transparent 45%, transparent 55%, rgba(0,0,0,0.1))",
+                        "linear-gradient(to right, transparent, rgba(0,0,0,0.22) 38%, rgba(0,0,0,0.28) 50%, rgba(0,0,0,0.22) 62%, transparent)",
                     }}
                     aria-hidden
                   />
+                  <div
+                    className="pointer-events-none absolute inset-y-0 left-1/2 z-10 w-px -translate-x-1/2 bg-white/25"
+                    aria-hidden
+                  />
 
-                  {/* Right page — the photo */}
-                  <div className="relative flex-1 overflow-hidden">
+                  {/* Right page — the photo, an even half */}
+                  <div className="relative w-1/2 shrink-0 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element -- static marketing asset, not user content */}
                     <img
                       src={`/marketing/book-${page.photo}.webp`}
