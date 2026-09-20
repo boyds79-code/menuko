@@ -30,6 +30,12 @@ const PAGES: Page[] = [
   { cuisine: "Cafe", restaurant: "Daily Grind", table: "Table 3", photo: "cafe" },
 ];
 
+// Extra scroll (in viewport-heights) the final reveal stays pinned and
+// fully visible before the page continues into the real homepage — without
+// this, the reveal is exposed for barely a moment before the sticky
+// container un-pins.
+const REVEAL_DWELL_VH = 1.1;
+
 function Mark({ className = "h-16 w-16" }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" fill="none" className={className}>
@@ -47,9 +53,11 @@ export function MenuBookIntro() {
   const shadowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const currentIndexRef = useRef(0);
+  const revealedRef = useRef(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     const origin = window.location.origin;
@@ -85,6 +93,12 @@ export function MenuBookIntro() {
           setCurrentIndex(nearest);
         }
 
+        const isRevealed = progress >= PAGES.length - 0.05;
+        if (isRevealed !== revealedRef.current) {
+          revealedRef.current = isRevealed;
+          setRevealed(isRevealed);
+        }
+
         pageRefs.current.forEach((el, i) => {
           if (!el) return;
           const local = Math.min(Math.max(progress - i, 0), 1);
@@ -115,7 +129,7 @@ export function MenuBookIntro() {
   const current = PAGES[currentIndex];
 
   return (
-    <div ref={wrapperRef} style={{ height: `${PAGES.length * 100}vh` }} className="relative">
+    <div ref={wrapperRef} style={{ height: `${(PAGES.length + REVEAL_DWELL_VH) * 100}vh` }} className="relative">
       <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden bg-[#1a1512]">
         {/* Ambient vignette behind the book, for depth */}
         <div
@@ -143,8 +157,12 @@ export function MenuBookIntro() {
           />
 
           {/* Header ribbon — reads the current page's table, like a real
-              table-side menu book cover. */}
-          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pt-4 text-[10px] font-bold tracking-[0.15em] text-[#8a7a68] uppercase">
+              table-side menu book cover. Fades out once fully revealed —
+              there's no page left to attribute it to. */}
+          <div
+            className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pt-4 text-[10px] font-bold tracking-[0.15em] text-[#8a7a68] uppercase transition-opacity duration-300"
+            style={{ opacity: revealed ? 0 : 1 }}
+          >
             <span>
               {current.restaurant} · {current.table}
             </span>
@@ -192,14 +210,45 @@ export function MenuBookIntro() {
                   zIndex: PAGES.length - i,
                 }}
               >
-                {/* Front face — the cuisine's full-bleed page photo */}
-                <div className="absolute inset-0 overflow-hidden" style={{ backfaceVisibility: "hidden" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- static marketing asset, not user content */}
-                  <img
-                    src={`/marketing/book-${page.photo}.webp`}
-                    alt={`${page.cuisine} menu`}
-                    className="absolute inset-0 h-full w-full object-cover"
+                {/* Front face — a two-page spread: left page names the
+                    cuisine (a real book's chapter page), right page is the
+                    full-bleed photo. Flips as one rigid unit. */}
+                <div className="absolute inset-0 flex overflow-hidden" style={{ backfaceVisibility: "hidden" }}>
+                  {/* Left page */}
+                  <div className="relative flex w-[36%] shrink-0 flex-col items-center justify-center gap-3 bg-[#fdf8ee] px-2 text-center">
+                    <span className="text-[9px] font-bold tracking-[0.25em] text-[#c96612] uppercase">
+                      On Menuko
+                    </span>
+                    <span className="font-serif text-xl leading-tight font-bold text-[#231f1a]">
+                      {page.cuisine}
+                    </span>
+                    <span className="h-px w-6 bg-[#d8c6a8]" aria-hidden />
+                    <span className="text-[9px] tracking-[0.15em] text-[#8a7a68] uppercase">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+
+                  {/* Center gutter shadow — sells the two-page illusion */}
+                  <div
+                    className="pointer-events-none absolute inset-y-0 z-10 w-4 -translate-x-1/2"
+                    style={{
+                      left: "36%",
+                      background:
+                        "linear-gradient(to right, rgba(0,0,0,0.14), transparent 45%, transparent 55%, rgba(0,0,0,0.1))",
+                    }}
+                    aria-hidden
                   />
+
+                  {/* Right page — the photo */}
+                  <div className="relative flex-1 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- static marketing asset, not user content */}
+                    <img
+                      src={`/marketing/book-${page.photo}.webp`}
+                      alt={`${page.cuisine} menu`}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </div>
+
                   {/* Curl shadow — driven imperatively by scroll progress above */}
                   <div
                     ref={(el) => {
@@ -230,27 +279,32 @@ export function MenuBookIntro() {
           </div>
 
           {/* Prev/next — jump a full page via smooth scroll, same motion the
-              scroll gesture itself drives. */}
-          <button
-            type="button"
-            onClick={() => scrollToPage(Math.max(currentIndex - 1, 0))}
-            aria-label="Previous page"
-            className="absolute top-1/2 -left-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#fdf8ee] text-[#8a7a68] shadow-lg transition hover:text-[#ea7c1f]"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToPage(Math.min(currentIndex + 1, PAGES.length))}
-            aria-label="Next page"
-            className="absolute top-1/2 -right-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#fdf8ee] text-[#8a7a68] shadow-lg transition hover:text-[#ea7c1f]"
-          >
-            ›
-          </button>
+              scroll gesture itself drives. Hidden once revealed, since
+              there's nothing left to turn to. */}
+          {!revealed && (
+            <>
+              <button
+                type="button"
+                onClick={() => scrollToPage(Math.max(currentIndex - 1, 0))}
+                aria-label="Previous page"
+                className="absolute top-1/2 -left-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#fdf8ee] text-[#8a7a68] shadow-lg transition hover:text-[#ea7c1f]"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToPage(Math.min(currentIndex + 1, PAGES.length))}
+                aria-label="Next page"
+                className="absolute top-1/2 -right-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#fdf8ee] text-[#8a7a68] shadow-lg transition hover:text-[#ea7c1f]"
+              >
+                ›
+              </button>
+            </>
+          )}
         </div>
 
         <span className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 text-xs font-bold tracking-[0.2em] text-[#e7dfd0] uppercase">
-          Scroll to turn the page
+          {revealed ? "Scroll down to explore Menuko" : "Scroll to turn the page"}
         </span>
       </div>
     </div>
