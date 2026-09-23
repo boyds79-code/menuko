@@ -31,18 +31,18 @@ export default async function OrderPage({
     await Promise.all([
       supabase
         .from("restaurants")
-        .select("id, name, about, payment_qr_url, payment_link, business_type, menu_template")
+        .select("id, name, about, payment_qr_url, payment_link, business_type, menu_template, plan, translations")
         .eq("id", table.restaurant_id)
         .single(),
       supabase
         .from("menu_categories")
-        .select("id, name, sort_order")
+        .select("id, name, sort_order, translations")
         .eq("restaurant_id", table.restaurant_id)
         .order("sort_order"),
       supabase
         .from("menu_items")
         .select(
-          "id, category_id, name, price, photo_url, is_available, sort_order, description, ingredients, allergy_info, cook_time_minutes, is_featured",
+          "id, category_id, name, price, photo_url, is_available, sort_order, description, ingredients, allergy_info, cook_time_minutes, is_featured, translations",
         )
         .eq("restaurant_id", table.restaurant_id)
         .eq("is_available", true)

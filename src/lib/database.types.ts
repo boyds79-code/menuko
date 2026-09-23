@@ -154,6 +154,7 @@ export type Database = {
           name: string
           restaurant_id: string
           sort_order: number
+          translations: Json
         }
         Insert: {
           created_at?: string
@@ -161,6 +162,7 @@ export type Database = {
           name: string
           restaurant_id: string
           sort_order?: number
+          translations?: Json
         }
         Update: {
           created_at?: string
@@ -168,6 +170,7 @@ export type Database = {
           name?: string
           restaurant_id?: string
           sort_order?: number
+          translations?: Json
         }
         Relationships: [
           {
@@ -195,6 +198,7 @@ export type Database = {
           price: number
           restaurant_id: string
           sort_order: number
+          translations: Json
         }
         Insert: {
           allergy_info?: string | null
@@ -211,6 +215,7 @@ export type Database = {
           price: number
           restaurant_id: string
           sort_order?: number
+          translations?: Json
         }
         Update: {
           allergy_info?: string | null
@@ -227,6 +232,7 @@ export type Database = {
           price?: number
           restaurant_id?: string
           sort_order?: number
+          translations?: Json
         }
         Relationships: [
           {
@@ -431,6 +437,7 @@ export type Database = {
           payment_link: string | null
           payment_qr_url: string | null
           plan: Database["public"]["Enums"]["restaurant_plan"]
+          translations: Json
         }
         Insert: {
           about?: string | null
@@ -447,6 +454,7 @@ export type Database = {
           payment_link?: string | null
           payment_qr_url?: string | null
           plan?: Database["public"]["Enums"]["restaurant_plan"]
+          translations?: Json
         }
         Update: {
           about?: string | null
@@ -463,6 +471,7 @@ export type Database = {
           payment_link?: string | null
           payment_qr_url?: string | null
           plan?: Database["public"]["Enums"]["restaurant_plan"]
+          translations?: Json
         }
         Relationships: []
       }

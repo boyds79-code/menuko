@@ -11,8 +11,16 @@ import type { OrderStatus } from "@/lib/database.types";
 import { DIGITAL_TEMPLATE_STYLES, type MenuTemplateId } from "@/lib/menu-templates";
 import { AdBanner, type AdContent } from "@/components/ad-banner";
 import { uploadPaymentProof, type UploadPaymentProofState } from "./actions";
+import { MENU_LANGUAGES, RTL_LANGUAGES, tr, ui, type MenuLanguage } from "@/lib/menu-i18n";
+import type { Json } from "@/lib/database.types";
 
-type Category = { id: string; name: string; sort_order: number };
+// The DB column is generic `jsonb` (typed as `Json`), but the
+// translate-content edge function always writes the narrower
+// `{lang: {field: string}}` shape (see 0025_menu_translations.sql) — `tr()`
+// in menu-i18n.ts casts to that shape internally.
+type Translations = Json;
+
+type Category = { id: string; name: string; sort_order: number; translations: Translations };
 type MenuItem = {
   id: string;
   category_id: string | null;
@@ -26,6 +34,7 @@ type MenuItem = {
   allergy_info: string | null;
   cook_time_minutes: number | null;
   is_featured: boolean;
+  translations: Translations;
 };
 type Restaurant = {
   id: string;
@@ -33,6 +42,8 @@ type Restaurant = {
   about: string | null;
   payment_qr_url: string | null;
   payment_link: string | null;
+  plan: string;
+  translations: Translations;
 };
 
 type CartLine = { item: MenuItem; quantity: number };
@@ -59,16 +70,74 @@ function storageKey(qrToken: string) {
   return `menuko:order:${qrToken}`;
 }
 
-function CallServerButton({ calling, called, onCall }: { calling: boolean; called: boolean; onCall: () => void }) {
+function CallServerButton({ calling, called, onCall, lang }: { calling: boolean; called: boolean; onCall: () => void; lang: MenuLanguage }) {
   return (
     <button onClick={onCall} disabled={calling || called} className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground disabled:opacity-60">
-      {called ? "Server called ✓" : calling ? "Calling…" : "Call Server"}
+      {called ? ui(lang, "callServerCalled") : calling ? ui(lang, "callServerCalling") : ui(lang, "callServer")}
     </button>
+  );
+}
+
+// Premium-only — a restaurant on the free plan never gets translated
+// content in its `translations` columns (see 0025_menu_translations.sql's
+// trigger gate), so showing the switcher there would just offer languages
+// that silently fall back to English for everything. A little globe icon
+// + a grid of 2-letter language codes (full native name on hover/long-press
+// via the title attribute), closes on selection or outside click.
+function LanguageSwitcher({ lang, onChange }: { lang: MenuLanguage; onChange: (lang: MenuLanguage) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative shrink-0">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Change language"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-brand text-sm text-brand transition-colors hover:bg-brand hover:text-brand-foreground"
+      >
+        🌐
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 z-40 mt-2 grid w-40 grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1.5 shadow-lg">
+            {MENU_LANGUAGES.map((option) => (
+              <button
+                key={option.code}
+                title={option.native}
+                onClick={() => {
+                  onChange(option.code);
+                  setOpen(false);
+                }}
+                className={`rounded-md py-1.5 text-center text-xs font-semibold uppercase transition-colors hover:bg-background ${option.code === lang ? "bg-brand/15 text-brand" : "text-foreground"}`}
+              >
+                {option.code}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
 export function OrderClient({ qrToken, table, restaurant, menuTemplate, categories, items, ad }: { qrToken: string; table: { id: string; label: string }; restaurant: Restaurant; menuTemplate: MenuTemplateId; categories: Category[]; items: MenuItem[]; ad: AdContent | null }) {
   const supabase = createClient();
+  const isPremium = restaurant.plan === "premium";
+  // Remembered per browser (not per restaurant) — a customer who picks
+  // Korean at one restaurant probably wants Korean at the next one too.
+  // Only ever set to a non-English value when the restaurant is premium
+  // (the switcher itself is hidden otherwise), so a free-tier menu always
+  // renders in the owner's original English regardless of a stale value
+  // from a previous premium restaurant.
+  const [lang, setLang] = useState<MenuLanguage>("en");
+  useEffect(() => {
+    const saved = localStorage.getItem("menuko:lang") as MenuLanguage | null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading localStorage needs an effect (unavailable during SSR/first render)
+    if (saved && isPremium) setLang(saved);
+  }, [isPremium]);
+  function changeLang(next: MenuLanguage) {
+    setLang(next);
+    localStorage.setItem("menuko:lang", next);
+  }
   const [cart, setCart] = useState<Record<string, number>>({});
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [status, setStatus] = useState<OrderStatus>("open");
@@ -293,20 +362,23 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
   }
 
   if (confirmation && !editingRequest) {
-    return <ConfirmationView restaurant={restaurant} table={table} menuTemplate={menuTemplate} confirmation={confirmation} status={status} ad={ad} changeRequest={changeRequest} dismissedRequestId={dismissedRequestId} onDismissChangeRequest={() => changeRequest && setDismissedRequestId(changeRequest.id)} requestingCancel={requestingCancel} onRequestCancel={requestCancel} onStartEdit={startEditRequest} onOrderMore={() => setConfirmation(null)} callingServer={callingServer} serverCalled={serverCalled} onCallServer={callServer} />;
+    return <ConfirmationView restaurant={restaurant} table={table} menuTemplate={menuTemplate} confirmation={confirmation} status={status} ad={ad} changeRequest={changeRequest} dismissedRequestId={dismissedRequestId} onDismissChangeRequest={() => changeRequest && setDismissedRequestId(changeRequest.id)} requestingCancel={requestingCancel} onRequestCancel={requestCancel} onStartEdit={startEditRequest} onOrderMore={() => setConfirmation(null)} callingServer={callingServer} serverCalled={serverCalled} onCallServer={callServer} lang={lang} isPremium={isPremium} onChangeLang={changeLang} />;
   }
 
   const style = DIGITAL_TEMPLATE_STYLES[menuTemplate];
 
   return (
-    <div data-menu-theme={menuTemplate} className={`flex min-h-full flex-1 flex-col pb-24 ${style.page}`}>
+    <div data-menu-theme={menuTemplate} dir={RTL_LANGUAGES.has(lang) ? "rtl" : "ltr"} className={`flex min-h-full flex-1 flex-col pb-24 ${style.page}`}>
       <header className={`flex items-start justify-between gap-3 ${style.header}`}>
         <div className="min-w-0">
           <h1 className={style.headerTitle}>{restaurant.name}</h1>
-          {restaurant.about && <p className="mt-1 line-clamp-2 text-xs leading-snug text-header-dark-foreground/80">{restaurant.about}</p>}
+          {restaurant.about && <p className="mt-1 line-clamp-2 text-xs leading-snug text-header-dark-foreground/80">{tr(restaurant.translations, lang, "about", restaurant.about)}</p>}
           <p className={`${style.headerSubtitle} mt-1`}>{table.label}</p>
         </div>
-        <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} />
+        <div className="flex shrink-0 items-center gap-2">
+          {isPremium && <LanguageSwitcher lang={lang} onChange={changeLang} />}
+          <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} lang={lang} />
+        </div>
       </header>
 
       {featuredItems.length > 0 && (
@@ -316,16 +388,16 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
               <button key={item.id} onClick={() => setDetailItem(item)} className="flex w-[220px] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card text-left transition-colors hover:border-brand">
                 <div className="relative h-28 w-full overflow-hidden bg-background">
                   {item.photo_url ? <Image src={item.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-xs text-muted">Menuko</span>}
-                  <span className="absolute top-2.5 left-2.5 rounded bg-foreground px-2 py-0.5 text-[10px] font-medium tracking-wider text-background uppercase">Our Best</span>
+                  <span className="absolute top-2.5 left-2.5 rounded bg-foreground px-2 py-0.5 text-[10px] font-medium tracking-wider text-background uppercase">{ui(lang, "ourBest")}</span>
                 </div>
                 <div className="p-3">
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="truncate text-sm font-bold text-foreground">{item.name}</p>
+                    <p className="truncate text-sm font-bold text-foreground">{tr(item.translations, lang, "name", item.name)}</p>
                     <span className="font-mono text-xs font-bold whitespace-nowrap text-foreground">{formatPeso(item.price)}</span>
                   </div>
                   <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-                    {item.cook_time_minutes ? <span className="font-mono text-[10px] text-muted">{item.cook_time_minutes} min</span> : <span />}
-                    <span className="text-xs font-semibold text-foreground">Details →</span>
+                    {item.cook_time_minutes ? <span className="font-mono text-[10px] text-muted">{item.cook_time_minutes} {ui(lang, "min")}</span> : <span />}
+                    <span className="text-xs font-semibold text-foreground">{ui(lang, "detailsArrow")}</span>
                   </div>
                 </div>
               </button>
@@ -333,8 +405,8 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
               <button key={item.id} onClick={() => setDetailItem(item)} className="relative h-[150px] w-[220px] shrink-0 overflow-hidden rounded-2xl shadow-lg transition-opacity hover:opacity-95">
                 {item.photo_url ? <Image src={item.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center bg-border text-xs text-muted">Menuko</span>}
                 <span className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" aria-hidden />
-                <span className="absolute bottom-3 left-3 rounded-full bg-brand px-3 py-1 text-xs font-bold text-brand-foreground">Our Best!</span>
-                <span className="absolute right-3 bottom-3 max-w-[55%] truncate text-right text-xs font-semibold text-white">{item.name}</span>
+                <span className="absolute bottom-3 left-3 rounded-full bg-brand px-3 py-1 text-xs font-bold text-brand-foreground">{ui(lang, "ourBest")}</span>
+                <span className="absolute right-3 bottom-3 max-w-[55%] truncate text-right text-xs font-semibold text-white">{tr(item.translations, lang, "name", item.name)}</span>
               </button>
             ),
           )}
@@ -343,7 +415,7 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
 
       {editingRequest && (
         <div className="mx-4 mt-4 flex items-center justify-between rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm">
-          <span>Adjust the items below, then send the change to staff.</span>
+          <span>{ui(lang, "adjustItemsHint")}</span>
           <button
             onClick={() => {
               setEditingRequest(false);
@@ -352,7 +424,7 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
             }}
             className="text-xs text-muted underline"
           >
-            Cancel
+            {ui(lang, "cancel")}
           </button>
         </div>
       )}
@@ -361,26 +433,27 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
         {categories.map((category) => {
           const categoryItems = items.filter((i) => i.category_id === category.id);
           if (categoryItems.length === 0) return null;
+          const categoryName = tr(category.translations, lang, "name", category.name);
           return (
             <section key={category.id}>
-              <h2 className={style.categoryTitle}>{category.name}</h2>
+              <h2 className={style.categoryTitle}>{categoryName}</h2>
               <div className="flex gap-3 overflow-x-auto pb-1">
                 {categoryItems.map((item, idx) => (
-                  <RowCard key={item.id} item={item} onClick={() => setDetailItem(item)} variant={style.variant} eyebrow={`${category.name.toUpperCase()} ${String(idx + 1).padStart(2, "0")}`} />
+                  <RowCard key={item.id} item={item} onClick={() => setDetailItem(item)} variant={style.variant} eyebrow={`${categoryName.toUpperCase()} ${String(idx + 1).padStart(2, "0")}`} lang={lang} />
                 ))}
               </div>
             </section>
           );
         })}
-        {items.length === 0 && <p className="text-sm text-muted">No menu items yet.</p>}
+        {items.length === 0 && <p className="text-sm text-muted">{ui(lang, "noMenuItems")}</p>}
         <p className="pt-2 text-center text-[11px] text-muted">
-          By ordering, you agree to our{" "}
+          {ui(lang, "byOrderingAgree")}{" "}
           <Link href="/terms" className="underline">
-            Terms
+            {ui(lang, "terms")}
           </Link>{" "}
-          and{" "}
+          {ui(lang, "and")}{" "}
           <Link href="/privacy" className="underline">
-            Privacy Policy
+            {ui(lang, "privacyPolicy")}
           </Link>
           .
         </p>
@@ -394,7 +467,7 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
             </p>
           )}
           <button onClick={editingRequest ? sendEditRequest : () => setReviewOpen(true)} disabled={submitting} className={style.variant === "nordic" ? "flex w-full items-center justify-between rounded bg-brand px-5 py-3.5 text-xs font-bold tracking-wider text-brand-foreground uppercase transition-opacity hover:opacity-90 disabled:opacity-60" : "flex w-full items-center justify-between rounded-full bg-brand px-5 py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"}>
-            <span>{submitting ? (editingRequest ? "Sending request…" : "Placing order…") : editingRequest ? `Send change request (${cartCount})` : `Review Order (${cartCount})`}</span>
+            <span>{submitting ? (editingRequest ? ui(lang, "sendingRequest") : ui(lang, "placingOrder")) : editingRequest ? `${ui(lang, "sendChangeRequest")} (${cartCount})` : `${ui(lang, "reviewOrder")} (${cartCount})`}</span>
             <span className={style.variant === "nordic" ? "font-mono normal-case" : ""}>{formatPeso(cartTotal)}</span>
           </button>
         </div>
@@ -411,6 +484,7 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
             setReviewOpen(false);
           }}
           onClose={() => setReviewOpen(false)}
+          lang={lang}
         />
       )}
 
@@ -426,13 +500,14 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
             setDetailItem(null);
             setReviewOpen(true);
           }}
+          lang={lang}
         />
       )}
     </div>
   );
 }
 
-function ReviewSheet({ lines, total, variant, submitting, onConfirm, onClose }: { lines: CartLine[]; total: number; variant: "default" | "nordic" | "botanical"; submitting: boolean; onConfirm: () => void; onClose: () => void }) {
+function ReviewSheet({ lines, total, variant, submitting, onConfirm, onClose, lang }: { lines: CartLine[]; total: number; variant: "default" | "nordic" | "botanical"; submitting: boolean; onConfirm: () => void; onClose: () => void; lang: MenuLanguage }) {
   const priceClass = variant === "nordic" ? "font-mono" : "";
 
   // DESIGN.md's own "Floating Bill / Order Tray" spec: frosted linen blur,
@@ -440,28 +515,28 @@ function ReviewSheet({ lines, total, variant, submitting, onConfirm, onClose }: 
   if (variant === "botanical") {
     return (
       <div className="fixed inset-0 z-20 flex items-end justify-center bg-foreground/40" onClick={onClose}>
-        <div role="dialog" aria-modal="true" aria-label="Review your order" onClick={(e) => e.stopPropagation()} className="w-full max-w-md overscroll-contain rounded-t-2xl bg-card/95 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-md">
+        <div role="dialog" aria-modal="true" aria-label={ui(lang, "reviewYourOrder")} onClick={(e) => e.stopPropagation()} className="w-full max-w-md overscroll-contain rounded-t-2xl bg-card/95 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-md">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" aria-hidden />
-          <h2 className="mb-3 text-lg font-semibold tracking-tight">Review your order</h2>
+          <h2 className="mb-3 text-lg font-semibold tracking-tight">{ui(lang, "reviewYourOrder")}</h2>
           <ul className="flex flex-col gap-2.5 text-sm">
             {lines.map((line) => (
               <li key={line.item.id} className="flex justify-between gap-3">
                 <span className="min-w-0 truncate text-foreground/90">
-                  {line.item.name} × {line.quantity}
+                  {tr(line.item.translations, lang, "name", line.item.name)} × {line.quantity}
                 </span>
                 <span className="shrink-0 font-medium text-foreground tabular-nums">{formatPeso(line.item.price * line.quantity)}</span>
               </li>
             ))}
           </ul>
           <div className="mt-3 flex justify-between border-t border-border pt-3 font-semibold">
-            <span>Total</span>
+            <span>{ui(lang, "total")}</span>
             <span className="text-brand">{formatPeso(total)}</span>
           </div>
           <button onClick={onConfirm} disabled={submitting} className="mt-4 w-full rounded-lg bg-brand py-3.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60">
-            {submitting ? "Placing order…" : "Send Order"}
+            {submitting ? ui(lang, "placingOrder") : ui(lang, "sendOrder")}
           </button>
           <button onClick={onClose} className="mt-2 w-full text-center text-sm text-muted underline">
-            Back to menu
+            {ui(lang, "backToMenu")}
           </button>
         </div>
       </div>
@@ -470,35 +545,36 @@ function ReviewSheet({ lines, total, variant, submitting, onConfirm, onClose }: 
 
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/45" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label="Review your order" onClick={(e) => e.stopPropagation()} className="w-full max-w-md overscroll-contain rounded-t-3xl bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg">
+      <div role="dialog" aria-modal="true" aria-label={ui(lang, "reviewYourOrder")} onClick={(e) => e.stopPropagation()} className="w-full max-w-md overscroll-contain rounded-t-3xl bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg">
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-border" aria-hidden />
-        <h2 className="mb-3 font-semibold">Review your order</h2>
+        <h2 className="mb-3 font-semibold">{ui(lang, "reviewYourOrder")}</h2>
         <ul className="flex flex-col gap-2 text-sm">
           {lines.map((line) => (
             <li key={line.item.id} className="flex justify-between gap-3">
               <span className="min-w-0 truncate">
-                {line.item.name} × {line.quantity}
+                {tr(line.item.translations, lang, "name", line.item.name)} × {line.quantity}
               </span>
               <span className={`shrink-0 tabular-nums ${priceClass}`}>{formatPeso(line.item.price * line.quantity)}</span>
             </li>
           ))}
         </ul>
         <div className="mt-3 flex justify-between border-t border-border pt-3 font-semibold">
-          <span>Total</span>
+          <span>{ui(lang, "total")}</span>
           <span className={priceClass}>{formatPeso(total)}</span>
         </div>
         <button onClick={onConfirm} disabled={submitting} className={variant === "nordic" ? "mt-4 w-full rounded bg-brand py-3.5 text-xs font-bold tracking-wider text-brand-foreground uppercase transition-opacity hover:opacity-90 disabled:opacity-60" : "mt-4 w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"}>
-          {submitting ? "Placing order…" : "Send Order"}
+          {submitting ? ui(lang, "placingOrder") : ui(lang, "sendOrder")}
         </button>
         <button onClick={onClose} className="mt-2 w-full text-center text-sm text-muted underline">
-          Back to menu
+          {ui(lang, "backToMenu")}
         </button>
       </div>
     </div>
   );
 }
 
-function RowCard({ item, onClick, variant, eyebrow }: { item: MenuItem; onClick: () => void; variant: "default" | "nordic" | "botanical"; eyebrow?: string }) {
+function RowCard({ item, onClick, variant, eyebrow, lang }: { item: MenuItem; onClick: () => void; variant: "default" | "nordic" | "botanical"; eyebrow?: string; lang: MenuLanguage }) {
+  const name = tr(item.translations, lang, "name", item.name);
   if (variant === "nordic") {
     return (
       <button onClick={onClick} className="flex w-36 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-card text-left transition-colors hover:border-brand">
@@ -506,7 +582,7 @@ function RowCard({ item, onClick, variant, eyebrow }: { item: MenuItem; onClick:
         <div className="flex flex-1 flex-col justify-between p-2.5">
           <div>
             {eyebrow && <p className="mb-1 font-mono text-[10px] text-muted">{eyebrow}</p>}
-            <p className="truncate text-xs font-bold text-foreground">{item.name}</p>
+            <p className="truncate text-xs font-bold text-foreground">{name}</p>
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
             <span className="font-mono text-xs font-semibold text-foreground">{formatPeso(item.price)}</span>
@@ -527,7 +603,7 @@ function RowCard({ item, onClick, variant, eyebrow }: { item: MenuItem; onClick:
       <button onClick={onClick} className="w-36 shrink-0 overflow-hidden rounded-lg border border-border bg-card text-left transition-colors hover:border-brand">
         <div className="relative h-24 w-full overflow-hidden bg-background">{item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="144px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">Menuko</span>}</div>
         <div className="flex flex-col gap-1 p-2.5">
-          <p className="truncate text-xs font-semibold text-foreground">{item.name}</p>
+          <p className="truncate text-xs font-semibold text-foreground">{name}</p>
           <p className="text-xs font-semibold text-brand">{formatPeso(item.price)}</p>
         </div>
       </button>
@@ -539,16 +615,21 @@ function RowCard({ item, onClick, variant, eyebrow }: { item: MenuItem; onClick:
       <div className="relative h-24 w-full overflow-hidden rounded-t-xl bg-background">{item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="144px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">Menuko</span>}</div>
       <div className="relative px-2 pb-2 pt-3">
         <span className="absolute -top-2 left-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-brand-foreground shadow">{formatPeso(item.price)}</span>
-        <p className="truncate text-xs font-medium text-foreground">{item.name}</p>
+        <p className="truncate text-xs font-medium text-foreground">{name}</p>
       </div>
     </button>
   );
 }
 
-function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canCheckout, onGoToCheckout }: { item: MenuItem; variant: "default" | "nordic" | "botanical"; quantity: number; onChangeQty: (quantity: number) => void; onClose: () => void; canCheckout: boolean; onGoToCheckout: () => void }) {
+function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canCheckout, onGoToCheckout, lang }: { item: MenuItem; variant: "default" | "nordic" | "botanical"; quantity: number; onChangeQty: (quantity: number) => void; onClose: () => void; canCheckout: boolean; onGoToCheckout: () => void; lang: MenuLanguage }) {
+  const name = tr(item.translations, lang, "name", item.name);
+  const description = tr(item.translations, lang, "description", item.description);
+  const ingredients = tr(item.translations, lang, "ingredients", item.ingredients);
+  const allergyInfo = tr(item.translations, lang, "allergy_info", item.allergy_info);
+
   if (variant === "botanical") {
     return (
-      <div role="dialog" aria-modal="true" aria-label={item.name} className="fixed inset-0 z-30 flex items-end justify-center bg-foreground/40 sm:items-center sm:p-4" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={name} className="fixed inset-0 z-30 flex items-end justify-center bg-foreground/40 sm:items-center sm:p-4" onClick={onClose}>
         {/* Full-width bottom sheet on a phone (DESIGN.md's own mobile spec:
             rounded top corners, edge-to-edge) — becomes the DESIGN.md
             flipbook's landscape framed card, centered with room to breathe,
@@ -561,28 +642,28 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
 
           <div className="relative h-72 w-full shrink-0 bg-background sm:h-full sm:min-h-[300px]">
             {item.photo_url ? <Image src={item.photo_url} alt="" fill priority className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>}
-            {item.cook_time_minutes && <span className="absolute right-3 bottom-3 rounded-full bg-background/85 px-3 py-1 text-[11px] font-medium text-foreground shadow-sm backdrop-blur-md">{item.cook_time_minutes} min</span>}
+            {item.cook_time_minutes && <span className="absolute right-3 bottom-3 rounded-full bg-background/85 px-3 py-1 text-[11px] font-medium text-foreground shadow-sm backdrop-blur-md">{item.cook_time_minutes} {ui(lang, "min")}</span>}
           </div>
 
           <div className="flex flex-1 flex-col gap-3 p-5 sm:overflow-y-auto">
             <div className="flex items-start justify-between gap-3 pr-6">
-              <h2 className="text-xl font-semibold tracking-tight text-balance">{item.name}</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-balance">{name}</h2>
               <span className="shrink-0 text-lg font-semibold whitespace-nowrap text-brand">{formatPeso(item.price)}</span>
             </div>
-            {item.description && <p className="text-sm leading-relaxed text-foreground/80">{item.description}</p>}
+            {description && <p className="text-sm leading-relaxed text-foreground/80">{description}</p>}
 
-            {(item.ingredients || item.allergy_info) && (
+            {(ingredients || allergyInfo) && (
               <div className="mt-1 flex flex-col gap-2.5 rounded-lg border border-border border-l-4 border-l-brand bg-background p-3.5">
-                {item.ingredients && (
+                {ingredients && (
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[11px] font-semibold tracking-wide text-muted uppercase">Ingredients</span>
-                    <span className="text-sm text-foreground">{item.ingredients}</span>
+                    <span className="text-[11px] font-semibold tracking-wide text-muted uppercase">{ui(lang, "ingredients")}</span>
+                    <span className="text-sm text-foreground">{ingredients}</span>
                   </div>
                 )}
-                {item.allergy_info && (
+                {allergyInfo && (
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[11px] font-semibold tracking-wide text-muted uppercase">Allergy</span>
-                    <span className="text-sm text-foreground">{item.allergy_info}</span>
+                    <span className="text-[11px] font-semibold tracking-wide text-muted uppercase">{ui(lang, "allergy")}</span>
+                    <span className="text-sm text-foreground">{allergyInfo}</span>
                   </div>
                 )}
               </div>
@@ -591,11 +672,11 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
             <div className="mt-auto flex flex-col gap-2 pt-6">
               {quantity === 0 ? (
                 <button onClick={() => onChangeQty(1)} className="w-full rounded-lg bg-brand py-3.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90">
-                  Add to Order
+                  {ui(lang, "addToOrder")}
                 </button>
               ) : (
                 <div className="flex items-center justify-between rounded-lg border border-border bg-background p-3">
-                  <span className="text-sm font-medium text-foreground">Quantity</span>
+                  <span className="text-sm font-medium text-foreground">{ui(lang, "quantity")}</span>
                   <div className="flex items-center gap-3">
                     <button onClick={() => onChangeQty(quantity - 1)} aria-label="Decrease quantity" className="touch-manipulation flex h-8 w-8 items-center justify-center rounded-md border border-border text-base transition-colors hover:border-brand hover:text-brand">
                       −
@@ -609,7 +690,7 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
               )}
               {canCheckout && (
                 <button onClick={onGoToCheckout} className="py-1 text-center text-sm text-muted underline hover:text-foreground">
-                  Review Order
+                  {ui(lang, "reviewOrder")}
                 </button>
               )}
             </div>
@@ -621,39 +702,39 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
 
   if (variant === "nordic") {
     return (
-      <div role="dialog" aria-modal="true" aria-label={item.name} className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card">
+      <div role="dialog" aria-modal="true" aria-label={name} className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-5 py-3 backdrop-blur">
           <button onClick={onClose} className="flex items-center gap-1.5 text-xs font-semibold text-foreground transition-colors hover:text-brand">
             <span aria-hidden>←</span>
-            <span>Back to Menu</span>
+            <span>{ui(lang, "backToMenuCaps")}</span>
           </button>
-          <span className="font-mono text-[11px] text-muted">DISH SPECIFICATION</span>
+          <span className="font-mono text-[11px] text-muted">{ui(lang, "dishSpecification")}</span>
         </div>
 
         <div className="relative h-64 shrink-0 bg-background">
           {item.photo_url ? <Image src={item.photo_url} alt="" fill priority className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>}
-          {item.cook_time_minutes && <span className="absolute right-3 bottom-3 rounded bg-black/70 px-2.5 py-1 font-mono text-[11px] text-white">{item.cook_time_minutes} min prep</span>}
+          {item.cook_time_minutes && <span className="absolute right-3 bottom-3 rounded bg-black/70 px-2.5 py-1 font-mono text-[11px] text-white">{item.cook_time_minutes} {ui(lang, "minPrep")}</span>}
         </div>
 
         <div className="flex flex-1 flex-col gap-3 p-5">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-xl font-bold tracking-tight text-balance">{item.name}</h2>
+            <h2 className="text-xl font-bold tracking-tight text-balance">{name}</h2>
             <span className="font-mono text-lg font-bold whitespace-nowrap text-foreground">{formatPeso(item.price)}</span>
           </div>
-          {item.description && <p className="text-xs leading-relaxed text-muted">{item.description}</p>}
+          {description && <p className="text-xs leading-relaxed text-muted">{description}</p>}
 
-          {(item.ingredients || item.allergy_info) && (
+          {(ingredients || allergyInfo) && (
             <div className="mt-2 divide-y divide-border rounded-lg border border-border text-xs">
-              {item.ingredients && (
+              {ingredients && (
                 <div className="flex justify-between gap-3 p-3">
-                  <span className="shrink-0 text-muted">Ingredients</span>
-                  <span className="text-right font-medium text-foreground">{item.ingredients}</span>
+                  <span className="shrink-0 text-muted">{ui(lang, "ingredients")}</span>
+                  <span className="text-right font-medium text-foreground">{ingredients}</span>
                 </div>
               )}
-              {item.allergy_info && (
+              {allergyInfo && (
                 <div className="flex justify-between gap-3 p-3">
-                  <span className="shrink-0 text-muted">Allergy</span>
-                  <span className="text-right font-medium text-foreground">{item.allergy_info}</span>
+                  <span className="shrink-0 text-muted">{ui(lang, "allergy")}</span>
+                  <span className="text-right font-medium text-foreground">{allergyInfo}</span>
                 </div>
               )}
             </div>
@@ -662,11 +743,11 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
           <div className="mt-auto flex flex-col gap-2 pt-6">
             {quantity === 0 ? (
               <button onClick={() => onChangeQty(1)} className="w-full rounded bg-brand py-3.5 text-xs font-bold tracking-wider text-brand-foreground uppercase transition-opacity hover:opacity-90">
-                Add to Table Order
+                {ui(lang, "addToTableOrder")}
               </button>
             ) : (
               <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3.5">
-                <span className="text-xs font-bold tracking-wider text-foreground uppercase">Order Quantity</span>
+                <span className="text-xs font-bold tracking-wider text-foreground uppercase">{ui(lang, "orderQuantity")}</span>
                 <div className="flex items-center gap-3">
                   <button onClick={() => onChangeQty(quantity - 1)} aria-label="Decrease quantity" className="touch-manipulation flex h-7 w-7 items-center justify-center rounded border border-border text-sm font-bold transition-colors hover:bg-border">
                     −
@@ -680,7 +761,7 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
             )}
             {canCheckout && (
               <button onClick={onGoToCheckout} className="py-1 text-center text-xs text-muted underline hover:text-foreground">
-                Review Order
+                {ui(lang, "reviewOrder")}
               </button>
             )}
           </div>
@@ -690,7 +771,7 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={item.name} className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card">
+    <div role="dialog" aria-modal="true" aria-label={name} className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card">
       <div className="relative h-64 shrink-0 bg-background">
         {item.photo_url ? <Image src={item.photo_url} alt="" fill priority className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>}
         <button onClick={onClose} aria-label="Back to menu" className="absolute top-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-lg text-white transition-colors hover:bg-black/60">
@@ -699,32 +780,32 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-5">
-        <h2 className="text-lg font-bold text-balance">{item.name}</h2>
+        <h2 className="text-lg font-bold text-balance">{name}</h2>
         <p className="font-semibold text-brand">{formatPeso(item.price)}</p>
-        {item.description && <p className="text-sm text-foreground">{item.description}</p>}
-        {item.ingredients && (
+        {description && <p className="text-sm text-foreground">{description}</p>}
+        {ingredients && (
           <p className="text-sm text-muted">
-            <span className="font-medium text-foreground">Ingredients: </span>
-            {item.ingredients}
+            <span className="font-medium text-foreground">{ui(lang, "ingredients")}: </span>
+            {ingredients}
           </p>
         )}
-        {item.allergy_info && (
+        {allergyInfo && (
           <p className="text-sm text-muted">
-            <span className="font-medium text-foreground">Allergy: </span>
-            {item.allergy_info}
+            <span className="font-medium text-foreground">{ui(lang, "allergy")}: </span>
+            {allergyInfo}
           </p>
         )}
         {item.cook_time_minutes && (
           <p className="flex items-center gap-1 text-sm text-muted">
             <span aria-hidden>🕐</span>
-            {item.cook_time_minutes} min
+            {item.cook_time_minutes} {ui(lang, "min")}
           </p>
         )}
 
         <div className="mt-auto flex flex-col items-center gap-3 pt-6">
           {quantity === 0 ? (
             <button onClick={() => onChangeQty(1)} className="w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90">
-              Add to Order
+              {ui(lang, "addToOrder")}
             </button>
           ) : (
             <div className="flex items-center gap-5">
@@ -739,7 +820,7 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
           )}
           {canCheckout && (
             <button onClick={onGoToCheckout} className="text-sm text-muted underline">
-              Review Order
+              {ui(lang, "reviewOrder")}
             </button>
           )}
         </div>
@@ -748,7 +829,7 @@ function ItemDetailOverlay({ item, variant, quantity, onChangeQty, onClose, canC
   );
 }
 
-function ConfirmationView({ restaurant, table, menuTemplate, confirmation, status, ad, changeRequest, dismissedRequestId, onDismissChangeRequest, requestingCancel, onRequestCancel, onStartEdit, onOrderMore, callingServer, serverCalled, onCallServer }: { restaurant: Restaurant; table: { id: string; label: string }; menuTemplate: MenuTemplateId; confirmation: Confirmation; status: OrderStatus; ad: AdContent | null; changeRequest: ChangeRequest | null; dismissedRequestId: string | null; onDismissChangeRequest: () => void; requestingCancel: boolean; onRequestCancel: () => void; onStartEdit: () => void; onOrderMore: () => void; callingServer: boolean; serverCalled: boolean; onCallServer: () => void }) {
+function ConfirmationView({ restaurant, table, menuTemplate, confirmation, status, ad, changeRequest, dismissedRequestId, onDismissChangeRequest, requestingCancel, onRequestCancel, onStartEdit, onOrderMore, callingServer, serverCalled, onCallServer, lang, isPremium, onChangeLang }: { restaurant: Restaurant; table: { id: string; label: string }; menuTemplate: MenuTemplateId; confirmation: Confirmation; status: OrderStatus; ad: AdContent | null; changeRequest: ChangeRequest | null; dismissedRequestId: string | null; onDismissChangeRequest: () => void; requestingCancel: boolean; onRequestCancel: () => void; onStartEdit: () => void; onOrderMore: () => void; callingServer: boolean; serverCalled: boolean; onCallServer: () => void; lang: MenuLanguage; isPremium: boolean; onChangeLang: (lang: MenuLanguage) => void }) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const isFinal = status === "paid" || status === "cancelled";
   const hasPendingRequest = changeRequest?.status === "pending";
@@ -756,29 +837,32 @@ function ConfirmationView({ restaurant, table, menuTemplate, confirmation, statu
   const showResolvedBanner = changeRequest && changeRequest.status !== "pending" && changeRequest.id !== dismissedRequestId;
 
   return (
-    <div data-menu-theme={menuTemplate} className="flex flex-1 flex-col gap-6 bg-background p-4 text-foreground">
+    <div data-menu-theme={menuTemplate} dir={RTL_LANGUAGES.has(lang) ? "rtl" : "ltr"} className="flex flex-1 flex-col gap-6 bg-background p-4 text-foreground">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h1 className="font-bold text-brand">{restaurant.name}</h1>
           <p className="text-sm text-muted">{table.label}</p>
         </div>
-        <CallServerButton calling={callingServer} called={serverCalled} onCall={onCallServer} />
+        <div className="flex shrink-0 items-center gap-2">
+          {isPremium && <LanguageSwitcher lang={lang} onChange={onChangeLang} />}
+          <CallServerButton calling={callingServer} called={serverCalled} onCall={onCallServer} lang={lang} />
+        </div>
       </header>
 
-      {hasPendingRequest && <div className="rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm text-brand">{changeRequest.kind === "cancel" ? "Cancellation requested" : "Change requested"} — staff will confirm with the kitchen shortly.</div>}
+      {hasPendingRequest && <div className="rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm text-brand">{changeRequest.kind === "cancel" ? ui(lang, "cancellationRequested") : ui(lang, "changeRequested")} {ui(lang, "staffWillConfirm")}</div>}
 
       {showResolvedBanner && (
         <div className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${changeRequest!.status === "approved" ? "border-brand/30 bg-brand/10 text-brand" : "border-border bg-background text-foreground"}`}>
-          <span>{changeRequest!.status === "approved" ? (changeRequest!.kind === "cancel" ? "Your cancellation was approved." : "Your change was approved.") : `Your request was declined.${changeRequest!.denyReason ? ` ${changeRequest!.denyReason}` : ""}`}</span>
+          <span>{changeRequest!.status === "approved" ? (changeRequest!.kind === "cancel" ? ui(lang, "cancellationApproved") : ui(lang, "changeApproved")) : `${ui(lang, "requestDeclined")}${changeRequest!.denyReason ? ` ${changeRequest!.denyReason}` : ""}`}</span>
           <button onClick={onDismissChangeRequest} className="shrink-0 text-xs underline">
-            Dismiss
+            {ui(lang, "dismiss")}
           </button>
         </div>
       )}
 
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">{status === "cancelled" ? "Order cancelled" : "Order received"}</h2>
+          <h2 className="font-semibold">{status === "cancelled" ? ui(lang, "orderCancelled") : ui(lang, "orderReceived")}</h2>
           <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand">{ORDER_STATUS_LABEL[status] ?? status}</span>
         </div>
         <ul className="flex flex-col gap-2 text-sm">
@@ -792,7 +876,7 @@ function ConfirmationView({ restaurant, table, menuTemplate, confirmation, statu
           ))}
         </ul>
         <div className="mt-3 flex justify-between border-t border-border pt-3 font-semibold">
-          <span>Total</span>
+          <span>{ui(lang, "total")}</span>
           <span>{formatPeso(confirmation.total)}</span>
         </div>
       </div>
@@ -801,10 +885,10 @@ function ConfirmationView({ restaurant, table, menuTemplate, confirmation, statu
         <div className="flex items-center gap-4 text-sm">
           {confirmingCancel ? (
             <div className="flex flex-1 items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
-              <span className="text-muted">Cancel this order?</span>
+              <span className="text-muted">{ui(lang, "cancelThisOrder")}</span>
               <div className="flex gap-3">
                 <button onClick={() => setConfirmingCancel(false)} className="text-muted underline" disabled={requestingCancel}>
-                  No
+                  {ui(lang, "no")}
                 </button>
                 <button
                   onClick={() => {
@@ -814,17 +898,17 @@ function ConfirmationView({ restaurant, table, menuTemplate, confirmation, statu
                   className="font-medium text-red-600 underline"
                   disabled={requestingCancel}
                 >
-                  {requestingCancel ? "Sending…" : "Yes, cancel"}
+                  {requestingCancel ? ui(lang, "sendingDots") : ui(lang, "yesCancel")}
                 </button>
               </div>
             </div>
           ) : (
             <>
               <button onClick={onStartEdit} className="text-muted underline">
-                Request a change
+                {ui(lang, "requestAChange")}
               </button>
               <button onClick={() => setConfirmingCancel(true)} className="text-muted underline">
-                Request cancellation
+                {ui(lang, "requestCancellation")}
               </button>
             </>
           )}
@@ -835,25 +919,25 @@ function ConfirmationView({ restaurant, table, menuTemplate, confirmation, statu
 
       {status !== "cancelled" && (restaurant.payment_qr_url || restaurant.payment_link) && (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted">Please pay at the cashier</p>
+          <p className="text-sm text-muted">{ui(lang, "pleasePayAtCashier")}</p>
           {restaurant.payment_qr_url && <Image src={restaurant.payment_qr_url} alt="Payment QR" width={180} height={180} className="rounded" />}
           {restaurant.payment_link && (
             <a href={restaurant.payment_link} target="_blank" rel="noreferrer" className="text-sm text-brand underline">
-              Open payment link
+              {ui(lang, "openPaymentLink")}
             </a>
           )}
-          <PaymentProofUpload orderId={confirmation.orderId} accessToken={confirmation.accessToken} />
+          <PaymentProofUpload orderId={confirmation.orderId} accessToken={confirmation.accessToken} lang={lang} />
         </div>
       )}
 
       <button onClick={onOrderMore} className="rounded-full border border-brand px-5 py-3 text-center font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground">
-        Add more from the menu
+        {ui(lang, "addMoreFromMenu")}
       </button>
     </div>
   );
 }
 
-function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessToken: string }) {
+function PaymentProofUpload({ orderId, accessToken, lang }: { orderId: string; accessToken: string; lang: MenuLanguage }) {
   const [state, formAction, pending] = useActionState<UploadPaymentProofState, FormData>(uploadPaymentProof, { error: null, url: null });
   const [preview, setPreview] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
@@ -882,7 +966,7 @@ function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessT
 
   return (
     <div className="mt-2 flex w-full flex-col items-center gap-2 border-t border-border pt-3">
-      <p className="text-xs text-muted">Already paid? Upload a screenshot so the cashier can confirm before you leave.</p>
+      <p className="text-xs text-muted">{ui(lang, "alreadyPaidHint")}</p>
       {shownImage && (
         // eslint-disable-next-line @next/next/no-img-element -- local blob preview before the real URL lands
         <img src={shownImage} alt="Payment proof" width={96} height={96} className="h-24 w-24 rounded object-cover" />
@@ -891,7 +975,7 @@ function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessT
         ref={fileRef}
         type="file"
         accept="image/*"
-        aria-label="Upload payment screenshot"
+        aria-label={ui(lang, "uploadPaymentScreenshot")}
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -900,14 +984,14 @@ function PaymentProofUpload({ orderId, accessToken }: { orderId: string; accessT
         }}
       />
       <button type="button" onClick={() => fileRef.current?.click()} disabled={compressing || pending} className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-60">
-        {compressing || pending ? "Uploading…" : state.url ? "Replace screenshot" : "Upload payment screenshot"}
+        {compressing || pending ? ui(lang, "uploading") : state.url ? ui(lang, "replaceScreenshot") : ui(lang, "uploadPaymentScreenshot")}
       </button>
       {state.error && (
         <p role="alert" aria-live="polite" className="text-xs text-red-600">
           {state.error}
         </p>
       )}
-      {state.url && !state.error && <p className="text-xs text-brand">Screenshot received ✓</p>}
+      {state.url && !state.error && <p className="text-xs text-brand">{ui(lang, "screenshotReceived")}</p>}
     </div>
   );
 }
