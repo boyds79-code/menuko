@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 import { AdminHeader } from "@/components/AdminHeader";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { BusinessSection } from "@/components/settings/BusinessSection";
@@ -15,6 +16,13 @@ const SECTIONS: { key: Section; label: string }[] = [
 
 export default function AdminSettings() {
   const [section, setSection] = useState<Section>("business");
+  const scrollRef = useRef<ScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, []),
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -22,7 +30,7 @@ export default function AdminSettings() {
       <View style={styles.switcherBar}>
         <SegmentedControl options={SECTIONS} value={section} onChange={setSection} />
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
         {section === "business" && <BusinessSection />}
         {section === "menu" && <MenuSection />}
       </ScrollView>

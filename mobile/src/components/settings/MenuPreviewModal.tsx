@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   applyButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
   content: { padding: 16, gap: 18 },
 
-  featuredRow: { flexGrow: 0 },
+  featuredRow: { flexGrow: 0, height: 120 },
   featuredCard: {
     width: 180,
     height: 120,

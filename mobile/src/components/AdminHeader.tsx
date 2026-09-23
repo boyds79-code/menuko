@@ -37,8 +37,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ece2d3",
   },
-  brand: { fontWeight: "700", color: "#ea7c1f" },
-  subtitle: { fontSize: 12, color: "#8a7c68" },
+  brand: { fontSize: 17, fontWeight: "800", color: "#ea7c1f" },
+  subtitle: { fontSize: 15, color: "#8a7c68" },
   signOutButton: {
     width: 36,
     height: 36,

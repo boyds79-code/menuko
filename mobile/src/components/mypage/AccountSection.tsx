@@ -209,8 +209,20 @@ export function AccountSection() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 12 },
-  card: { backgroundColor: "#ffffff", borderRadius: 14, borderWidth: 1, borderColor: "#ece2d3", padding: 14, gap: 10 },
+  content: { gap: 20 },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#ece2d3",
+    padding: 14,
+    gap: 10,
+    shadowColor: "#3d2f1f",
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
   cardTitle: { fontSize: 14, fontWeight: "700" },
   hint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
   label: { fontSize: 12, color: "#8a7c68" },
