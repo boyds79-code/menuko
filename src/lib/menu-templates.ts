@@ -68,40 +68,40 @@ export const DIGITAL_TEMPLATE_STYLES: Record<
   terracotta: {
     page: "bg-background",
     header: "rounded-b-3xl bg-header-dark px-4 pb-14 pt-5",
-    headerTitle: "text-lg font-bold text-header-dark-foreground",
+    headerTitle: "text-lg font-extrabold text-header-dark-foreground",
     headerSubtitle: "text-xs text-header-dark-foreground/60",
     categoryTitle:
-      "mb-2 inline-block rounded-full bg-brand/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand",
+      "mb-2 inline-block rounded-full bg-brand/15 px-3 py-1 text-[13px] font-bold uppercase tracking-wide text-brand",
     featuredOverlap: "-mt-10",
     variant: "default",
   },
   heritage: {
     page: "bg-background",
     header: "bg-header-dark px-4 pb-14 pt-5",
-    headerTitle: "text-lg font-bold tracking-wide text-header-dark-foreground",
+    headerTitle: "text-lg font-extrabold tracking-wide text-header-dark-foreground",
     headerSubtitle: "text-xs uppercase tracking-[0.2em] text-header-dark-foreground/60",
     categoryTitle:
-      "mb-2 border-b border-brand/40 pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand",
+      "mb-2 border-b border-brand/40 pb-1 text-[13px] font-semibold uppercase tracking-[0.2em] text-brand",
     featuredOverlap: "-mt-10",
     variant: "default",
   },
   nordic: {
     page: "bg-background",
     header: "border-b border-border bg-header-dark px-4 pb-5 pt-5",
-    headerTitle: "text-lg font-semibold tracking-tight text-header-dark-foreground",
+    headerTitle: "text-lg font-extrabold tracking-tight text-header-dark-foreground",
     headerSubtitle: "text-xs uppercase tracking-[0.15em] text-header-dark-foreground/60",
     categoryTitle:
-      "mb-2 border-b border-border pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-foreground",
+      "mb-2 border-b border-border pb-1 text-[13px] font-semibold uppercase tracking-[0.2em] text-foreground",
     featuredOverlap: "mt-4",
     variant: "nordic",
   },
   botanical: {
     page: "bg-background",
     header: "rounded-b-3xl bg-header-dark px-4 pb-14 pt-5",
-    headerTitle: "text-lg font-semibold tracking-tight text-header-dark-foreground",
+    headerTitle: "text-lg font-extrabold tracking-tight text-header-dark-foreground",
     headerSubtitle: "text-xs uppercase tracking-[0.08em] text-header-dark-foreground/70",
     categoryTitle:
-      "mb-2 border-b border-brand/25 pb-1 text-xs font-semibold uppercase tracking-[0.15em] text-foreground",
+      "mb-2 border-b border-brand/25 pb-1 text-[13px] font-semibold uppercase tracking-[0.15em] text-foreground",
     featuredOverlap: "-mt-10",
     variant: "botanical",
   },

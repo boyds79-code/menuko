@@ -20,10 +20,10 @@ const TEMPLATE_PALETTES: Record<MenuTemplateId, { brand: string; background: str
 // Generic placeholder menu for the "preview a design" sample — deliberately
 // unrelated to the owner's real dishes, since this is about showing the
 // design's look, not this restaurant's actual menu.
-const SAMPLE_ITEMS: { name: string; price: number }[] = [
-  { name: "Grilled Chicken Plate", price: 220 },
-  { name: "Beef Pasta", price: 260 },
-  { name: "Garden Salad", price: 150 },
+const SAMPLE_ITEMS: { name: string; price: number; photo: string }[] = [
+  { name: "Grilled Chicken Plate", price: 220, photo: "/marketing/book-japanese.webp" },
+  { name: "Beef Pasta", price: 260, photo: "/marketing/book-italian.webp" },
+  { name: "Garden Salad", price: 150, photo: "/marketing/book-korean.webp" },
 ];
 
 type Restaurant = {
@@ -362,8 +362,8 @@ function SamplePreviewOverlay({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {SAMPLE_ITEMS.map((item) => (
             <div key={item.name} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="flex h-24 items-center justify-center bg-background">
-                <span className="text-xs text-muted">Menuko</span>
+              <div className="relative h-24 bg-background">
+                <Image src={item.photo} alt={item.name} fill className="object-cover" sizes="200px" />
               </div>
               <div className="p-2.5">
                 <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
