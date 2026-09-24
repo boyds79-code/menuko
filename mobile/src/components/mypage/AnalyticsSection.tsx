@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { formatPeso } from "@/lib/money";
 import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { SalesInsights } from "@/components/SalesInsights";
+
+const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_ORIGIN;
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
 const ORDER_SELECT =
   "id, status, channel, note, payment_proof_url, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
@@ -125,7 +133,10 @@ export function AnalyticsSection() {
       </View>
 
       {isPremium ? (
-        <SalesInsights />
+        <>
+          <SalesInsights />
+          <SalesReportCard />
+        </>
       ) : (
         <View style={[styles.card, styles.premiumCard]}>
           <Text style={styles.premiumBadge}>Premium</Text>
@@ -145,6 +156,83 @@ function Stat({ label, value }: { label: string; value: string }) {
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// Year/month "dial" for browsing past reports — a first-of-month Date
+// stands in for "the selected period" throughout. Bounded so the owner
+// can't pick a future month (nothing to report yet).
+function SalesReportCard() {
+  const [reportMonth, setReportMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isCurrentMonth = useCallback((d: Date) => {
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }, []);
+
+  function shiftMonth(delta: number) {
+    setReportMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+  }
+
+  async function downloadReport() {
+    if (!WEB_ORIGIN) {
+      setError("EXPO_PUBLIC_WEB_ORIGIN is not set.");
+      return;
+    }
+    setError(null);
+    setDownloading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setError("Please sign in again.");
+        return;
+      }
+      const year = reportMonth.getFullYear();
+      const month = reportMonth.getMonth() + 1;
+      const url = `${WEB_ORIGIN}/api/reports/sales?year=${year}&month=${month}`;
+      const file = await File.downloadFileAsync(url, Paths.cache, {
+        headers: { Authorization: `Bearer ${token}` },
+        idempotent: true,
+      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, { mimeType: "application/pdf", UTI: "com.adobe.pdf" });
+      }
+    } catch {
+      setError("Couldn't generate the report. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Sales Report</Text>
+      <Text style={styles.hint}>
+        A full monthly PDF report — revenue trends, busy hours, best sellers, menu profitability, and
+        more.
+      </Text>
+      <View style={styles.monthRow}>
+        <TouchableOpacity onPress={() => shiftMonth(-1)} hitSlop={8}>
+          <Text style={styles.monthArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.monthLabel}>
+          {MONTH_NAMES[reportMonth.getMonth()]} {reportMonth.getFullYear()}
+        </Text>
+        <TouchableOpacity onPress={() => shiftMonth(1)} disabled={isCurrentMonth(reportMonth)} hitSlop={8}>
+          <Text style={[styles.monthArrow, isCurrentMonth(reportMonth) && styles.monthArrowDisabled]}>›</Text>
+        </TouchableOpacity>
+      </View>
+      {error && <Text style={styles.error}>{error}</Text>}
+      <TouchableOpacity style={styles.downloadButton} onPress={downloadReport} disabled={downloading}>
+        {downloading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.downloadButtonText}>Download PDF report</Text>}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -194,4 +282,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
+  monthRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20, paddingVertical: 4 },
+  monthArrow: { fontSize: 22, fontWeight: "700", color: "#ea7c1f", paddingHorizontal: 8 },
+  monthArrowDisabled: { color: "#d8cdbc" },
+  monthLabel: { fontSize: 14, fontWeight: "700", minWidth: 130, textAlign: "center" },
+  error: { color: "#dc2626", fontSize: 12 },
+  downloadButton: {
+    backgroundColor: "#ea7c1f",
+    borderRadius: 999,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  downloadButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
 });

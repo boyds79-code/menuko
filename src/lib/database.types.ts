@@ -190,6 +190,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          ingredient_cost: number | null
           ingredients: string | null
           is_available: boolean
           is_featured: boolean
@@ -207,6 +208,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          ingredient_cost?: number | null
           ingredients?: string | null
           is_available?: boolean
           is_featured?: boolean
@@ -224,6 +226,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          ingredient_cost?: number | null
           ingredients?: string | null
           is_available?: boolean
           is_featured?: boolean
@@ -372,6 +375,7 @@ export type Database = {
           access_token: string
           channel: Database["public"]["Enums"]["order_channel"]
           created_at: string
+          delivery_platform: string | null
           id: string
           note: string | null
           payment_proof_url: string | null
@@ -384,6 +388,7 @@ export type Database = {
           access_token?: string
           channel?: Database["public"]["Enums"]["order_channel"]
           created_at?: string
+          delivery_platform?: string | null
           id?: string
           note?: string | null
           payment_proof_url?: string | null
@@ -396,6 +401,7 @@ export type Database = {
           access_token?: string
           channel?: Database["public"]["Enums"]["order_channel"]
           created_at?: string
+          delivery_platform?: string | null
           id?: string
           note?: string | null
           payment_proof_url?: string | null
@@ -428,6 +434,8 @@ export type Database = {
           business_type: Database["public"]["Enums"]["business_type"]
           created_at: string
           cuisine_tags: string[]
+          foodpanda_commission_pct: number | null
+          grabfood_commission_pct: number | null
           id: string
           latitude: number | null
           logo_url: string | null
@@ -445,6 +453,8 @@ export type Database = {
           business_type?: Database["public"]["Enums"]["business_type"]
           created_at?: string
           cuisine_tags?: string[]
+          foodpanda_commission_pct?: number | null
+          grabfood_commission_pct?: number | null
           id?: string
           latitude?: number | null
           logo_url?: string | null
@@ -462,6 +472,8 @@ export type Database = {
           business_type?: Database["public"]["Enums"]["business_type"]
           created_at?: string
           cuisine_tags?: string[]
+          foodpanda_commission_pct?: number | null
+          grabfood_commission_pct?: number | null
           id?: string
           latitude?: number | null
           logo_url?: string | null
@@ -587,17 +599,30 @@ export type Database = {
         Returns: undefined
       }
       check_table_stalls: { Args: never; Returns: undefined }
-      create_manual_order: {
-        Args: {
-          p_channel: Database["public"]["Enums"]["order_channel"]
-          p_items: Json
-          p_note?: string
-        }
-        Returns: {
-          access_token: string
-          order_id: string
-        }[]
-      }
+      create_manual_order:
+        | {
+            Args: {
+              p_channel: Database["public"]["Enums"]["order_channel"]
+              p_items: Json
+              p_note?: string
+            }
+            Returns: {
+              access_token: string
+              order_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_channel: Database["public"]["Enums"]["order_channel"]
+              p_delivery_platform?: string
+              p_items: Json
+              p_note?: string
+            }
+            Returns: {
+              access_token: string
+              order_id: string
+            }[]
+          }
       create_order: {
         Args: { p_items: Json; p_qr_token: string }
         Returns: {
@@ -642,6 +667,73 @@ export type Database = {
       my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["account_role"]
+      }
+      report_category_revenue: {
+        Args: { p_month: string }
+        Returns: {
+          category_name: string
+          revenue: number
+        }[]
+      }
+      report_channel_revenue: {
+        Args: { p_month: string }
+        Returns: {
+          channel: Database["public"]["Enums"]["order_channel"]
+          delivery_platform: string
+          revenue: number
+        }[]
+      }
+      report_combos: {
+        Args: { p_limit?: number; p_month: string }
+        Returns: {
+          item_a_name: string
+          item_b_name: string
+          order_count: number
+        }[]
+      }
+      report_daily_revenue: {
+        Args: { p_month: string }
+        Returns: {
+          day_of_month: number
+          order_count: number
+          revenue: number
+        }[]
+      }
+      report_day_hour_heatmap: {
+        Args: { p_month: string }
+        Returns: {
+          day_of_week: number
+          hour_of_day: number
+          order_count: number
+        }[]
+      }
+      report_item_sales: {
+        Args: { p_month: string }
+        Returns: {
+          item_name: string
+          total_quantity: number
+          total_revenue: number
+        }[]
+      }
+      report_menu_engineering: {
+        Args: { p_month: string }
+        Returns: {
+          item_name: string
+          items_with_cost: number
+          margin_pct: number
+          quantity: number
+          total_items: number
+        }[]
+      }
+      report_monthly_summary: {
+        Args: { p_month: string }
+        Returns: {
+          days_in_period: number
+          period: string
+          table_count: number
+          total_orders: number
+          total_revenue: number
+        }[]
       }
       request_order_cancel: {
         Args: { p_access_token: string; p_note?: string; p_order_id: string }
