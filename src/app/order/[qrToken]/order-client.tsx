@@ -81,8 +81,10 @@ function CallServerButton({ calling, called, onCall, lang }: { calling: boolean;
 // Premium-only — a restaurant on the free plan never gets translated
 // content in its `translations` columns (see 0025_menu_translations.sql's
 // trigger gate), so showing the switcher there would just offer languages
-// that silently fall back to English for everything. A little globe icon
-// + a grid of 2-letter language codes (full native name on hover/long-press
+// that silently fall back to English for everything. Same pill shape/size
+// as CallServerButton (stacked above it in the header) so the two read as
+// a matched pair of controls, not one icon-only afterthought — opens a
+// grid of 2-letter language codes (full native name on hover/long-press
 // via the title attribute), closes on selection or outside click.
 function LanguageSwitcher({ lang, onChange }: { lang: MenuLanguage; onChange: (lang: MenuLanguage) => void }) {
   const [open, setOpen] = useState(false);
@@ -91,9 +93,9 @@ function LanguageSwitcher({ lang, onChange }: { lang: MenuLanguage; onChange: (l
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Change language"
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-brand text-sm text-brand transition-colors hover:bg-brand hover:text-brand-foreground"
+        className="shrink-0 rounded-full border border-brand px-3 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand hover:text-brand-foreground"
       >
-        🌐
+        Language
       </button>
       {open && (
         <>
@@ -375,7 +377,7 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
           {restaurant.about && <p className="mt-1 line-clamp-2 text-xs leading-snug text-header-dark-foreground/80">{tr(restaurant.translations, lang, "about", restaurant.about)}</p>}
           <p className={`${style.headerSubtitle} mt-1`}>{table.label}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-col items-stretch gap-2">
           {isPremium && <LanguageSwitcher lang={lang} onChange={changeLang} />}
           <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} lang={lang} />
         </div>
@@ -843,7 +845,7 @@ function ConfirmationView({ restaurant, table, menuTemplate, confirmation, statu
           <h1 className="font-bold text-brand">{restaurant.name}</h1>
           <p className="text-sm text-muted">{table.label}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-col items-stretch gap-2">
           {isPremium && <LanguageSwitcher lang={lang} onChange={onChangeLang} />}
           <CallServerButton calling={callingServer} called={serverCalled} onCall={onCallServer} lang={lang} />
         </div>
