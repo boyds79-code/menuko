@@ -23,6 +23,8 @@ export function BusinessSection() {
   const [paymentQrUrl, setPaymentQrUrl] = useState<string | null>(null);
   const [paymentLink, setPaymentLink] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [grabfoodPct, setGrabfoodPct] = useState("");
+  const [foodpandaPct, setFoodpandaPct] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [hasLocation, setHasLocation] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
@@ -39,7 +41,9 @@ export function BusinessSection() {
     if (!restaurantId) return;
     const { data } = await supabase
       .from("restaurants")
-      .select("name, address, about, business_type, payment_qr_url, payment_link, logo_url, latitude, longitude")
+      .select(
+        "name, address, about, business_type, payment_qr_url, payment_link, logo_url, latitude, longitude, grabfood_commission_pct, foodpanda_commission_pct",
+      )
       .eq("id", restaurantId)
       .single();
     if (data) {
@@ -51,6 +55,8 @@ export function BusinessSection() {
       setPaymentLink(data.payment_link ?? "");
       setLogoUrl(data.logo_url);
       setHasLocation(data.latitude !== null && data.longitude !== null);
+      setGrabfoodPct(data.grabfood_commission_pct?.toString() ?? "");
+      setFoodpandaPct(data.foodpanda_commission_pct?.toString() ?? "");
     }
     setLoaded(true);
   }, [restaurantId]);
@@ -303,6 +309,40 @@ export function BusinessSection() {
           placeholder="https://..."
           placeholderTextColor="#8a7c68"
           style={styles.input}
+        />
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Delivery channels</Text>
+        <Text style={styles.hint}>
+          Your actual commission rate for each delivery platform, so the Sales Report can show
+          real net revenue instead of an industry-average estimate (26%). Optional.
+        </Text>
+        <Text style={styles.label}>GrabFood commission (%)</Text>
+        <TextInput
+          value={grabfoodPct}
+          onChangeText={setGrabfoodPct}
+          onBlur={() => {
+            const parsed = grabfoodPct.trim() ? Number(grabfoodPct) : null;
+            save({ grabfood_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
+          }}
+          placeholder="e.g. 26"
+          placeholderTextColor="#8a7c68"
+          keyboardType="decimal-pad"
+          style={[styles.input, { width: 100 }]}
+        />
+        <Text style={styles.label}>foodpanda commission (%)</Text>
+        <TextInput
+          value={foodpandaPct}
+          onChangeText={setFoodpandaPct}
+          onBlur={() => {
+            const parsed = foodpandaPct.trim() ? Number(foodpandaPct) : null;
+            save({ foodpanda_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
+          }}
+          placeholder="e.g. 26"
+          placeholderTextColor="#8a7c68"
+          keyboardType="decimal-pad"
+          style={[styles.input, { width: 100 }]}
         />
       </View>
 

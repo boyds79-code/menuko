@@ -15,6 +15,7 @@ type MenuItem = { id: string; category_id: string | null; name: string; price: n
 export function NewOrderForm({ categories, items }: { categories: Category[]; items: MenuItem[] }) {
   const [open, setOpen] = useState(false);
   const [channel, setChannel] = useState<OrderChannel>("manual_delivery_entry");
+  const [platform, setPlatform] = useState<"grabfood" | "foodpanda" | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,7 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
   function reset() {
     setCart({});
     setNote("");
+    setPlatform(null);
     setOpen(false);
   }
 
@@ -45,6 +47,7 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
       p_channel: channel,
       p_items: lines.map((l) => ({ menu_item_id: l.item.id, quantity: l.quantity })),
       ...(note.trim() ? { p_note: note.trim() } : {}),
+      ...(channel === "manual_delivery_entry" && platform ? { p_delivery_platform: platform } : {}),
     });
     setSubmitting(false);
     if (rpcError) {
@@ -76,15 +79,32 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
           onPress={() => setChannel("manual_delivery_entry")}
           style={[styles.channelChip, channel === "manual_delivery_entry" && styles.channelChipActive]}
         >
-          <Text style={styles.channelChipText}>🛵 Delivery</Text>
+          <Text style={styles.channelChipText}>Delivery</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => setChannel("manual_pickup_entry")}
+          onPress={() => {
+            setChannel("manual_pickup_entry");
+            setPlatform(null);
+          }}
           style={[styles.channelChip, channel === "manual_pickup_entry" && styles.channelChipActive]}
         >
-          <Text style={styles.channelChipText}>🥡 Takeout</Text>
+          <Text style={styles.channelChipText}>Takeout</Text>
         </TouchableOpacity>
       </View>
+
+      {channel === "manual_delivery_entry" && (
+        <View style={styles.channelRow}>
+          {(["grabfood", "foodpanda"] as const).map((p) => (
+            <TouchableOpacity
+              key={p}
+              onPress={() => setPlatform(platform === p ? null : p)}
+              style={[styles.channelChip, platform === p && styles.channelChipActive]}
+            >
+              <Text style={styles.channelChipText}>{p === "grabfood" ? "GrabFood" : "foodpanda"}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <View style={styles.itemList}>
         {categories.map((category) => {

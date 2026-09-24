@@ -20,84 +20,10 @@ type Item = {
   allergy_info: string | null;
   cook_time_minutes: number | null;
   is_featured: boolean;
+  ingredient_cost: number | null;
 };
 
 const MAX_FEATURED_ITEMS = 3;
-
-// Generic placeholder menu for the "pick a design" sample preview — on
-// purpose unrelated to the owner's real dishes, since the point is to show
-// the design's look, not this restaurant's actual menu.
-const SAMPLE_CATEGORIES: Category[] = [
-  { id: "sample-mains", name: "Mains", sort_order: 0 },
-  { id: "sample-drinks", name: "Drinks", sort_order: 1 },
-];
-const SAMPLE_ITEMS: Item[] = [
-  {
-    id: "sample-1",
-    category_id: "sample-mains",
-    name: "Grilled Chicken Plate",
-    price: 220,
-    photo_url: "https://menuko.net/marketing/book-japanese.webp",
-    is_available: true,
-    is_featured: true,
-    description: "Served with rice and a side salad.",
-    ingredients: null,
-    allergy_info: null,
-    cook_time_minutes: 15,
-  },
-  {
-    id: "sample-2",
-    category_id: "sample-mains",
-    name: "Beef Pasta",
-    price: 260,
-    photo_url: "https://menuko.net/marketing/book-italian.webp",
-    is_available: true,
-    is_featured: false,
-    description: null,
-    ingredients: null,
-    allergy_info: null,
-    cook_time_minutes: null,
-  },
-  {
-    id: "sample-3",
-    category_id: "sample-mains",
-    name: "Garden Salad",
-    price: 150,
-    photo_url: "https://menuko.net/marketing/book-korean.webp",
-    is_available: true,
-    is_featured: false,
-    description: null,
-    ingredients: null,
-    allergy_info: null,
-    cook_time_minutes: null,
-  },
-  {
-    id: "sample-4",
-    category_id: "sample-drinks",
-    name: "Fresh Lemonade",
-    price: 90,
-    photo_url: "https://menuko.net/marketing/book-cafe.webp",
-    is_available: true,
-    is_featured: true,
-    description: null,
-    ingredients: null,
-    allergy_info: null,
-    cook_time_minutes: null,
-  },
-  {
-    id: "sample-5",
-    category_id: "sample-drinks",
-    name: "Iced Tea",
-    price: 80,
-    photo_url: "https://menuko.net/marketing/book-cafe.webp",
-    is_available: true,
-    is_featured: false,
-    description: null,
-    ingredients: null,
-    allergy_info: null,
-    cook_time_minutes: null,
-  },
-];
 
 export function MenuSection() {
   const { account } = useSession();
@@ -110,9 +36,8 @@ export function MenuSection() {
   const [menuTemplate, setMenuTemplate] = useState<MobileMenuTemplateId>("terracotta");
   // The chip the owner has tapped to browse, which may not be applied yet —
   // stays equal to menuTemplate until they tap a different one. Only
-  // "Apply" inside the sample preview actually writes menuTemplate.
+  // "Apply" inside the preview modal actually writes menuTemplate.
   const [candidateTemplate, setCandidateTemplate] = useState<MobileMenuTemplateId>("terracotta");
-  const [sampleOpen, setSampleOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!restaurantId) return;
@@ -125,7 +50,7 @@ export function MenuSection() {
       supabase
         .from("menu_items")
         .select(
-          "id, category_id, name, price, photo_url, is_available, description, ingredients, allergy_info, cook_time_minutes, is_featured",
+          "id, category_id, name, price, photo_url, is_available, description, ingredients, allergy_info, cook_time_minutes, is_featured, ingredient_cost",
         )
         .eq("restaurant_id", restaurantId)
         .order("sort_order"),
@@ -143,7 +68,7 @@ export function MenuSection() {
   async function applyMenuTemplate(id: MobileMenuTemplateId) {
     setMenuTemplate(id);
     setCandidateTemplate(id);
-    setSampleOpen(false);
+    setPreviewOpen(false);
     if (!restaurantId) return;
     await supabase.from("restaurants").update({ menu_template: id }).eq("id", restaurantId);
   }
@@ -216,6 +141,7 @@ export function MenuSection() {
         ...(patch.allergy_info !== undefined ? { allergy_info: patch.allergy_info } : {}),
         ...(patch.cook_time_minutes !== undefined ? { cook_time_minutes: patch.cook_time_minutes } : {}),
         ...(patch.is_featured !== undefined ? { is_featured: patch.is_featured } : {}),
+        ...(patch.ingredient_cost !== undefined ? { ingredient_cost: patch.ingredient_cost } : {}),
       })
       .eq("id", id);
     load();
@@ -314,29 +240,24 @@ export function MenuSection() {
           <View>
             <PaletteCard menuTemplate={candidateTemplate} />
             <Text style={styles.swatchCaption}>Not applied yet</Text>
-            <TouchableOpacity style={styles.previewButton} onPress={() => setSampleOpen(true)}>
+            <TouchableOpacity style={styles.previewButton} onPress={() => setPreviewOpen(true)}>
               <Text style={styles.previewButtonText}>Preview this design</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
+      {/* Always the real menu, themed as candidateTemplate — previewing a
+          design should show the owner their own items in it, not a fake
+          "Grilled Chicken Plate" mockup. Only offers Apply when browsing a
+          template that isn't already applied. */}
       <MenuPreviewModal
         visible={previewOpen}
         onClose={() => setPreviewOpen(false)}
         categories={categories}
         items={items}
-        menuTemplate={menuTemplate}
-      />
-
-      <MenuPreviewModal
-        visible={sampleOpen}
-        onClose={() => setSampleOpen(false)}
-        categories={SAMPLE_CATEGORIES}
-        items={SAMPLE_ITEMS}
         menuTemplate={candidateTemplate}
-        subtitle="Sample menu — not your real items"
-        onApply={() => applyMenuTemplate(candidateTemplate)}
+        onApply={candidateTemplate !== menuTemplate ? () => applyMenuTemplate(candidateTemplate) : undefined}
       />
     </View>
   );
@@ -593,14 +514,17 @@ function ItemRow({
   const [ingredients, setIngredients] = useState(item.ingredients ?? "");
   const [allergyInfo, setAllergyInfo] = useState(item.allergy_info ?? "");
   const [cookTime, setCookTime] = useState(item.cook_time_minutes?.toString() ?? "");
+  const [ingredientCost, setIngredientCost] = useState(item.ingredient_cost?.toString() ?? "");
 
   function saveDetails() {
     const parsed = cookTime.trim() ? Number(cookTime) : null;
+    const parsedCost = ingredientCost.trim() ? Number(ingredientCost) : null;
     onUpdate({
       description: description.trim() || null,
       ingredients: ingredients.trim() || null,
       allergy_info: allergyInfo.trim() || null,
       cook_time_minutes: parsed !== null && Number.isNaN(parsed) ? null : parsed,
+      ingredient_cost: parsedCost !== null && Number.isNaN(parsedCost) ? null : parsedCost,
     });
   }
 
@@ -680,15 +604,29 @@ function ItemRow({
             placeholderTextColor="#8a7c68"
             style={styles.input}
           />
-          <TextInput
-            value={cookTime}
-            onChangeText={setCookTime}
-            onBlur={saveDetails}
-            placeholder="Cook time (minutes)"
-            placeholderTextColor="#8a7c68"
-            keyboardType="number-pad"
-            style={[styles.input, { width: 120 }]}
-          />
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TextInput
+              value={cookTime}
+              onChangeText={setCookTime}
+              onBlur={saveDetails}
+              placeholder="Cook time (minutes)"
+              placeholderTextColor="#8a7c68"
+              keyboardType="number-pad"
+              style={[styles.input, { width: 140 }]}
+            />
+            <TextInput
+              value={ingredientCost}
+              onChangeText={setIngredientCost}
+              onBlur={saveDetails}
+              placeholder="Ingredient cost (₱)"
+              placeholderTextColor="#8a7c68"
+              keyboardType="decimal-pad"
+              style={[styles.input, { width: 140 }]}
+            />
+          </View>
+          <Text style={styles.costHint}>
+            Optional — used for the Sales Report&apos;s menu profitability chart. Not shown to customers.
+          </Text>
         </View>
       )}
     </View>
@@ -783,6 +721,7 @@ const styles = StyleSheet.create({
   detailsToggle: { fontSize: 11, color: "#8a7c68", textDecorationLine: "underline" },
   detailsForm: { gap: 6, paddingLeft: 52 },
   detailsTextarea: { minHeight: 50, textAlignVertical: "top" },
+  costHint: { fontSize: 10, color: "#8a7c68", lineHeight: 14 },
   addItemRow: { flexDirection: "row", alignItems: "center", gap: 8, borderTopWidth: 1, borderTopColor: "#ece2d3", paddingTop: 10 },
   photoBox: {
     width: 44,

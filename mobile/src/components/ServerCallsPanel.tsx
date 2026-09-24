@@ -68,9 +68,6 @@ export function ServerCallsPanel({ restaurantId }: { restaurantId: string }) {
         const table = Array.isArray(call.tables) ? call.tables[0] : call.tables;
         return (
           <View key={call.id} style={styles.card}>
-            <Text style={styles.icon} aria-hidden>
-              🔔
-            </Text>
             <Text style={styles.text}>{table?.label ?? "A table"} is calling for a server</Text>
             <TouchableOpacity
               onPress={() => resolve(call.id)}
@@ -99,7 +96,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
   },
-  icon: { fontSize: 16 },
   text: { flex: 1, fontSize: 13, fontWeight: "600" },
   resolveButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
   resolveButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 12 },

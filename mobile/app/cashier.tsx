@@ -18,7 +18,7 @@ import { createMutationQueue } from "@/lib/offline-queue";
 import { registerForPushNotifications } from "@/lib/push";
 import { formatPeso } from "@/lib/money";
 import { ORDER_STATUS_LABEL } from "@/lib/constants";
-import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
+import { toOrderView, orderTotal, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { NewOrderForm } from "@/components/NewOrderForm";
 import { ChangeRequestsPanel } from "@/components/ChangeRequestsPanel";
@@ -26,6 +26,14 @@ import { ServerCallsPanel } from "@/components/ServerCallsPanel";
 import { getCurrentCoords } from "@/lib/location";
 
 const PRESENCE_PING_MS = 5 * 60 * 1000;
+
+// Plain-text channel labels for Floor — unlike Kitchen (which keeps
+// CHANNEL_BADGE's icons), this screen shows no icons anywhere.
+const CHANNEL_LABEL: Record<string, string | null> = {
+  dine_in: null,
+  manual_delivery_entry: "Delivery",
+  manual_pickup_entry: "Takeout",
+};
 
 const ORDER_SELECT =
   "id, status, channel, note, payment_proof_url, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
@@ -396,8 +404,7 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
               </View>
               <View style={styles.occupiedRow}>
                 <Text style={styles.occupiedStatus}>
-                  {table.occupied_source === "qr_scan" ? "📷 " : "✋ "}
-                  {isOrdering ? "🟢 Occupied — ordering" : isStalled ? "⚠ Seated, no order yet" : `🟡 Seated ${waitingMinutes}m ago`}
+                  {isOrdering ? "Occupied — ordering" : isStalled ? "Seated, no order yet" : `Seated ${waitingMinutes}m ago`}
                 </Text>
                 <TouchableOpacity onPress={() => freeTable(table.id)} disabled={busy}>
                   <Text style={styles.link}>Free table</Text>
@@ -411,7 +418,7 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
                       <View style={styles.orderStatusRow}>
                         <Text style={styles.orderStatus}>
                           {ORDER_STATUS_LABEL[order.status] ?? order.status}
-                          {CHANNEL_BADGE[order.channel] ? ` · ${CHANNEL_BADGE[order.channel]}` : ""}
+                          {CHANNEL_LABEL[order.channel] ? ` · ${CHANNEL_LABEL[order.channel]}` : ""}
                           {order.note ? ` · ${order.note}` : ""}
                         </Text>
                         {group.orders.length > 1 && (
