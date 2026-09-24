@@ -23,6 +23,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { NewOrderForm } from "@/components/NewOrderForm";
 import { ChangeRequestsPanel } from "@/components/ChangeRequestsPanel";
 import { ServerCallsPanel } from "@/components/ServerCallsPanel";
+import { CloseDayCard } from "@/components/CloseDayCard";
 import { getCurrentCoords } from "@/lib/location";
 
 const PRESENCE_PING_MS = 5 * 60 * 1000;
@@ -355,6 +356,7 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
       <ChangeRequestsPanel restaurantId={restaurantId ?? ""} menuItems={menuItems} role={account?.role} />
 
       <NewOrderForm categories={categories} items={menuItems} />
+      <CloseDayCard />
 
       <ScrollView
         contentContainerStyle={styles.content}

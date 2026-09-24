@@ -118,6 +118,48 @@ export type Database = {
           },
         ]
       }
+      daily_closings: {
+        Row: {
+          business_date: string
+          closed_at: string
+          closed_by: string
+          delivery_revenue: number
+          id: string
+          restaurant_id: string
+        }
+        Insert: {
+          business_date: string
+          closed_at?: string
+          closed_by: string
+          delivery_revenue?: number
+          id?: string
+          restaurant_id: string
+        }
+        Update: {
+          business_date?: string
+          closed_at?: string
+          closed_by?: string
+          delivery_revenue?: number
+          id?: string
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_closings_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_closings_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_push_tokens: {
         Row: {
           account_id: string
@@ -599,6 +641,17 @@ export type Database = {
         Returns: undefined
       }
       check_table_stalls: { Args: never; Returns: undefined }
+      close_business_day: {
+        Args: { p_delivery_revenue: number }
+        Returns: {
+          best_seller_name: string
+          closing_date: string
+          delivery_revenue: number
+          dine_in_revenue: number
+          is_premium: boolean
+          table_count: number
+        }[]
+      }
       create_manual_order:
         | {
             Args: {
