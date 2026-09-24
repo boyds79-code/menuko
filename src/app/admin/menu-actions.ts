@@ -126,3 +126,56 @@ export async function deleteItem(itemId: string) {
   await supabase.from("menu_items").delete().eq("id", itemId);
   revalidatePath("/admin");
 }
+
+// Bulk-writes the owner-reviewed draft from the "import menu from photo/PDF"
+// flow (see extract-menu edge function — this action never talks to
+// Claude itself, it only saves what the owner already reviewed/edited).
+// Matches each extracted category to an existing one by case-insensitive
+// name first, so re-running an import (or importing a second page of the
+// same menu) doesn't create duplicate categories.
+export async function importMenu(
+  categories: { name: string; items: { name: string; price: number; description: string | null }[] }[],
+) {
+  const ctx = await requireStaff("owner");
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("menu_categories")
+    .select("id, name, sort_order")
+    .eq("restaurant_id", ctx.restaurantId);
+  const existingByName = new Map((existing ?? []).map((c) => [c.name.trim().toLowerCase(), c]));
+  let nextSortOrder = (existing ?? []).length;
+
+  for (const category of categories) {
+    if (!category.name.trim() || category.items.length === 0) continue;
+    const key = category.name.trim().toLowerCase();
+    let categoryId = existingByName.get(key)?.id;
+
+    if (!categoryId) {
+      const { data: inserted } = await supabase
+        .from("menu_categories")
+        .insert({ restaurant_id: ctx.restaurantId, name: category.name.trim(), sort_order: nextSortOrder })
+        .select("id")
+        .single();
+      if (!inserted) continue;
+      categoryId = inserted.id;
+      existingByName.set(key, { id: inserted.id, name: category.name.trim(), sort_order: nextSortOrder });
+      nextSortOrder += 1;
+    }
+
+    const rows = category.items
+      .filter((item) => item.name.trim() && item.price >= 0)
+      .map((item) => ({
+        restaurant_id: ctx.restaurantId,
+        category_id: categoryId,
+        name: item.name.trim(),
+        price: item.price,
+        description: item.description,
+      }));
+    if (rows.length > 0) {
+      await supabase.from("menu_items").insert(rows);
+    }
+  }
+
+  revalidatePath("/admin");
+}

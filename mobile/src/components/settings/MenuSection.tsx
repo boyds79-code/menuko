@@ -6,6 +6,7 @@ import { pickAndUploadPhoto } from "@/lib/upload-photo";
 import { MOBILE_MENU_TEMPLATES, MOBILE_TEMPLATE_STYLES, type MobileMenuTemplateId } from "@/lib/menu-templates";
 import { formatPeso } from "@/lib/money";
 import { MenuPreviewModal } from "./MenuPreviewModal";
+import { MenuImportModal } from "./MenuImportModal";
 
 type Category = { id: string; name: string; sort_order: number };
 type Item = {
@@ -172,6 +173,8 @@ export function MenuSection() {
       <Text style={styles.featuredHint}>
         ⭐ marks up to {MAX_FEATURED_ITEMS} items shown as &ldquo;Our Best!&rdquo; on the customer menu ({featuredCount}/{MAX_FEATURED_ITEMS} used)
       </Text>
+
+      {restaurantId && <MenuImportModal restaurantId={restaurantId} onImported={load} />}
 
       <View style={styles.addCategoryRow}>
         <TextInput

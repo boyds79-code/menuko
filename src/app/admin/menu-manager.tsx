@@ -14,6 +14,7 @@ import {
   updateItem,
   deleteItem,
 } from "./menu-actions";
+import { MenuImport } from "./menu-import";
 
 type Category = { id: string; name: string; sort_order: number };
 type Item = {
@@ -61,6 +62,8 @@ export function MenuManager({
         ⭐ marks up to {MAX_FEATURED_ITEMS} items shown as &ldquo;Our Best!&rdquo; on the customer menu (
         {featuredCount}/{MAX_FEATURED_ITEMS} used)
       </p>
+
+      <MenuImport />
 
       <form
         onSubmit={(e) => {
