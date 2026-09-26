@@ -50,9 +50,15 @@ export function CloseDayCard() {
 
   if (!open) {
     return (
-      <TouchableOpacity style={styles.openButton} onPress={() => setOpen(true)}>
-        <Text style={styles.openButtonText}>Close day</Text>
-      </TouchableOpacity>
+      <View style={styles.openWrap}>
+        <TouchableOpacity style={styles.openButton} onPress={() => setOpen(true)}>
+          <Text style={styles.openButtonText}>Close day</Text>
+        </TouchableOpacity>
+        <Text style={styles.openHint}>
+          Enter today&apos;s delivery revenue and close out — Premium restaurants get a same-day sales
+          summary right after.
+        </Text>
+      </View>
     );
   }
 
@@ -121,9 +127,8 @@ export function CloseDayCard() {
 }
 
 const styles = StyleSheet.create({
+  openWrap: { marginHorizontal: 16, marginTop: 12, gap: 6 },
   openButton: {
-    marginHorizontal: 16,
-    marginTop: 12,
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "#ece2d3",
@@ -133,6 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   openButtonText: { fontSize: 13, fontWeight: "600", color: "#8a7c68" },
+  openHint: { fontSize: 11, color: "#8a7c68", lineHeight: 15, paddingHorizontal: 4 },
   card: {
     marginHorizontal: 16,
     marginTop: 12,

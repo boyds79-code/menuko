@@ -139,7 +139,7 @@ export function AccountSection() {
       )}
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Account</Text>
+        <Text style={styles.cardTitle}>My Account</Text>
         <Text style={styles.label}>Email</Text>
         <TextInput
           value={newEmail}

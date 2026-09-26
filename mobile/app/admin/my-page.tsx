@@ -9,13 +9,13 @@ import { AccountSection } from "@/components/mypage/AccountSection";
 
 type Section = "analytics" | "account";
 
-const SECTIONS: { key: Section; label: string }[] = [
-  { key: "analytics", label: "Analytics" },
+const SECTIONS: { key: Section; label: string; badge?: string }[] = [
   { key: "account", label: "Account" },
+  { key: "analytics", label: "Analytics", badge: "Premium" },
 ];
 
 export default function MyPage() {
-  const [section, setSection] = useState<Section>("analytics");
+  const [section, setSection] = useState<Section>("account");
   const scrollRef = useRef<ScrollView>(null);
 
   useFocusEffect(

@@ -12,6 +12,21 @@ type Account = { id: string; email: string; role: string };
 
 const ROLE_LABEL: Record<string, string> = { owner: "Owner", kitchen: "Kitchen", cashier: "Cashier" };
 
+// Collapsed by default so the tab doesn't dump every setting on screen at
+// once — tap a header to reveal that section's fields.
+function AccordionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={styles.card}>
+      <TouchableOpacity style={styles.cardHeader} onPress={() => setOpen((o) => !o)}>
+        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={styles.chevron}>{open ? "−" : "+"}</Text>
+      </TouchableOpacity>
+      {open && <View style={styles.cardBody}>{children}</View>}
+    </View>
+  );
+}
+
 export function BusinessSection() {
   const { account } = useSession();
   const restaurantId = account?.restaurantId;
@@ -145,8 +160,7 @@ export function BusinessSection() {
 
   return (
     <View style={styles.content}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>My Business</Text>
+      <AccordionCard title="My Business">
         <Text style={styles.label}>Logo (optional)</Text>
         <TouchableOpacity
           style={styles.photoBox}
@@ -223,10 +237,9 @@ export function BusinessSection() {
             {savingLocation ? "Getting location..." : hasLocation ? "Update to current location" : "Set restaurant location"}
           </Text>
         </TouchableOpacity>
-      </View>
+      </AccordionCard>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Staff accounts</Text>
+      <AccordionCard title="Staff accounts">
         <Text style={styles.hint}>
           The free plan supports 1 owner + 1 kitchen + 1 cashier account. Additional accounts
           require the premium plan.
@@ -277,10 +290,9 @@ export function BusinessSection() {
         <TouchableOpacity style={styles.primaryButton} onPress={inviteStaff} disabled={inviting}>
           <Text style={styles.primaryButtonText}>{inviting ? "Creating..." : "Create account"}</Text>
         </TouchableOpacity>
-      </View>
+      </AccordionCard>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Payment info</Text>
+      <AccordionCard title="Payment info">
         <Text style={styles.hint}>
           Upload a payment QR image you already have (GCash/Maya, etc.) — shown as-is to
           customers and the cashier. Menuko never processes payments directly.
@@ -310,10 +322,9 @@ export function BusinessSection() {
           placeholderTextColor="#8a7c68"
           style={styles.input}
         />
-      </View>
+      </AccordionCard>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Delivery channels</Text>
+      <AccordionCard title="Delivery channels">
         <Text style={styles.hint}>
           Your actual commission rate for each delivery platform, so the Sales Report can show
           real net revenue instead of an industry-average estimate (26%). Optional.
@@ -344,12 +355,11 @@ export function BusinessSection() {
           keyboardType="decimal-pad"
           style={[styles.input, { width: 100 }]}
         />
-      </View>
+      </AccordionCard>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Tables</Text>
+      <AccordionCard title="Tables">
         <TablesSection />
-      </View>
+      </AccordionCard>
     </View>
   );
 }
@@ -361,14 +371,21 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#ece2d3",
-    padding: 14,
-    gap: 8,
+    overflow: "hidden",
     shadowColor: "#3d2f1f",
     shadowOpacity: 0.06,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 2,
   },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 14,
+  },
+  cardBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
+  chevron: { fontSize: 16, fontWeight: "700", color: "#ea7c1f", width: 20, textAlign: "center" },
   cardTitle: { fontSize: 14, fontWeight: "700", color: "#ea7c1f" },
   label: { fontSize: 12, color: "#8a7c68" },
   hint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },

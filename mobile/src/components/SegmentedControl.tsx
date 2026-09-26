@@ -7,7 +7,7 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
 }: {
-  options: { key: T; label: string }[];
+  options: { key: T; label: string; badge?: string }[];
   value: T;
   onChange: (value: T) => void;
 }) {
@@ -21,7 +21,14 @@ export function SegmentedControl<T extends string>({
             style={[styles.segment, active && styles.segmentActive]}
             onPress={() => onChange(opt.key)}
           >
-            <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{opt.label}</Text>
+            <View style={styles.segmentLabelRow}>
+              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{opt.label}</Text>
+              {opt.badge && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{opt.badge}</Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -53,4 +60,12 @@ const styles = StyleSheet.create({
   },
   segmentText: { fontSize: 12, fontWeight: "600", color: "#8a7c68" },
   segmentTextActive: { color: "#231f1a", fontWeight: "700" },
+  segmentLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  badge: {
+    backgroundColor: "#fff0e0",
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  badgeText: { fontSize: 9, fontWeight: "700", color: "#ea7c1f" },
 });
