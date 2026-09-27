@@ -20,9 +20,14 @@ export async function signup(
   const businessType: BusinessType = businessTypeRaw === "cafe" ? "cafe" : "restaurant";
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const agreedToTerms = formData.get("agreeToTerms") === "on";
 
   if (!restaurantName || !email || password.length < 6) {
     return { error: "Please enter a restaurant name, email, and a password of at least 6 characters." };
+  }
+
+  if (!agreedToTerms) {
+    return { error: "Please agree to the Terms of Service and Privacy Policy to continue." };
   }
 
   const admin = createAdminClient();

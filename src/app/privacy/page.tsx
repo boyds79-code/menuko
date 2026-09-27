@@ -1,9 +1,8 @@
 import Link from "next/link";
 
 // Draft legal content — not reviewed by a lawyer. See the launch checklist
-// artifact / chat for what still needs filling in (contact email) and the
-// note about Philippines Data Privacy Act (RA 10173) compliance before
-// this goes live for real.
+// artifact / chat for the note about Philippines Data Privacy Act (RA 10173)
+// compliance before this goes live for real.
 
 export const metadata = {
   title: "Privacy Policy — Menuko",
@@ -20,14 +19,15 @@ export default function PrivacyPolicyPage() {
 
       <div>
         <h1 className="text-xl font-semibold">Privacy Policy</h1>
-        <p className="mt-1 text-xs text-muted">Last updated: [DATE]</p>
+        <p className="mt-1 text-xs text-muted">Last updated: September 28, 2026</p>
       </div>
 
       <p>
         This Privacy Policy explains how Menuko (&quot;Menuko,&quot; &quot;we,&quot; &quot;us&quot;) collects,
         uses, and shares information when a restaurant or cafe (&quot;Restaurant,&quot; &quot;you&quot;) uses the
         Menuko service, and when a customer of that Restaurant (&quot;Customer&quot;) places an order
-        through a Menuko-powered QR menu.
+        through a Menuko-powered QR menu. Menuko is operated by <strong>DBandSolution</strong>,
+        401-389A, 79, Gimpohangang 9-ro, Gimpo-si, Gyeonggi-do, Republic of Korea, 10071.
       </p>
 
       <Section title="1. Who this applies to">
@@ -159,7 +159,10 @@ export default function PrivacyPolicyPage() {
       </Section>
 
       <Section title="10. Contact">
-        <p>Questions about this policy? Contact us at hello@menuko.net.</p>
+        <p>
+          Questions about this policy? Contact us at hello@menuko.net, or write to DBandSolution,
+          401-389A, 79, Gimpohangang 9-ro, Gimpo-si, Gyeonggi-do, Republic of Korea, 10071.
+        </p>
       </Section>
 
       <p className="mt-4 text-xs text-muted">

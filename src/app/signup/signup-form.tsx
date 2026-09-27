@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import Link from "next/link";
 import { signup, type SignupState } from "./actions";
 
 const initialState: SignupState = { error: null };
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signup, initialState);
+  const [agreed, setAgreed] = useState(false);
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
@@ -64,6 +66,27 @@ export function SignupForm() {
           className="rounded-lg border border-border bg-card px-3 py-2 outline-none focus:border-brand"
         />
       </div>
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="agreeToTerms"
+          required
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          I agree to the{" "}
+          <Link href="/terms" target="_blank" className="text-brand underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" target="_blank" className="text-brand underline">
+            Privacy Policy
+          </Link>
+          .
+        </span>
+      </label>
       {state.error && (
         <p className="text-sm text-red-600" role="alert">
           {state.error}
@@ -71,7 +94,7 @@ export function SignupForm() {
       )}
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !agreed}
         className="rounded-full bg-brand px-4 py-2 font-medium text-brand-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Signing up..." : "Get started for free"}
