@@ -1,14 +1,19 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
 import { signup, type SignupState } from "./actions";
+import { LegalModal } from "./legal-modal";
+import { TermsContent } from "../terms/terms-content";
+import { PrivacyContent } from "../privacy/privacy-content";
 
 const initialState: SignupState = { error: null };
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signup, initialState);
-  const [agreed, setAgreed] = useState(false);
+  const [termsConfirmed, setTermsConfirmed] = useState(false);
+  const [privacyConfirmed, setPrivacyConfirmed] = useState(false);
+  const [openModal, setOpenModal] = useState<"terms" | "privacy" | null>(null);
+  const agreed = termsConfirmed && privacyConfirmed;
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
@@ -66,27 +71,60 @@ export function SignupForm() {
           className="rounded-lg border border-border bg-card px-3 py-2 outline-none focus:border-brand"
         />
       </div>
-      <label className="flex items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="agreeToTerms"
-          required
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-0.5"
-        />
-        <span>
-          I agree to the{" "}
-          <Link href="/terms" target="_blank" className="text-brand underline">
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" target="_blank" className="text-brand underline">
-            Privacy Policy
-          </Link>
-          .
+      <input type="hidden" name="agreeToTerms" value={agreed ? "on" : ""} />
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium">Terms &amp; Privacy</span>
+        <div className="flex flex-col gap-2 text-sm">
+          <button
+            type="button"
+            onClick={() => setOpenModal("terms")}
+            className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-left"
+          >
+            <span>Terms of Service</span>
+            <span className={termsConfirmed ? "text-brand" : "text-muted"}>
+              {termsConfirmed ? "✓ Confirmed" : "Open to read →"}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenModal("privacy")}
+            className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-left"
+          >
+            <span>Privacy Policy</span>
+            <span className={privacyConfirmed ? "text-brand" : "text-muted"}>
+              {privacyConfirmed ? "✓ Confirmed" : "Open to read →"}
+            </span>
+          </button>
+        </div>
+        <span className="text-xs text-muted">
+          You must open and confirm both before you can create an account.
         </span>
-      </label>
+      </div>
+
+      <LegalModal
+        title="Terms of Service"
+        open={openModal === "terms"}
+        onClose={() => setOpenModal(null)}
+        onConfirm={() => {
+          setTermsConfirmed(true);
+          setOpenModal(null);
+        }}
+      >
+        <TermsContent />
+      </LegalModal>
+
+      <LegalModal
+        title="Privacy Policy"
+        open={openModal === "privacy"}
+        onClose={() => setOpenModal(null)}
+        onConfirm={() => {
+          setPrivacyConfirmed(true);
+          setOpenModal(null);
+        }}
+      >
+        <PrivacyContent />
+      </LegalModal>
+
       {state.error && (
         <p className="text-sm text-red-600" role="alert">
           {state.error}
