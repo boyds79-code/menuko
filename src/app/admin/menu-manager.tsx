@@ -46,6 +46,7 @@ export function MenuManager({
   const router = useRouter();
   const [newCategoryName, setNewCategoryName] = useState("");
   const [pending, startTransition] = useTransition();
+  const categoryInputRef = useRef<HTMLInputElement>(null);
 
   function afterMutate() {
     startTransition(() => router.refresh());
@@ -63,7 +64,19 @@ export function MenuManager({
         {featuredCount}/{MAX_FEATURED_ITEMS} used)
       </p>
 
-      <MenuImport />
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">Add your menu</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <MenuImport />
+          <button
+            type="button"
+            onClick={() => categoryInputRef.current?.focus()}
+            className="self-start rounded-full border border-border px-4 py-2 text-sm text-muted transition hover:border-brand hover:text-brand"
+          >
+            Enter manually
+          </button>
+        </div>
+      </div>
 
       <form
         onSubmit={(e) => {
@@ -75,6 +88,7 @@ export function MenuManager({
         className="flex gap-2"
       >
         <input
+          ref={categoryInputRef}
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
           placeholder="New category name (e.g. Drinks, Mains)"

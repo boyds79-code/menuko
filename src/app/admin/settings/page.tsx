@@ -7,11 +7,23 @@ export default async function AdminSettingsPage() {
   const ctx = await requireStaff("owner");
   const supabase = await createClient();
 
-  const { data: restaurant } = await supabase
-    .from("restaurants")
-    .select("name, address, about, business_type, menu_template, payment_qr_url, payment_link, logo_url")
-    .eq("id", ctx.restaurantId)
-    .single();
+  const [{ data: restaurant }, { data: categories }, { data: items }] = await Promise.all([
+    supabase
+      .from("restaurants")
+      .select("name, address, about, business_type, menu_template, payment_qr_url, payment_link, logo_url")
+      .eq("id", ctx.restaurantId)
+      .single(),
+    supabase
+      .from("menu_categories")
+      .select("id, name, sort_order")
+      .eq("restaurant_id", ctx.restaurantId)
+      .order("sort_order"),
+    supabase
+      .from("menu_items")
+      .select("id, category_id, name, price, photo_url")
+      .eq("restaurant_id", ctx.restaurantId)
+      .order("sort_order"),
+  ]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
@@ -26,6 +38,8 @@ export default async function AdminSettingsPage() {
               }
             : null
         }
+        categories={categories ?? []}
+        items={items ?? []}
       />
     </main>
   );

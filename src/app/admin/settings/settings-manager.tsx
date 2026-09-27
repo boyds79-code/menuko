@@ -17,14 +17,8 @@ const TEMPLATE_PALETTES: Record<MenuTemplateId, { brand: string; background: str
   botanical: { brand: "#1e3a2b", background: "#f7f9f6", card: "#eff3ee", foreground: "#212623" },
 };
 
-// Generic placeholder menu for the "preview a design" sample — deliberately
-// unrelated to the owner's real dishes, since this is about showing the
-// design's look, not this restaurant's actual menu.
-const SAMPLE_ITEMS: { name: string; price: number; photo: string }[] = [
-  { name: "Grilled Chicken Plate", price: 220, photo: "/marketing/book-japanese.webp" },
-  { name: "Beef Pasta", price: 260, photo: "/marketing/book-italian.webp" },
-  { name: "Garden Salad", price: 150, photo: "/marketing/book-korean.webp" },
-];
+type MenuCategory = { id: string; name: string; sort_order: number };
+type MenuItem = { id: string; category_id: string | null; name: string; price: number; photo_url: string | null };
 
 type Restaurant = {
   name: string;
@@ -40,9 +34,13 @@ type Restaurant = {
 export function SettingsManager({
   restaurantId,
   initial,
+  categories,
+  items,
 }: {
   restaurantId: string;
   initial: Restaurant;
+  categories: MenuCategory[];
+  items: MenuItem[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial?.name ?? "");
@@ -123,26 +121,27 @@ export function SettingsManager({
           ))}
         </div>
 
-        {candidateTemplate === menuTemplate ? (
-          <p className="text-xs text-muted">This is your live design.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <PaletteCard templateId={candidateTemplate} />
-            <p className="text-xs text-muted">Not applied yet.</p>
-            <button
-              type="button"
-              onClick={() => setSampleOpen(true)}
-              className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
-            >
-              Preview this design
-            </button>
-          </div>
-        )}
+        <div className="flex flex-col gap-3">
+          <PaletteCard templateId={candidateTemplate} />
+          <p className="text-xs text-muted">
+            {candidateTemplate === menuTemplate ? "This is your live design." : "Not applied yet."}
+          </p>
+          <button
+            type="button"
+            onClick={() => setSampleOpen(true)}
+            className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+          >
+            Preview this design
+          </button>
+        </div>
       </div>
 
       {sampleOpen && (
         <SamplePreviewOverlay
           templateId={candidateTemplate}
+          categories={categories}
+          items={items}
+          isApplied={candidateTemplate === menuTemplate}
           saving={savingTemplate}
           onClose={() => setSampleOpen(false)}
           onApply={() => applyTemplate(candidateTemplate)}
@@ -318,22 +317,29 @@ function PaletteCard({ templateId }: { templateId: MenuTemplateId }) {
   );
 }
 
-// A full-screen sample of the candidate design — generic placeholder dishes
-// styled with the real [data-menu-theme] CSS scope (same tokens the actual
-// customer order page uses), so it looks exactly like the real thing without
-// touching the owner's actual menu data. "Apply" is the only thing that
-// commits it.
+// A full-screen preview of the candidate design using the restaurant's real
+// menu (categories/items), styled with the real [data-menu-theme] CSS scope
+// (same tokens the actual customer order page uses) — so it looks exactly
+// like the real thing without writing anything until "Apply" is pressed.
 function SamplePreviewOverlay({
   templateId,
+  categories,
+  items,
+  isApplied,
   saving,
   onClose,
   onApply,
 }: {
   templateId: MenuTemplateId;
+  categories: MenuCategory[];
+  items: MenuItem[];
+  isApplied: boolean;
   saving: boolean;
   onClose: () => void;
   onApply: () => void;
 }) {
+  const hasItems = items.length > 0;
+
   return (
     <div
       data-menu-theme={templateId}
@@ -342,9 +348,9 @@ function SamplePreviewOverlay({
       <div className="flex items-center justify-between gap-3 border-b border-border bg-header-dark px-4 py-4">
         <div>
           <p className="text-xs font-semibold tracking-wide text-header-dark-foreground/70 uppercase">
-            Sample preview — not your real menu
+            {isApplied ? "Your live menu" : "Preview — not applied yet"}
           </p>
-          <h2 className="text-lg font-bold text-header-dark-foreground">Sample Restaurant</h2>
+          <h2 className="text-lg font-bold text-header-dark-foreground">Menu preview</h2>
         </div>
         <button
           type="button"
@@ -356,34 +362,57 @@ function SamplePreviewOverlay({
       </div>
 
       <div className="flex-1 px-4 pt-5">
-        <span className="mb-3 inline-block text-xs font-bold tracking-wide text-brand uppercase">
-          Mains
-        </span>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {SAMPLE_ITEMS.map((item) => (
-            <div key={item.name} className="overflow-hidden rounded-xl border border-border bg-card">
-              <div className="relative h-24 bg-background">
-                <Image src={item.photo} alt={item.name} fill className="object-cover" sizes="200px" />
+        {hasItems ? (
+          categories.map((category) => {
+            const categoryItems = items.filter((item) => item.category_id === category.id);
+            if (categoryItems.length === 0) return null;
+            return (
+              <div key={category.id} className="mb-6">
+                <span className="mb-3 inline-block text-xs font-bold tracking-wide text-brand uppercase">
+                  {category.name}
+                </span>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {categoryItems.map((item) => (
+                    <div key={item.id} className="overflow-hidden rounded-xl border border-border bg-card">
+                      <div className="relative h-24 bg-background">
+                        {item.photo_url ? (
+                          <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="200px" />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-xs text-muted">
+                            No photo
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-2.5">
+                        <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
+                        <p className="text-sm font-semibold text-brand">₱{item.price}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="p-2.5">
-                <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
-                <p className="text-sm font-semibold text-brand">₱{item.price}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            );
+          })
+        ) : (
+          <p className="text-sm text-muted">
+            Add a category and a few items in the Menu tab first — then this preview will show them
+            styled with this design.
+          </p>
+        )}
       </div>
 
-      <div className="sticky bottom-0 border-t border-border bg-background p-4">
-        <button
-          type="button"
-          onClick={onApply}
-          disabled={saving}
-          className="w-full rounded-full bg-brand py-3 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
-        >
-          {saving ? "Applying…" : "Apply this design"}
-        </button>
-      </div>
+      {!isApplied && (
+        <div className="sticky bottom-0 border-t border-border bg-background p-4">
+          <button
+            type="button"
+            onClick={onApply}
+            disabled={saving}
+            className="w-full rounded-full bg-brand py-3 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+          >
+            {saving ? "Applying…" : "Apply this design"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

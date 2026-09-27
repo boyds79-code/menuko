@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
@@ -33,6 +33,7 @@ export function MenuSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const categoryInputRef = useRef<TextInput>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [menuTemplate, setMenuTemplate] = useState<MobileMenuTemplateId>("terracotta");
   // The chip the owner has tapped to browse, which may not be applied yet —
@@ -174,10 +175,20 @@ export function MenuSection() {
         ⭐ marks up to {MAX_FEATURED_ITEMS} items shown as &ldquo;Our Best!&rdquo; on the customer menu ({featuredCount}/{MAX_FEATURED_ITEMS} used)
       </Text>
 
-      {restaurantId && <MenuImportModal restaurantId={restaurantId} onImported={load} />}
+      <Text style={styles.addMenuLabel}>Add your menu</Text>
+      <View style={styles.addMenuRow}>
+        {restaurantId && <MenuImportModal restaurantId={restaurantId} onImported={load} />}
+        <TouchableOpacity
+          style={styles.manualEntryButton}
+          onPress={() => categoryInputRef.current?.focus()}
+        >
+          <Text style={styles.manualEntryButtonText}>Enter manually</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.addCategoryRow}>
         <TextInput
+          ref={categoryInputRef}
           value={newCategoryName}
           onChangeText={setNewCategoryName}
           placeholder="New category (e.g. Drinks, Mains)"
@@ -639,6 +650,19 @@ function ItemRow({
 const styles = StyleSheet.create({
   content: { gap: 16 },
   featuredHint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
+  addMenuLabel: { fontSize: 13, fontWeight: "700" },
+  addMenuRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  manualEntryButton: {
+    borderWidth: 1,
+    borderColor: "#ece2d3",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+  },
+  manualEntryButtonText: { fontSize: 13, fontWeight: "600", color: "#8a7c68" },
   addCategoryRow: { flexDirection: "row", gap: 8 },
   input: {
     borderWidth: 1,
