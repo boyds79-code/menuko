@@ -89,33 +89,52 @@ export function OnboardingChecklist({
           </span>
         </summary>
         <ul className="flex flex-col gap-2 px-4 pb-4">
-          {steps.map((step) => (
-            <li key={step.label} className="flex items-start justify-between gap-3 rounded-lg bg-background p-3">
-              <div className="flex items-start gap-2">
-                <span
-                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] ${
-                    step.done ? "bg-brand text-brand-foreground" : "border border-border text-transparent"
-                  }`}
-                >
-                  ✓
-                </span>
-                <div>
-                  <p className="text-sm font-medium">
-                    {step.label}
-                    {step.optional && <span className="ml-1.5 text-xs font-normal text-muted">(optional)</span>}
-                    {step.done && <span className="ml-1.5 text-xs font-semibold text-brand">Done</span>}
-                  </p>
-                  <p className="text-xs text-muted">{step.hint}</p>
-                </div>
-              </div>
-              <Link
-                href={step.href}
-                className="shrink-0 rounded-full border border-brand px-3 py-1 text-xs font-medium text-brand transition hover:bg-brand hover:text-brand-foreground"
+          {steps.map((step, i) => {
+            const unlocked = steps.slice(0, i).every((s) => s.done);
+            return (
+              <li
+                key={step.label}
+                className={`flex items-start justify-between gap-3 rounded-lg bg-background p-3 ${
+                  unlocked ? "" : "opacity-50"
+                }`}
               >
-                {step.done ? "View" : "Go"}
-              </Link>
-            </li>
-          ))}
+                <div className="flex items-start gap-2">
+                  <span
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] ${
+                      step.done ? "bg-brand text-brand-foreground" : "border border-border text-transparent"
+                    }`}
+                  >
+                    ✓
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {step.label}
+                      {step.optional && <span className="ml-1.5 text-xs font-normal text-muted">(optional)</span>}
+                      {step.done && <span className="ml-1.5 text-xs font-semibold text-brand">Done</span>}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {unlocked ? step.hint : "Finish the step above first."}
+                    </p>
+                  </div>
+                </div>
+                {unlocked ? (
+                  <Link
+                    href={step.href}
+                    className="shrink-0 rounded-full border border-brand px-3 py-1 text-xs font-medium text-brand transition hover:bg-brand hover:text-brand-foreground"
+                  >
+                    {step.done ? "View" : "Go"}
+                  </Link>
+                ) : (
+                  <span
+                    title="Finish the step above first"
+                    className="shrink-0 cursor-not-allowed rounded-full border border-border px-3 py-1 text-xs font-medium text-muted"
+                  >
+                    Locked
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
         <form action={completeOnboarding} className="flex flex-col gap-2 border-t border-brand/20 px-4 py-4">
           <button
