@@ -4,11 +4,8 @@ import { StaffHeader } from "@/components/staff-header";
 import { OnboardingChecklist } from "./onboarding-checklist";
 
 const NAV = [
-  { href: "/admin", label: "Menu" },
-  { href: "/admin/tables", label: "Tables/QR" },
-  { href: "/admin/ads", label: "Ads" },
-  { href: "/admin/accounts", label: "Accounts" },
   { href: "/admin/settings", label: "Settings" },
+  { href: "/admin/ads", label: "Ads" },
   { href: "/admin/analytics", label: "Analytics" },
 ];
 

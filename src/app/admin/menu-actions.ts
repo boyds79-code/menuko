@@ -19,7 +19,7 @@ export async function addCategory(name: string) {
   await supabase
     .from("menu_categories")
     .insert({ restaurant_id: ctx.restaurantId, name: name.trim(), sort_order: count ?? 0 });
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }
 
 export async function renameCategory(categoryId: string, name: string) {
@@ -27,14 +27,14 @@ export async function renameCategory(categoryId: string, name: string) {
   if (!name.trim()) return;
   const supabase = await createClient();
   await supabase.from("menu_categories").update({ name: name.trim() }).eq("id", categoryId);
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }
 
 export async function deleteCategory(categoryId: string) {
   await requireStaff("owner");
   const supabase = await createClient();
   await supabase.from("menu_categories").delete().eq("id", categoryId);
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }
 
 export async function moveCategory(categoryId: string, direction: "up" | "down") {
@@ -63,7 +63,7 @@ export async function moveCategory(categoryId: string, direction: "up" | "down")
     ids.map((id, i) => supabase.from("menu_categories").update({ sort_order: i }).eq("id", id)),
   );
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }
 
 export async function addItem(input: {
@@ -82,7 +82,7 @@ export async function addItem(input: {
     price: input.price,
     photo_url: input.photoUrl,
   });
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }
 
 export async function updateItem(
@@ -117,14 +117,14 @@ export async function updateItem(
       ...(input.isFeatured !== undefined ? { is_featured: input.isFeatured } : {}),
     })
     .eq("id", itemId);
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }
 
 export async function deleteItem(itemId: string) {
   await requireStaff("owner");
   const supabase = await createClient();
   await supabase.from("menu_items").delete().eq("id", itemId);
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }
 
 // Bulk-writes the owner-reviewed draft from the "import menu from photo/PDF"
@@ -177,5 +177,5 @@ export async function importMenu(
     }
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
 }

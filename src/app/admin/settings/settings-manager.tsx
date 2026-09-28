@@ -5,6 +5,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { uploadPhoto } from "@/lib/upload-photo";
 import { updateRestaurant } from "../settings-actions";
+import { MenuManager } from "../menu-manager";
+import { TablesManager } from "../tables/tables-manager";
+import { AccountsManager } from "../accounts/accounts-manager";
 import type { BusinessType } from "@/lib/database.types";
 import { MENU_TEMPLATES, type MenuTemplateId } from "@/lib/menu-templates";
 
@@ -18,7 +21,22 @@ const TEMPLATE_PALETTES: Record<MenuTemplateId, { brand: string; background: str
 };
 
 type MenuCategory = { id: string; name: string; sort_order: number };
-type MenuItem = { id: string; category_id: string | null; name: string; price: number; photo_url: string | null };
+type MenuItem = {
+  id: string;
+  category_id: string | null;
+  name: string;
+  price: number;
+  photo_url: string | null;
+  is_available: boolean;
+  sort_order: number;
+  description: string | null;
+  ingredients: string | null;
+  allergy_info: string | null;
+  cook_time_minutes: number | null;
+  is_featured: boolean;
+};
+type Table = { id: string; label: string; qr_token: string; capacity: number };
+type Account = { id: string; email: string; role: string; created_at: string };
 
 // Shown only until the owner has added real menu items — lets a brand-new
 // restaurant still judge a design's color/style during onboarding, before
@@ -45,11 +63,15 @@ export function SettingsManager({
   initial,
   categories,
   items,
+  tables,
+  accounts,
 }: {
   restaurantId: string;
   initial: Restaurant;
   categories: MenuCategory[];
   items: MenuItem[];
+  tables: Table[];
+  accounts: Account[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial?.name ?? "");
@@ -59,7 +81,6 @@ export function SettingsManager({
   const [menuTemplate, setMenuTemplate] = useState<MenuTemplateId>(initial?.menu_template ?? "terracotta");
   const [candidateTemplate, setCandidateTemplate] = useState<MenuTemplateId>(initial?.menu_template ?? "terracotta");
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [sampleOpen, setSampleOpen] = useState(false);
   const [paymentLink, setPaymentLink] = useState(initial?.payment_link ?? "");
   const [qrUrl, setQrUrl] = useState(initial?.payment_qr_url ?? null);
   const [logoUrl, setLogoUrl] = useState(initial?.logo_url ?? null);
@@ -98,7 +119,6 @@ export function SettingsManager({
       await updateRestaurant({ menuTemplate: id });
       setMenuTemplate(id);
       setCandidateTemplate(id);
-      setSampleOpen(false);
       router.refresh();
     } finally {
       setSavingTemplate(false);
@@ -106,59 +126,8 @@ export function SettingsManager({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold">Menu design</h2>
-        <p className="text-xs text-muted">
-          Applies to your customer-facing web menu. Pick the one that matches your space.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {MENU_TEMPLATES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setCandidateTemplate(t.id)}
-              title={t.description}
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                candidateTemplate === t.id
-                  ? "border-brand bg-brand/10 text-brand"
-                  : "border-border text-muted hover:border-brand hover:text-brand"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <PaletteCard templateId={candidateTemplate} />
-          <p className="text-xs text-muted">
-            {candidateTemplate === menuTemplate ? "This is your live design." : "Not applied yet."}
-          </p>
-          <button
-            type="button"
-            onClick={() => setSampleOpen(true)}
-            className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
-          >
-            Preview this design
-          </button>
-        </div>
-      </div>
-
-      {sampleOpen && (
-        <SamplePreviewOverlay
-          templateId={candidateTemplate}
-          categories={categories}
-          items={items}
-          isApplied={candidateTemplate === menuTemplate}
-          saving={savingTemplate}
-          onClose={() => setSampleOpen(false)}
-          onApply={() => applyTemplate(candidateTemplate)}
-        />
-      )}
-
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold">Restaurant info</h2>
+    <div className="flex flex-col gap-3">
+      <AccordionSection title="Basic Information">
         <label className="flex flex-col gap-1 text-sm">
           Logo (optional)
           <div className="flex items-center gap-3">
@@ -195,7 +164,7 @@ export function SettingsManager({
           </div>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Restaurant name
+          Restaurant/Cafe name
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -251,10 +220,82 @@ export function SettingsManager({
             restaurant ads by default).
           </span>
         </label>
-      </div>
+      </AccordionSection>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold">Payment info</h2>
+      <AccordionSection title="Menu Setting">
+        <div className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold">Menu design</h3>
+          <p className="text-xs text-muted">
+            Applies to your customer-facing web menu. Pick the one that matches your space.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {MENU_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setCandidateTemplate(t.id)}
+                title={t.description}
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  candidateTemplate === t.id
+                    ? "border-brand bg-brand/10 text-brand"
+                    : "border-border text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <PaletteCard templateId={candidateTemplate} />
+
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+            <MiniMenuPreview templateId={candidateTemplate} categories={categories} items={items} />
+            <div className="flex flex-1 flex-col gap-2">
+              <p className="text-xs text-muted">
+                Most customers browse on their phone, so this preview is shown at roughly the same
+                shape as the mobile order page.
+              </p>
+              <p className="text-xs text-muted">
+                {candidateTemplate === menuTemplate ? "This is your live design." : "Not applied yet."}
+              </p>
+              {candidateTemplate !== menuTemplate && (
+                <button
+                  type="button"
+                  onClick={() => applyTemplate(candidateTemplate)}
+                  disabled={savingTemplate}
+                  className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+                >
+                  {savingTemplate ? "Applying…" : "Apply this design"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <h3 className="mb-3 text-sm font-semibold">Category &amp; item setting</h3>
+          <MenuManager restaurantId={restaurantId} initialCategories={categories} initialItems={items} />
+        </div>
+      </AccordionSection>
+
+      <AccordionSection title="Table Setting">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">
+            Each table gets its own QR code automatically — open a table below to view or print it.
+          </p>
+          <a
+            href={`/print/${restaurantId}/qr`}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 rounded-full border border-border px-4 py-2 text-xs text-muted transition hover:border-brand hover:text-brand"
+          >
+            Print all QR codes
+          </a>
+        </div>
+        <TablesManager initialTables={tables} />
+      </AccordionSection>
+
+      <AccordionSection title="Payment Info">
         <p className="text-xs text-muted">
           Upload a payment QR image you already have (GCash/Maya, etc.) and it&apos;s shown as-is
           on the customer order screen and cashier screen. Menuko never processes payments
@@ -300,8 +341,41 @@ export function SettingsManager({
             />
           </label>
         </div>
-      </div>
+      </AccordionSection>
+
+      <AccordionSection title="Invite Kitchen / Cashier Accounts" badge="Optional">
+        <p className="text-xs text-muted">
+          The free plan supports 1 owner + 1 kitchen + 1 cashier account. Additional accounts
+          require the premium plan.
+        </p>
+        <AccountsManager initialAccounts={accounts} />
+      </AccordionSection>
     </div>
+  );
+}
+
+// Collapsed by default so the page doesn't dump everything on screen at
+// once — tap a header to reveal that section.
+function AccordionSection({
+  title,
+  badge,
+  children,
+}: {
+  title: string;
+  badge?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group rounded-xl border border-border bg-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
+        <span className="text-sm font-semibold">
+          {title}
+          {badge && <span className="ml-2 text-xs font-normal text-muted">({badge})</span>}
+        </span>
+        <span className="text-muted transition group-open:rotate-180">⌄</span>
+      </summary>
+      <div className="flex flex-col gap-3 border-t border-border p-4">{children}</div>
+    </details>
   );
 }
 
@@ -331,119 +405,72 @@ function PaletteCard({ templateId }: { templateId: MenuTemplateId }) {
   );
 }
 
-// A full-screen preview of the candidate design using the restaurant's real
-// menu (categories/items), styled with the real [data-menu-theme] CSS scope
-// (same tokens the actual customer order page uses) — so it looks exactly
-// like the real thing without writing anything until "Apply" is pressed.
-function SamplePreviewOverlay({
+// A small, always-visible preview at roughly a phone's aspect ratio (the
+// same ~9:19.5 shape as the mobile order page) using the restaurant's real
+// menu, styled with the real [data-menu-theme] CSS scope — so an owner can
+// judge a design's look at the size most customers will actually see it,
+// without a full-screen takeover or an extra click to reveal it.
+function MiniMenuPreview({
   templateId,
   categories,
   items,
-  isApplied,
-  saving,
-  onClose,
-  onApply,
 }: {
   templateId: MenuTemplateId;
   categories: MenuCategory[];
   items: MenuItem[];
-  isApplied: boolean;
-  saving: boolean;
-  onClose: () => void;
-  onApply: () => void;
 }) {
   const hasItems = items.length > 0;
 
   return (
     <div
-      data-menu-theme={templateId}
-      className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-background"
+      className="w-[180px] shrink-0 overflow-hidden rounded-[20px] border border-border shadow-sm"
+      style={{ aspectRatio: "9 / 19.5" }}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-header-dark px-4 py-4">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-header-dark-foreground/70 uppercase">
-            {isApplied ? "Your live menu" : "Preview — not applied yet"}
-          </p>
-          <h2 className="text-lg font-bold text-header-dark-foreground">Menu preview</h2>
+      <div data-menu-theme={templateId} className="flex h-full w-full flex-col bg-background">
+        <div className="shrink-0 bg-header-dark px-2.5 py-2">
+          <p className="truncate text-[9px] font-bold text-header-dark-foreground">Your Menu</p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full bg-background/80 px-3 py-1.5 text-sm font-medium text-foreground"
-        >
-          Close
-        </button>
-      </div>
-
-      <div className="flex-1 px-4 pt-5">
-        {hasItems ? (
-          categories.map((category) => {
-            const categoryItems = items.filter((item) => item.category_id === category.id);
-            if (categoryItems.length === 0) return null;
-            return (
-              <div key={category.id} className="mb-6">
-                <span className="mb-3 inline-block text-xs font-bold tracking-wide text-brand uppercase">
-                  {category.name}
-                </span>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {categoryItems.map((item) => (
-                    <div key={item.id} className="overflow-hidden rounded-xl border border-border bg-card">
-                      <div className="relative h-24 bg-background">
-                        {item.photo_url ? (
-                          <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="200px" />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center text-xs text-muted">
-                            No photo
-                          </span>
-                        )}
-                      </div>
-                      <div className="p-2.5">
-                        <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
-                        <p className="text-sm font-semibold text-brand">₱{item.price}</p>
-                      </div>
-                    </div>
-                  ))}
+        <div className="flex-1 overflow-y-auto p-1.5">
+          {hasItems ? (
+            categories.map((category) => {
+              const categoryItems = items.filter((item) => item.category_id === category.id);
+              if (categoryItems.length === 0) return null;
+              return (
+                <div key={category.id} className="mb-2">
+                  <span className="mb-1 inline-block text-[7px] font-bold tracking-wide text-brand uppercase">
+                    {category.name}
+                  </span>
+                  <div className="grid grid-cols-2 gap-1">
+                    {categoryItems.slice(0, 4).map((item) => (
+                      <MiniCard key={item.id} name={item.name} price={item.price} photo={item.photo_url} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="mb-6">
-            <p className="mb-3 text-xs text-muted">
-              Sample dishes — add your own menu in the Menu tab and this preview will show those instead.
-            </p>
-            <span className="mb-3 inline-block text-xs font-bold tracking-wide text-brand uppercase">
-              Sample dishes
-            </span>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              );
+            })
+          ) : (
+            <div className="grid grid-cols-2 gap-1">
               {SAMPLE_ITEMS.map((item) => (
-                <div key={item.name} className="overflow-hidden rounded-xl border border-border bg-card">
-                  <div className="relative h-24 bg-background">
-                    <Image src={item.photo} alt={item.name} fill className="object-cover" sizes="200px" />
-                  </div>
-                  <div className="p-2.5">
-                    <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
-                    <p className="text-sm font-semibold text-brand">₱{item.price}</p>
-                  </div>
-                </div>
+                <MiniCard key={item.name} name={item.name} price={item.price} photo={item.photo} />
               ))}
             </div>
-          </div>
-        )}
-      </div>
-
-      {!isApplied && (
-        <div className="sticky bottom-0 border-t border-border bg-background p-4">
-          <button
-            type="button"
-            onClick={onApply}
-            disabled={saving}
-            className="w-full rounded-full bg-brand py-3 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
-          >
-            {saving ? "Applying…" : "Apply this design"}
-          </button>
+          )}
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function MiniCard({ name, price, photo }: { name: string; price: number; photo: string | null }) {
+  return (
+    <div className="overflow-hidden rounded-md border border-border bg-card">
+      <div className="relative h-8 bg-background">
+        {photo && <Image src={photo} alt={name} fill className="object-cover" sizes="90px" />}
+      </div>
+      <div className="p-1">
+        <p className="truncate text-[6px] font-medium text-foreground">{name}</p>
+        <p className="text-[6px] font-semibold text-brand">₱{price}</p>
+      </div>
     </div>
   );
 }

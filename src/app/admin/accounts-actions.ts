@@ -69,7 +69,7 @@ export async function inviteAccount(
     return { error: insertError.message, success: false };
   }
 
-  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/settings");
   return { error: null, success: true };
 }
 
@@ -91,5 +91,5 @@ export async function removeAccount(accountId: string) {
 
   await admin.from("accounts").delete().eq("id", accountId);
   await admin.auth.admin.deleteUser(accountId);
-  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/settings");
 }

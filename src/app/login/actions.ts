@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 const ROLE_HOME: Record<string, string> = {
-  owner: "/admin",
+  owner: "/admin/settings",
   kitchen: "/kitchen",
   cashier: "/cashier",
 };

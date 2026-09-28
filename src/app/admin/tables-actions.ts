@@ -13,7 +13,7 @@ export async function addTable(label: string, capacity: number) {
     label: label.trim(),
     capacity: capacity > 0 ? capacity : 4,
   });
-  revalidatePath("/admin/tables");
+  revalidatePath("/admin/settings");
 }
 
 export async function renameTable(tableId: string, label: string) {
@@ -21,7 +21,7 @@ export async function renameTable(tableId: string, label: string) {
   if (!label.trim()) return;
   const supabase = await createClient();
   await supabase.from("tables").update({ label: label.trim() }).eq("id", tableId);
-  revalidatePath("/admin/tables");
+  revalidatePath("/admin/settings");
 }
 
 export async function updateTableCapacity(tableId: string, capacity: number) {
@@ -29,7 +29,7 @@ export async function updateTableCapacity(tableId: string, capacity: number) {
   if (!(capacity > 0)) return;
   const supabase = await createClient();
   await supabase.from("tables").update({ capacity }).eq("id", tableId);
-  revalidatePath("/admin/tables");
+  revalidatePath("/admin/settings");
   revalidatePath("/cashier");
 }
 
@@ -37,5 +37,5 @@ export async function deleteTable(tableId: string) {
   await requireStaff("owner");
   const supabase = await createClient();
   await supabase.from("tables").delete().eq("id", tableId);
-  revalidatePath("/admin/tables");
+  revalidatePath("/admin/settings");
 }

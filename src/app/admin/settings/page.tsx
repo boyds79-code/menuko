@@ -7,23 +7,37 @@ export default async function AdminSettingsPage() {
   const ctx = await requireStaff("owner");
   const supabase = await createClient();
 
-  const [{ data: restaurant }, { data: categories }, { data: items }] = await Promise.all([
-    supabase
-      .from("restaurants")
-      .select("name, address, about, business_type, menu_template, payment_qr_url, payment_link, logo_url")
-      .eq("id", ctx.restaurantId)
-      .single(),
-    supabase
-      .from("menu_categories")
-      .select("id, name, sort_order")
-      .eq("restaurant_id", ctx.restaurantId)
-      .order("sort_order"),
-    supabase
-      .from("menu_items")
-      .select("id, category_id, name, price, photo_url")
-      .eq("restaurant_id", ctx.restaurantId)
-      .order("sort_order"),
-  ]);
+  const [{ data: restaurant }, { data: categories }, { data: items }, { data: tables }, { data: accounts }] =
+    await Promise.all([
+      supabase
+        .from("restaurants")
+        .select("name, address, about, business_type, menu_template, payment_qr_url, payment_link, logo_url")
+        .eq("id", ctx.restaurantId)
+        .single(),
+      supabase
+        .from("menu_categories")
+        .select("id, name, sort_order")
+        .eq("restaurant_id", ctx.restaurantId)
+        .order("sort_order"),
+      supabase
+        .from("menu_items")
+        .select(
+          "id, category_id, name, price, photo_url, is_available, sort_order, description, ingredients, allergy_info, cook_time_minutes, is_featured",
+        )
+        .eq("restaurant_id", ctx.restaurantId)
+        .order("sort_order"),
+      supabase
+        .from("tables")
+        .select("id, label, qr_token, capacity")
+        .eq("restaurant_id", ctx.restaurantId)
+        .eq("is_virtual", false)
+        .order("label"),
+      supabase
+        .from("accounts")
+        .select("id, email, role, created_at")
+        .eq("restaurant_id", ctx.restaurantId)
+        .order("role"),
+    ]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4">
@@ -40,6 +54,8 @@ export default async function AdminSettingsPage() {
         }
         categories={categories ?? []}
         items={items ?? []}
+        tables={tables ?? []}
+        accounts={accounts ?? []}
       />
     </main>
   );

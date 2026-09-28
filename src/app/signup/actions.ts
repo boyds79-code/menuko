@@ -78,5 +78,5 @@ export async function signup(
     redirect("/login");
   }
 
-  redirect("/admin");
+  redirect("/admin/settings");
 }
