@@ -9,7 +9,7 @@ import { MenuManager } from "../menu-manager";
 import { TablesManager } from "../tables/tables-manager";
 import { AccountsManager } from "../accounts/accounts-manager";
 import type { BusinessType } from "@/lib/database.types";
-import { MENU_TEMPLATES, type MenuTemplateId } from "@/lib/menu-templates";
+import { MENU_TEMPLATES, DIGITAL_TEMPLATE_STYLES, type MenuTemplateId } from "@/lib/menu-templates";
 import { MENU_LANGUAGES, type MenuLanguage } from "@/lib/menu-i18n";
 
 // Kept in sync with each [data-menu-theme] block in globals.css — just the
@@ -273,7 +273,7 @@ export function SettingsManager({
           <PaletteCard templateId={candidateTemplate} />
 
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-            <MiniMenuPreview templateId={candidateTemplate} categories={categories} items={items} />
+            <MiniMenuPreview templateId={candidateTemplate} restaurantName={name} categories={categories} items={items} />
             <div className="flex flex-1 flex-col gap-2">
               <p className="text-xs text-muted">
                 Most customers browse on their phone, so this preview is shown at roughly the same
@@ -523,71 +523,162 @@ function PaletteCard({ templateId }: { templateId: MenuTemplateId }) {
   );
 }
 
+type PreviewItem = { id: string; name: string; price: number; photo_url: string | null };
+
 // A small, always-visible preview at roughly a phone's aspect ratio (the
-// same ~9:19.5 shape as the mobile order page) using the restaurant's real
-// menu, styled with the real [data-menu-theme] CSS scope — so an owner can
-// judge a design's look at the size most customers will actually see it,
-// without a full-screen takeover or an extra click to reveal it.
+// same ~9:19.5 shape as the customer order page) — not the live
+// [qrToken]/order-client.tsx page itself (that stays untouched; this is a
+// deliberately separate, hand-scaled approximation), but built from the
+// same DIGITAL_TEMPLATE_STYLES tokens and the same card "variant" shapes
+// (see RowCard in order-client.tsx) each template actually uses, so the
+// color *and* layout feel — rounded photo-forward cards vs. Nordic's flat
+// bordered ones, pill vs. underlined category labels — actually match,
+// not just a same-colored generic grid.
 function MiniMenuPreview({
   templateId,
+  restaurantName,
   categories,
   items,
 }: {
   templateId: MenuTemplateId;
+  restaurantName: string;
   categories: MenuCategory[];
   items: MenuItem[];
 }) {
+  const style = DIGITAL_TEMPLATE_STYLES[templateId];
   const hasItems = items.length > 0;
+
+  const displayCategories: { id: string; name: string; items: PreviewItem[] }[] = hasItems
+    ? categories
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          items: items.filter((i) => i.category_id === c.id).map((i) => ({ id: i.id, name: i.name, price: i.price, photo_url: i.photo_url })),
+        }))
+        .filter((c) => c.items.length > 0)
+    : [
+        {
+          id: "sample-starters",
+          name: "Starters",
+          items: SAMPLE_ITEMS.map((s, i) => ({ id: `sample-${i}`, name: s.name, price: s.price, photo_url: s.photo })),
+        },
+      ];
 
   return (
     <div
-      className="w-[180px] shrink-0 overflow-hidden rounded-[20px] border border-border shadow-sm"
+      className="w-[190px] shrink-0 overflow-hidden rounded-[22px] border border-border shadow-sm"
       style={{ aspectRatio: "9 / 19.5" }}
     >
       <div data-menu-theme={templateId} className="flex h-full w-full flex-col bg-background">
-        <div className="shrink-0 bg-header-dark px-2.5 py-2">
-          <p className="truncate text-[9px] font-bold text-header-dark-foreground">Your Menu</p>
-        </div>
-        <div className="flex-1 overflow-y-auto p-1.5">
-          {hasItems ? (
-            categories.map((category) => {
-              const categoryItems = items.filter((item) => item.category_id === category.id);
-              if (categoryItems.length === 0) return null;
-              return (
-                <div key={category.id} className="mb-2">
-                  <span className="mb-1 inline-block text-[7px] font-bold tracking-wide text-brand uppercase">
-                    {category.name}
-                  </span>
-                  <div className="grid grid-cols-2 gap-1">
-                    {categoryItems.slice(0, 4).map((item) => (
-                      <MiniCard key={item.id} name={item.name} price={item.price} photo={item.photo_url} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="grid grid-cols-2 gap-1">
-              {SAMPLE_ITEMS.map((item) => (
-                <MiniCard key={item.name} name={item.name} price={item.price} photo={item.photo} />
-              ))}
+        <MiniHeader templateId={templateId} restaurantName={restaurantName} />
+        <div className="flex-1 overflow-y-auto p-2">
+          {displayCategories.map((category) => (
+            <div key={category.id} className="mb-3">
+              <MiniCategoryLabel templateId={templateId} style={style} name={category.name} />
+              <div className="grid grid-cols-2 gap-1.5">
+                {category.items.slice(0, 6).map((item) => (
+                  <MiniCard key={item.id} variant={style.variant} item={item} />
+                ))}
+              </div>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-function MiniCard({ name, price, photo }: { name: string; price: number; photo: string | null }) {
+// Structural echo of each template's real header (rounded-b-3xl curve for
+// terracotta/botanical, plain dark block for heritage, bordered flat panel
+// for nordic — see DIGITAL_TEMPLATE_STYLES) at a scale that fits a 190px
+// frame instead of a full page.
+function MiniHeader({ templateId, restaurantName }: { templateId: MenuTemplateId; restaurantName: string }) {
+  const roundedBottom = templateId === "terracotta" || templateId === "botanical";
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-card">
-      <div className="relative h-8 bg-background">
-        {photo && <Image src={photo} alt={name} fill className="object-cover" sizes="90px" />}
+    <div
+      className={`shrink-0 bg-header-dark px-2.5 py-2.5 ${roundedBottom ? "rounded-b-xl" : ""} ${
+        templateId === "nordic" ? "border-b border-border" : ""
+      }`}
+    >
+      <p className="truncate text-[10px] font-bold text-header-dark-foreground">{restaurantName || "Your Restaurant"}</p>
+      <p className="mt-0.5 text-[7px] uppercase tracking-wide text-header-dark-foreground/60">Table 1</p>
+    </div>
+  );
+}
+
+function MiniCategoryLabel({
+  templateId,
+  style,
+  name,
+}: {
+  templateId: MenuTemplateId;
+  style: (typeof DIGITAL_TEMPLATE_STYLES)[MenuTemplateId];
+  name: string;
+}) {
+  if (templateId === "terracotta") {
+    return (
+      <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2 py-0.5 text-[7px] font-bold uppercase tracking-wide text-brand">
+        {name}
+      </span>
+    );
+  }
+  return (
+    <span
+      className={`mb-1.5 block text-[7px] font-semibold uppercase tracking-wide ${
+        style.variant === "nordic" ? "border-b border-border pb-0.5 text-foreground" : "border-b border-brand/30 pb-0.5 text-brand"
+      }`}
+    >
+      {name}
+    </span>
+  );
+}
+
+// Mirrors RowCard's three real shapes (order-client.tsx) at a smaller
+// scale: default = rounded card, price badge overlapping the photo;
+// nordic = flat bordered card, price + "+" chip below a divider; botanical
+// = rounded card, plain price line under the name, no badge.
+function MiniCard({ variant, item }: { variant: "default" | "nordic" | "botanical"; item: PreviewItem }) {
+  if (variant === "nordic") {
+    return (
+      <div className="flex flex-col overflow-hidden rounded-md border border-border bg-card">
+        <div className="relative h-11 w-full bg-background">
+          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="90px" />}
+        </div>
+        <div className="flex flex-1 flex-col justify-between p-1">
+          <p className="truncate text-[6.5px] font-bold text-foreground">{item.name}</p>
+          <div className="mt-1 flex items-center justify-between border-t border-border pt-1">
+            <span className="text-[6px] font-semibold text-foreground">₱{item.price}</span>
+            <span className="flex h-2.5 w-2.5 items-center justify-center rounded-sm bg-border text-[6px] font-bold text-foreground">+</span>
+          </div>
+        </div>
       </div>
-      <div className="p-1">
-        <p className="truncate text-[6px] font-medium text-foreground">{name}</p>
-        <p className="text-[6px] font-semibold text-brand">₱{price}</p>
+    );
+  }
+
+  if (variant === "botanical") {
+    return (
+      <div className="overflow-hidden rounded-md border border-border bg-card">
+        <div className="relative h-11 w-full bg-background">
+          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="90px" />}
+        </div>
+        <div className="flex flex-col gap-0.5 p-1">
+          <p className="truncate text-[6.5px] font-semibold text-foreground">{item.name}</p>
+          <p className="text-[6px] font-semibold text-brand">₱{item.price}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-visible rounded-lg border border-border bg-card">
+      <div className="relative h-11 w-full overflow-hidden rounded-t-lg bg-background">
+        {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="90px" />}
+      </div>
+      <div className="relative px-1 pt-2 pb-1">
+        <span className="absolute -top-1.5 left-1 rounded-full bg-brand px-1.5 py-0.5 text-[6px] font-bold whitespace-nowrap text-brand-foreground shadow">
+          ₱{item.price}
+        </span>
+        <p className="truncate text-[6.5px] font-medium text-foreground">{item.name}</p>
       </div>
     </div>
   );
