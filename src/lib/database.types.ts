@@ -713,6 +713,14 @@ export type Database = {
           unit_price_snapshot: number
         }[]
       }
+      get_table_order_summary: {
+        Args: { p_qr_token: string }
+        Returns: {
+          item_name: string
+          menu_item_id: string
+          quantity: number
+        }[]
+      }
       haversine_meters: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number

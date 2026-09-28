@@ -155,6 +155,12 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
     localStorage.setItem("menuko:lang", next);
   }
   const [cart, setCart] = useState<Record<string, number>>({});
+  // What's already been ordered at this table this visit (by anyone,
+  // possibly on a different phone) — shown before the menu so a second or
+  // third person doesn't accidentally duplicate an item someone else
+  // already ordered. Scoped server-side to the table's current occupancy
+  // window (see get_table_order_summary in 0035_table_order_summary.sql).
+  const [tableOrderSummary, setTableOrderSummary] = useState<{ menu_item_id: string; item_name: string; quantity: number }[]>([]);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [status, setStatus] = useState<OrderStatus>("open");
   const [submitting, setSubmitting] = useState(false);
@@ -282,6 +288,40 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
     );
   }
 
+  async function refreshTableSummary() {
+    const { data } = await supabase.rpc("get_table_order_summary", { p_qr_token: qrToken });
+    setTableOrderSummary(data ?? []);
+  }
+
+  useEffect(() => {
+    // Deliberate mount-time fetch — the realtime subscription below keeps
+    // it live after this.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refreshTableSummary();
+    const channel = supabase
+      .channel(`table-orders-${table.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `table_id=eq.${table.id}` },
+        () => refreshTableSummary(),
+      )
+      .on(
+        // order_items has no table_id of its own to filter on — scoped to
+        // the restaurant instead, same tradeoff cashier-board.tsx makes.
+        "postgres_changes",
+        { event: "*", schema: "public", table: "order_items", filter: `restaurant_id=eq.${restaurant.id}` },
+        () => refreshTableSummary(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // Only re-subscribe if the table/restaurant identity actually changes —
+    // supabase/qrToken are stable for the component's lifetime in practice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table.id, restaurant.id]);
+
   // Rehydrate the confirmation screen if the customer reloads the page
   // (e.g. phone screen locked) after already placing an order.
   useEffect(() => {
@@ -396,6 +436,21 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
           <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} lang={lang} />
         </div>
       </header>
+
+      {tableOrderSummary.length > 0 && (
+        <div className="mx-4 mt-3 rounded-lg border border-brand/30 bg-brand/5 p-3">
+          <p className="mb-1.5 text-xs font-bold tracking-wide text-brand uppercase">
+            Already ordered at this table
+          </p>
+          <ul className="flex flex-col gap-0.5 text-sm text-foreground">
+            {tableOrderSummary.map((line) => (
+              <li key={line.menu_item_id}>
+                {line.item_name} × {line.quantity}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {featuredItems.length > 0 && (
         <div className={`flex gap-3 overflow-x-auto px-4 pb-1 ${style.featuredOverlap}`}>
