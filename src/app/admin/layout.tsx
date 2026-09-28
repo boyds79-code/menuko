@@ -18,7 +18,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const [{ data: restaurant }, { count: categoryCount }, { count: itemCount }, { count: tableCount }, { count: staffCount }] =
     await Promise.all([
-      supabase.from("restaurants").select("logo_url").eq("id", ctx.restaurantId).single(),
+      supabase
+        .from("restaurants")
+        .select("logo_url, address, onboarding_completed_at")
+        .eq("id", ctx.restaurantId)
+        .single(),
       supabase
         .from("menu_categories")
         .select("id", { count: "exact", head: true })
@@ -42,13 +46,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <StaffHeader restaurantName={ctx.restaurantName} roleLabel="Owner" nav={NAV} />
-      <OnboardingChecklist
-        hasLogo={!!restaurant?.logo_url}
-        categoryCount={categoryCount ?? 0}
-        itemCount={itemCount ?? 0}
-        tableCount={tableCount ?? 0}
-        staffCount={staffCount ?? 0}
-      />
+      {!restaurant?.onboarding_completed_at && (
+        <OnboardingChecklist
+          hasLogo={!!restaurant?.logo_url}
+          hasAddress={!!restaurant?.address?.trim()}
+          categoryCount={categoryCount ?? 0}
+          itemCount={itemCount ?? 0}
+          tableCount={tableCount ?? 0}
+          staffCount={staffCount ?? 0}
+        />
+      )}
       {children}
     </div>
   );

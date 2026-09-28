@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { completeOnboarding } from "./onboarding-actions";
 
 type Step = {
   label: string;
@@ -11,17 +12,20 @@ type Step = {
 // A getting-started checklist for a brand-new owner — the spec's "easy
 // onboarding" pitch doesn't mean anything if the owner lands on an empty
 // /admin/menu page with no idea what to do first. Pure server component
-// (native <details> for collapse) so it needs no client JS of its own;
-// each step just links to the existing admin page that already does the
-// work — this only adds the guided order and progress state.
+// (native <details> for collapse, a server-action-bound <form> for Save)
+// so it needs no client JS of its own; each step just links to the existing
+// admin page that already does the work — this only adds the guided order,
+// progress state, and a final explicit "done" action.
 export function OnboardingChecklist({
   hasLogo,
+  hasAddress,
   categoryCount,
   itemCount,
   tableCount,
   staffCount,
 }: {
   hasLogo: boolean;
+  hasAddress: boolean;
   categoryCount: number;
   itemCount: number;
   tableCount: number;
@@ -35,6 +39,12 @@ export function OnboardingChecklist({
         : "Name and business type are set from signup — add a logo if you have one (optional).",
       href: "/admin/settings",
       done: true,
+    },
+    {
+      label: "Restaurant address",
+      hint: "Used to confirm you're on-site before approving a customer's cancel/change request, so notifications aren't sent while you're away.",
+      href: "/admin/settings",
+      done: hasAddress,
     },
     {
       label: "Create a menu category",
@@ -93,6 +103,7 @@ export function OnboardingChecklist({
                   <p className="text-sm font-medium">
                     {step.label}
                     {step.optional && <span className="ml-1.5 text-xs font-normal text-muted">(optional)</span>}
+                    {step.done && <span className="ml-1.5 text-xs font-semibold text-brand">Done</span>}
                   </p>
                   <p className="text-xs text-muted">{step.hint}</p>
                 </div>
@@ -106,6 +117,18 @@ export function OnboardingChecklist({
             </li>
           ))}
         </ul>
+        <form action={completeOnboarding} className="flex flex-col gap-2 border-t border-brand/20 px-4 py-4">
+          <button
+            type="submit"
+            disabled={!allRequiredDone}
+            className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Save and finish setup
+          </button>
+          {!allRequiredDone && (
+            <span className="text-xs text-muted">Finish every required step above to enable this.</span>
+          )}
+        </form>
       </details>
     </div>
   );

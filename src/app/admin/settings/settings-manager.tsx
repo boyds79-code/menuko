@@ -20,6 +20,15 @@ const TEMPLATE_PALETTES: Record<MenuTemplateId, { brand: string; background: str
 type MenuCategory = { id: string; name: string; sort_order: number };
 type MenuItem = { id: string; category_id: string | null; name: string; price: number; photo_url: string | null };
 
+// Shown only until the owner has added real menu items — lets a brand-new
+// restaurant still judge a design's color/style during onboarding, before
+// there's anything real to preview.
+const SAMPLE_ITEMS: { name: string; price: number; photo: string }[] = [
+  { name: "Grilled Chicken Plate", price: 220, photo: "/marketing/book-japanese.webp" },
+  { name: "Beef Pasta", price: 260, photo: "/marketing/book-italian.webp" },
+  { name: "Garden Salad", price: 150, photo: "/marketing/book-korean.webp" },
+];
+
 type Restaurant = {
   name: string;
   address: string | null;
@@ -195,13 +204,18 @@ export function SettingsManager({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Address
+          Address <span className="text-red-600">*</span>
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onBlur={() => updateRestaurant({ address })}
+            required
             className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
           />
+          <span className="text-xs text-muted">
+            Required — used to confirm you&apos;re on-site before approving a customer&apos;s cancel/change
+            request, so notifications aren&apos;t sent when you&apos;re away.
+          </span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
           About your restaurant
@@ -394,10 +408,27 @@ function SamplePreviewOverlay({
             );
           })
         ) : (
-          <p className="text-sm text-muted">
-            Add a category and a few items in the Menu tab first — then this preview will show them
-            styled with this design.
-          </p>
+          <div className="mb-6">
+            <p className="mb-3 text-xs text-muted">
+              Sample dishes — add your own menu in the Menu tab and this preview will show those instead.
+            </p>
+            <span className="mb-3 inline-block text-xs font-bold tracking-wide text-brand uppercase">
+              Sample dishes
+            </span>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {SAMPLE_ITEMS.map((item) => (
+                <div key={item.name} className="overflow-hidden rounded-xl border border-border bg-card">
+                  <div className="relative h-24 bg-background">
+                    <Image src={item.photo} alt={item.name} fill className="object-cover" sizes="200px" />
+                  </div>
+                  <div className="p-2.5">
+                    <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
+                    <p className="text-sm font-semibold text-brand">₱{item.price}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
