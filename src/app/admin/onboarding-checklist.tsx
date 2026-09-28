@@ -91,13 +91,8 @@ export function OnboardingChecklist({
         <ul className="flex flex-col gap-2 px-4 pb-4">
           {steps.map((step, i) => {
             const unlocked = steps.slice(0, i).every((s) => s.done);
-            return (
-              <li
-                key={step.label}
-                className={`flex items-start justify-between gap-3 rounded-lg bg-background p-3 ${
-                  unlocked ? "" : "opacity-50"
-                }`}
-              >
+            const rowContent = (
+              <>
                 <div className="flex items-start gap-2">
                   <span
                     className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] ${
@@ -118,12 +113,9 @@ export function OnboardingChecklist({
                   </div>
                 </div>
                 {unlocked ? (
-                  <Link
-                    href={step.href}
-                    className="shrink-0 rounded-full border border-brand px-3 py-1 text-xs font-medium text-brand transition hover:bg-brand hover:text-brand-foreground"
-                  >
+                  <span className="shrink-0 rounded-full border border-brand px-3 py-1 text-xs font-medium text-brand transition group-hover:bg-brand group-hover:text-brand-foreground">
                     {step.done ? "View" : "Go"}
-                  </Link>
+                  </span>
                 ) : (
                   <span
                     title="Finish the step above first"
@@ -131,6 +123,22 @@ export function OnboardingChecklist({
                   >
                     Locked
                   </span>
+                )}
+              </>
+            );
+            return (
+              <li key={step.label}>
+                {unlocked ? (
+                  <Link
+                    href={step.href}
+                    className="group flex items-start justify-between gap-3 rounded-lg bg-background p-3 transition hover:bg-brand/5"
+                  >
+                    {rowContent}
+                  </Link>
+                ) : (
+                  <div className="flex items-start justify-between gap-3 rounded-lg bg-background p-3 opacity-50">
+                    {rowContent}
+                  </div>
                 )}
               </li>
             );
