@@ -272,28 +272,29 @@ export function SettingsManager({
 
           <PaletteCard templateId={candidateTemplate} />
 
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-            <MiniMenuPreview templateId={candidateTemplate} restaurantName={name} categories={categories} items={items} />
-            <div className="flex flex-1 flex-col gap-2">
-              <p className="text-xs text-muted">
-                Most customers browse on their phone, so this preview is shown at roughly the same
-                shape as the mobile order page.
-              </p>
-              <p className="text-xs text-muted">
-                {candidateTemplate === menuTemplate ? "This is your live design." : "Not applied yet."}
-              </p>
-              {candidateTemplate !== menuTemplate && (
-                <button
-                  type="button"
-                  onClick={() => applyTemplate(candidateTemplate)}
-                  disabled={savingTemplate}
-                  className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
-                >
-                  {savingTemplate ? "Applying…" : "Apply this design"}
-                </button>
-              )}
-            </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted">
+              {candidateTemplate === menuTemplate ? "This is your live design." : "Not applied yet."}
+            </p>
+            {candidateTemplate !== menuTemplate && (
+              <button
+                type="button"
+                onClick={() => applyTemplate(candidateTemplate)}
+                disabled={savingTemplate}
+                className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+              >
+                {savingTemplate ? "Applying…" : "Apply this design"}
+              </button>
+            )}
           </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <MiniMenuPreview templateId={candidateTemplate} restaurantName={name} categories={categories} items={items} />
+            <p className="text-xs text-muted">
+              Roughly what customers see on their phone — full menu, scrollable.
+            </p>
+          </div>
+
         </div>
 
         <div className="border-t border-border pt-4">
@@ -565,18 +566,15 @@ function MiniMenuPreview({
       ];
 
   return (
-    <div
-      className="w-[190px] shrink-0 overflow-hidden rounded-[22px] border border-border shadow-sm"
-      style={{ aspectRatio: "9 / 19.5" }}
-    >
-      <div data-menu-theme={templateId} className="flex h-full w-full flex-col bg-background">
+    <div className="w-[300px] max-w-full shrink-0 overflow-hidden rounded-[26px] border border-border shadow-sm">
+      <div data-menu-theme={templateId} className="flex max-h-[640px] w-full flex-col bg-background">
         <MiniHeader templateId={templateId} restaurantName={restaurantName} />
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 overflow-y-auto p-2.5">
           {displayCategories.map((category) => (
-            <div key={category.id} className="mb-3">
+            <div key={category.id} className="mb-3.5">
               <MiniCategoryLabel templateId={templateId} style={style} name={category.name} />
-              <div className="grid grid-cols-2 gap-1.5">
-                {category.items.slice(0, 6).map((item) => (
+              <div className="grid grid-cols-3 gap-2">
+                {category.items.map((item) => (
                   <MiniCard key={item.id} variant={style.variant} item={item} />
                 ))}
               </div>
@@ -600,8 +598,8 @@ function MiniHeader({ templateId, restaurantName }: { templateId: MenuTemplateId
         templateId === "nordic" ? "border-b border-border" : ""
       }`}
     >
-      <p className="truncate text-[10px] font-bold text-header-dark-foreground">{restaurantName || "Your Restaurant"}</p>
-      <p className="mt-0.5 text-[7px] uppercase tracking-wide text-header-dark-foreground/60">Table 1</p>
+      <p className="truncate text-[13px] font-bold text-header-dark-foreground">{restaurantName || "Your Restaurant"}</p>
+      <p className="mt-0.5 text-[9px] uppercase tracking-wide text-header-dark-foreground/60">Table 1</p>
     </div>
   );
 }
@@ -617,14 +615,14 @@ function MiniCategoryLabel({
 }) {
   if (templateId === "terracotta") {
     return (
-      <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2 py-0.5 text-[7px] font-bold uppercase tracking-wide text-brand">
+      <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-brand">
         {name}
       </span>
     );
   }
   return (
     <span
-      className={`mb-1.5 block text-[7px] font-semibold uppercase tracking-wide ${
+      className={`mb-1.5 block text-[9px] font-semibold uppercase tracking-wide ${
         style.variant === "nordic" ? "border-b border-border pb-0.5 text-foreground" : "border-b border-brand/30 pb-0.5 text-brand"
       }`}
     >
@@ -641,14 +639,14 @@ function MiniCard({ variant, item }: { variant: "default" | "nordic" | "botanica
   if (variant === "nordic") {
     return (
       <div className="flex flex-col overflow-hidden rounded-md border border-border bg-card">
-        <div className="relative h-11 w-full bg-background">
-          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="90px" />}
+        <div className="relative h-16 w-full bg-background">
+          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="100px" />}
         </div>
-        <div className="flex flex-1 flex-col justify-between p-1">
-          <p className="truncate text-[6.5px] font-bold text-foreground">{item.name}</p>
+        <div className="flex flex-1 flex-col justify-between p-1.5">
+          <p className="truncate text-[8.5px] font-bold text-foreground">{item.name}</p>
           <div className="mt-1 flex items-center justify-between border-t border-border pt-1">
-            <span className="text-[6px] font-semibold text-foreground">₱{item.price}</span>
-            <span className="flex h-2.5 w-2.5 items-center justify-center rounded-sm bg-border text-[6px] font-bold text-foreground">+</span>
+            <span className="text-[7.5px] font-semibold text-foreground">₱{item.price}</span>
+            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-border text-[8px] font-bold text-foreground">+</span>
           </div>
         </div>
       </div>
@@ -658,12 +656,12 @@ function MiniCard({ variant, item }: { variant: "default" | "nordic" | "botanica
   if (variant === "botanical") {
     return (
       <div className="overflow-hidden rounded-md border border-border bg-card">
-        <div className="relative h-11 w-full bg-background">
-          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="90px" />}
+        <div className="relative h-16 w-full bg-background">
+          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="100px" />}
         </div>
-        <div className="flex flex-col gap-0.5 p-1">
-          <p className="truncate text-[6.5px] font-semibold text-foreground">{item.name}</p>
-          <p className="text-[6px] font-semibold text-brand">₱{item.price}</p>
+        <div className="flex flex-col gap-0.5 p-1.5">
+          <p className="truncate text-[8.5px] font-semibold text-foreground">{item.name}</p>
+          <p className="text-[7.5px] font-semibold text-brand">₱{item.price}</p>
         </div>
       </div>
     );
@@ -671,14 +669,14 @@ function MiniCard({ variant, item }: { variant: "default" | "nordic" | "botanica
 
   return (
     <div className="overflow-visible rounded-lg border border-border bg-card">
-      <div className="relative h-11 w-full overflow-hidden rounded-t-lg bg-background">
-        {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="90px" />}
+      <div className="relative h-16 w-full overflow-hidden rounded-t-lg bg-background">
+        {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="100px" />}
       </div>
-      <div className="relative px-1 pt-2 pb-1">
-        <span className="absolute -top-1.5 left-1 rounded-full bg-brand px-1.5 py-0.5 text-[6px] font-bold whitespace-nowrap text-brand-foreground shadow">
+      <div className="relative px-1.5 pt-2.5 pb-1.5">
+        <span className="absolute -top-2 left-1.5 rounded-full bg-brand px-2 py-0.5 text-[7.5px] font-bold whitespace-nowrap text-brand-foreground shadow">
           ₱{item.price}
         </span>
-        <p className="truncate text-[6.5px] font-medium text-foreground">{item.name}</p>
+        <p className="truncate text-[8.5px] font-medium text-foreground">{item.name}</p>
       </div>
     </div>
   );
