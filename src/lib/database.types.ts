@@ -484,7 +484,6 @@ export type Database = {
           longitude: number | null
           menu_template: string
           name: string
-          onboarding_completed_at: string | null
           payment_link: string | null
           payment_qr_url: string | null
           plan: Database["public"]["Enums"]["restaurant_plan"]
@@ -504,7 +503,6 @@ export type Database = {
           longitude?: number | null
           menu_template?: string
           name: string
-          onboarding_completed_at?: string | null
           payment_link?: string | null
           payment_qr_url?: string | null
           plan?: Database["public"]["Enums"]["restaurant_plan"]
@@ -524,7 +522,6 @@ export type Database = {
           longitude?: number | null
           menu_template?: string
           name?: string
-          onboarding_completed_at?: string | null
           payment_link?: string | null
           payment_qr_url?: string | null
           plan?: Database["public"]["Enums"]["restaurant_plan"]
