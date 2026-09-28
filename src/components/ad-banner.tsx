@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { MenuTemplateId } from "@/lib/menu-templates";
+import type { MenuColorId } from "@/lib/menu-templates";
 
 export type AdContent = {
   headline: string;
@@ -7,7 +7,7 @@ export type AdContent = {
   imageUrl: string | null;
   linkUrl: string | null;
   advertiserName: string;
-  templateId: MenuTemplateId;
+  templateId: MenuColorId;
 };
 
 // Renders one ad banner. Used both on the customer confirmation screen and

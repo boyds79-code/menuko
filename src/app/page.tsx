@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { MENU_TEMPLATES } from "@/lib/menu-templates";
+import { MENU_COLORS } from "@/lib/menu-templates";
 import { IntroBookGate } from "@/components/marketing/IntroBookGate";
 
 // Menuko's own marketing homepage — the company/product's public face at
 // the root domain, distinct from the customer order pages (which use a
-// per-restaurant menu_template) and the admin app. Uses Menuko's own brand
+// per-restaurant menu_layout/menu_color) and the admin app. Uses Menuko's own brand
 // (orange/cream) directly rather than the shared --brand token, since that
 // token is the *admin app's* accent color and isn't meant to double as the
 // company brand.
@@ -224,7 +224,7 @@ function FeaturesSection() {
               <p className="text-sm leading-relaxed text-[#6f6252]">{f.body}</p>
               {f.swatches && (
                 <div className="mt-4 flex flex-col gap-2">
-                  {MENU_TEMPLATES.map((t) => (
+                  {MENU_COLORS.map((t) => (
                     <div key={t.id} className="flex items-center gap-2">
                       <span
                         className="h-3 w-3 shrink-0 rounded-full border border-black/10"

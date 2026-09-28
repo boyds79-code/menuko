@@ -9,12 +9,12 @@ import { MenuManager } from "../menu-manager";
 import { TablesManager } from "../tables/tables-manager";
 import { AccountsManager } from "../accounts/accounts-manager";
 import type { BusinessType } from "@/lib/database.types";
-import { MENU_TEMPLATES, DIGITAL_TEMPLATE_STYLES, type MenuTemplateId } from "@/lib/menu-templates";
+import { MENU_LAYOUTS, MENU_COLORS, type MenuLayoutId, type MenuColorId } from "@/lib/menu-templates";
 import { MENU_LANGUAGES, type MenuLanguage } from "@/lib/menu-i18n";
 
 // Kept in sync with each [data-menu-theme] block in globals.css — just the
-// 4 swatches shown while browsing a design that isn't applied yet.
-const TEMPLATE_PALETTES: Record<MenuTemplateId, { brand: string; background: string; card: string; foreground: string }> = {
+// 4 swatches shown while browsing a color that isn't applied yet.
+const COLOR_PALETTES: Record<MenuColorId, { brand: string; background: string; card: string; foreground: string }> = {
   terracotta: { brand: "#e0623a", background: "#fff8f5", card: "#fff1ea", foreground: "#2b1b17" },
   heritage: { brand: "#c5a880", background: "#faf6ef", card: "#fdfbf7", foreground: "#2c251e" },
   nordic: { brand: "#191c1d", background: "#faf9f7", card: "#ffffff", foreground: "#191c1d" },
@@ -53,7 +53,8 @@ type Restaurant = {
   address: string | null;
   about: string | null;
   business_type: BusinessType;
-  menu_template: MenuTemplateId;
+  menu_layout: MenuLayoutId;
+  menu_color: MenuColorId;
   payment_qr_url: string | null;
   payment_link: string | null;
   logo_url: string | null;
@@ -82,9 +83,11 @@ export function SettingsManager({
   const [address, setAddress] = useState(initial?.address ?? "");
   const [about, setAbout] = useState(initial?.about ?? "");
   const [businessType, setBusinessType] = useState<BusinessType>(initial?.business_type ?? "restaurant");
-  const [menuTemplate, setMenuTemplate] = useState<MenuTemplateId>(initial?.menu_template ?? "terracotta");
-  const [candidateTemplate, setCandidateTemplate] = useState<MenuTemplateId>(initial?.menu_template ?? "terracotta");
-  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [menuLayout, setMenuLayout] = useState<MenuLayoutId>(initial?.menu_layout ?? "classic");
+  const [candidateLayout, setCandidateLayout] = useState<MenuLayoutId>(initial?.menu_layout ?? "classic");
+  const [menuColor, setMenuColor] = useState<MenuColorId>(initial?.menu_color ?? "terracotta");
+  const [candidateColor, setCandidateColor] = useState<MenuColorId>(initial?.menu_color ?? "terracotta");
+  const [savingDesign, setSavingDesign] = useState(false);
   const [paymentLink, setPaymentLink] = useState(initial?.payment_link ?? "");
   const [qrUrl, setQrUrl] = useState(initial?.payment_qr_url ?? null);
   const [logoUrl, setLogoUrl] = useState(initial?.logo_url ?? null);
@@ -101,6 +104,7 @@ export function SettingsManager({
 
   const requiredFilledCount = [name, address, about, businessType].filter((v) => v && v.trim()).length;
   const requiredComplete = requiredFilledCount === 4;
+  const designApplied = candidateLayout === menuLayout && candidateColor === menuColor;
 
   function toggleLanguage(code: MenuLanguage) {
     if (code === "en") return; // English is always on — the guaranteed fallback.
@@ -135,15 +139,17 @@ export function SettingsManager({
     }
   }
 
-  async function applyTemplate(id: MenuTemplateId) {
-    setSavingTemplate(true);
+  async function applyDesign(layout: MenuLayoutId, color: MenuColorId) {
+    setSavingDesign(true);
     try {
-      await updateRestaurant({ menuTemplate: id });
-      setMenuTemplate(id);
-      setCandidateTemplate(id);
+      await updateRestaurant({ menuLayout: layout, menuColor: color });
+      setMenuLayout(layout);
+      setMenuColor(color);
+      setCandidateLayout(layout);
+      setCandidateColor(color);
       router.refresh();
     } finally {
-      setSavingTemplate(false);
+      setSavingDesign(false);
     }
   }
 
@@ -250,46 +256,69 @@ export function SettingsManager({
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold">Menu design</h3>
           <p className="text-xs text-muted">
-            Applies to your customer-facing web menu. Pick the one that matches your space.
+            Applies to your customer-facing web menu. Pick a layout and a color that matches your space.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {MENU_TEMPLATES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setCandidateTemplate(t.id)}
-                title={t.description}
-                className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                  candidateTemplate === t.id
-                    ? "border-brand bg-brand/10 text-brand"
-                    : "border-border text-muted hover:border-brand hover:text-brand"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-muted uppercase">Layout</span>
+            <div className="flex flex-wrap gap-2">
+              {MENU_LAYOUTS.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => setCandidateLayout(l.id)}
+                  title={l.description}
+                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                    candidateLayout === l.id
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-border text-muted hover:border-brand hover:text-brand"
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <PaletteCard templateId={candidateTemplate} />
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-muted uppercase">Color</span>
+            <div className="flex flex-wrap gap-2">
+              {MENU_COLORS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCandidateColor(c.id)}
+                  title={c.description}
+                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                    candidateColor === c.id
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-border text-muted hover:border-brand hover:text-brand"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <PaletteCard colorId={candidateColor} />
 
           <div className="flex flex-col gap-2">
-            <p className="text-xs text-muted">
-              {candidateTemplate === menuTemplate ? "This is your live design." : "Not applied yet."}
-            </p>
-            {candidateTemplate !== menuTemplate && (
+            <p className="text-xs text-muted">{designApplied ? "This is your live design." : "Not applied yet."}</p>
+            {!designApplied && (
               <button
                 type="button"
-                onClick={() => applyTemplate(candidateTemplate)}
-                disabled={savingTemplate}
+                onClick={() => applyDesign(candidateLayout, candidateColor)}
+                disabled={savingDesign}
                 className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
               >
-                {savingTemplate ? "Applying…" : "Apply this design"}
+                {savingDesign ? "Applying…" : "Apply this design"}
               </button>
             )}
           </div>
 
           <div className="flex flex-col items-center gap-2">
-            <MiniMenuPreview templateId={candidateTemplate} restaurantName={name} categories={categories} items={items} />
+            <MiniMenuPreview layoutId={candidateLayout} colorId={candidateColor} restaurantName={name} categories={categories} items={items} />
             <p className="text-xs text-muted">
               Roughly what customers see on their phone — full menu, scrollable.
             </p>
@@ -498,11 +527,11 @@ function AccordionSection({
   );
 }
 
-// The color feel of a template being browsed (not yet applied) — plain
-// labeled swatches, no hex codes, rather than a fake menu (there's nothing
-// real to preview until the owner commits to it).
-function PaletteCard({ templateId }: { templateId: MenuTemplateId }) {
-  const p = TEMPLATE_PALETTES[templateId];
+// The color feel of a color identity being browsed (not yet applied) —
+// plain labeled swatches, no hex codes, rather than a fake menu (there's
+// nothing real to preview until the owner commits to it).
+function PaletteCard({ colorId }: { colorId: MenuColorId }) {
+  const p = COLOR_PALETTES[colorId];
   const swatches: { label: string; color: string }[] = [
     { label: "Brand", color: p.brand },
     { label: "Background", color: p.background },
@@ -529,24 +558,22 @@ type PreviewItem = { id: string; name: string; price: number; photo_url: string 
 // A small, always-visible preview at roughly a phone's aspect ratio (the
 // same ~9:19.5 shape as the customer order page) — not the live
 // [qrToken]/order-client.tsx page itself (that stays untouched; this is a
-// deliberately separate, hand-scaled approximation), but built from the
-// same DIGITAL_TEMPLATE_STYLES tokens and the same card "variant" shapes
-// (see RowCard in order-client.tsx) each template actually uses, so the
-// color *and* layout feel — rounded photo-forward cards vs. Nordic's flat
-// bordered ones, pill vs. underlined category labels — actually match,
-// not just a same-colored generic grid.
+// deliberately separate, hand-scaled approximation), branching its markup
+// by `layoutId` to mirror order-client.tsx's ClassicLayout/MinimalListLayout
+// shapes, and coloring itself via the same `data-menu-theme` CSS scope.
 function MiniMenuPreview({
-  templateId,
+  layoutId,
+  colorId,
   restaurantName,
   categories,
   items,
 }: {
-  templateId: MenuTemplateId;
+  layoutId: MenuLayoutId;
+  colorId: MenuColorId;
   restaurantName: string;
   categories: MenuCategory[];
   items: MenuItem[];
 }) {
-  const style = DIGITAL_TEMPLATE_STYLES[templateId];
   const hasItems = items.length > 0;
 
   const displayCategories: { id: string; name: string; items: PreviewItem[] }[] = hasItems
@@ -567,106 +594,59 @@ function MiniMenuPreview({
 
   return (
     <div className="w-[300px] max-w-full shrink-0 overflow-hidden rounded-[26px] border border-border shadow-sm">
-      <div data-menu-theme={templateId} className="flex max-h-[640px] w-full flex-col bg-background">
-        <MiniHeader templateId={templateId} restaurantName={restaurantName} />
+      <div data-menu-theme={colorId} className="flex max-h-[640px] w-full flex-col bg-background">
+        <MiniHeader layoutId={layoutId} restaurantName={restaurantName} />
         <div className="flex-1 overflow-y-auto p-2.5">
-          {displayCategories.map((category) => (
-            <div key={category.id} className="mb-3.5">
-              <MiniCategoryLabel templateId={templateId} style={style} name={category.name} />
-              <div className="grid grid-cols-3 gap-2">
-                {category.items.map((item) => (
-                  <MiniCard key={item.id} variant={style.variant} item={item} />
-                ))}
+          {displayCategories.map((category) =>
+            layoutId === "minimal-list" ? (
+              <div key={category.id} className="mb-3.5">
+                <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wide text-foreground">{category.name}</span>
+                <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+                  {category.items.map((item) => (
+                    <MiniListRow key={item.id} item={item} />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ) : (
+              <div key={category.id} className="mb-3.5">
+                <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-brand">{category.name}</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {category.items.map((item) => (
+                    <MiniCard key={item.id} item={item} />
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// Structural echo of each template's real header (rounded-b-3xl curve for
-// terracotta/botanical, plain dark block for heritage, bordered flat panel
-// for nordic — see DIGITAL_TEMPLATE_STYLES) at a scale that fits a 190px
-// frame instead of a full page.
-function MiniHeader({ templateId, restaurantName }: { templateId: MenuTemplateId; restaurantName: string }) {
-  const roundedBottom = templateId === "terracotta" || templateId === "botanical";
+// Structural echo of each layout's real header — rounded curved block for
+// Classic, plain bordered bar for Minimal List — at a scale that fits the
+// 300px preview frame instead of a full page.
+function MiniHeader({ layoutId, restaurantName }: { layoutId: MenuLayoutId; restaurantName: string }) {
+  if (layoutId === "minimal-list") {
+    return (
+      <div className="shrink-0 border-b border-border bg-card px-2.5 py-2.5">
+        <p className="truncate text-[13px] font-bold text-foreground">{restaurantName || "Your Restaurant"}</p>
+        <p className="mt-0.5 text-[9px] text-muted">Table 1</p>
+      </div>
+    );
+  }
   return (
-    <div
-      className={`shrink-0 bg-header-dark px-2.5 py-2.5 ${roundedBottom ? "rounded-b-xl" : ""} ${
-        templateId === "nordic" ? "border-b border-border" : ""
-      }`}
-    >
+    <div className="shrink-0 rounded-b-xl bg-header-dark px-2.5 py-2.5">
       <p className="truncate text-[13px] font-bold text-header-dark-foreground">{restaurantName || "Your Restaurant"}</p>
       <p className="mt-0.5 text-[9px] uppercase tracking-wide text-header-dark-foreground/60">Table 1</p>
     </div>
   );
 }
 
-function MiniCategoryLabel({
-  templateId,
-  style,
-  name,
-}: {
-  templateId: MenuTemplateId;
-  style: (typeof DIGITAL_TEMPLATE_STYLES)[MenuTemplateId];
-  name: string;
-}) {
-  if (templateId === "terracotta") {
-    return (
-      <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-brand">
-        {name}
-      </span>
-    );
-  }
-  return (
-    <span
-      className={`mb-1.5 block text-[9px] font-semibold uppercase tracking-wide ${
-        style.variant === "nordic" ? "border-b border-border pb-0.5 text-foreground" : "border-b border-brand/30 pb-0.5 text-brand"
-      }`}
-    >
-      {name}
-    </span>
-  );
-}
-
-// Mirrors RowCard's three real shapes (order-client.tsx) at a smaller
-// scale: default = rounded card, price badge overlapping the photo;
-// nordic = flat bordered card, price + "+" chip below a divider; botanical
-// = rounded card, plain price line under the name, no badge.
-function MiniCard({ variant, item }: { variant: "default" | "nordic" | "botanical"; item: PreviewItem }) {
-  if (variant === "nordic") {
-    return (
-      <div className="flex flex-col overflow-hidden rounded-md border border-border bg-card">
-        <div className="relative h-16 w-full bg-background">
-          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="100px" />}
-        </div>
-        <div className="flex flex-1 flex-col justify-between p-1.5">
-          <p className="truncate text-[8.5px] font-bold text-foreground">{item.name}</p>
-          <div className="mt-1 flex items-center justify-between border-t border-border pt-1">
-            <span className="text-[7.5px] font-semibold text-foreground">₱{item.price}</span>
-            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-border text-[8px] font-bold text-foreground">+</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (variant === "botanical") {
-    return (
-      <div className="overflow-hidden rounded-md border border-border bg-card">
-        <div className="relative h-16 w-full bg-background">
-          {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="100px" />}
-        </div>
-        <div className="flex flex-col gap-0.5 p-1.5">
-          <p className="truncate text-[8.5px] font-semibold text-foreground">{item.name}</p>
-          <p className="text-[7.5px] font-semibold text-brand">₱{item.price}</p>
-        </div>
-      </div>
-    );
-  }
-
+// Mirrors ClassicLayout's RowCard shape (order-client.tsx) at a smaller
+// scale: rounded card, price badge overlapping the photo.
+function MiniCard({ item }: { item: PreviewItem }) {
   return (
     <div className="overflow-visible rounded-lg border border-border bg-card">
       <div className="relative h-16 w-full overflow-hidden rounded-t-lg bg-background">
@@ -678,6 +658,23 @@ function MiniCard({ variant, item }: { variant: "default" | "nordic" | "botanica
         </span>
         <p className="truncate text-[8.5px] font-medium text-foreground">{item.name}</p>
       </div>
+    </div>
+  );
+}
+
+// Mirrors MinimalListLayout's list row shape (order-client.tsx): small
+// square thumbnail, name + price, a round "+" chip.
+function MiniListRow({ item }: { item: PreviewItem }) {
+  return (
+    <div className="flex items-center gap-2 p-1.5">
+      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-background">
+        {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="32px" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[8.5px] font-medium text-foreground">{item.name}</p>
+        <p className="text-[7.5px] font-semibold text-brand">₱{item.price}</p>
+      </div>
+      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[8px] font-bold text-brand">+</span>
     </div>
   );
 }

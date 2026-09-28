@@ -1,17 +1,18 @@
-// Shared design tokens for the customer-facing menu templates
-// (order-client.tsx).
+// Shared design tokens for the customer-facing menu (order-client.tsx).
 //
-// Each template also gets its own independent color palette and type pairing
-// via a `[data-menu-theme="<id>"]` CSS scope in globals.css (see that file) —
-// the classes below only carry the *shape*/layout differences (rounded vs.
-// square, filled pill vs. hairline label, etc.); the actual bg-brand/
-// text-brand/etc. colors they reference resolve differently per template
-// automatically through that CSS scope.
+// The menu design is two independent axes:
+//   - `MenuLayoutId` — the structural shape (header, category grouping, card
+//     shape). Classic is the original shape (all 4 old templates folded into
+//     one); Minimal List is a flatter, list-row shape modeled on a simple
+//     printed-menu look.
+//   - `MenuColorId` — a color identity with its own palette and type pairing
+//     via a `[data-menu-theme="<id>"]` CSS scope in globals.css (see that
+//     file). Any color can be paired with any layout.
 
-export type MenuTemplateId = "terracotta" | "heritage" | "nordic" | "botanical";
+export type MenuColorId = "terracotta" | "heritage" | "nordic" | "botanical";
 
-export const MENU_TEMPLATES: {
-  id: MenuTemplateId;
+export const MENU_COLORS: {
+  id: MenuColorId;
   label: string;
   description: string;
 }[] = [
@@ -37,72 +38,29 @@ export const MENU_TEMPLATES: {
   },
 ];
 
-export function isMenuTemplateId(value: string): value is MenuTemplateId {
-  return MENU_TEMPLATES.some((t) => t.id === value);
+export function isMenuColorId(value: string): value is MenuColorId {
+  return MENU_COLORS.some((c) => c.id === value);
 }
 
-// Digital menu (order-client.tsx) style tokens.
-export const DIGITAL_TEMPLATE_STYLES: Record<
-  MenuTemplateId,
+export type MenuLayoutId = "classic" | "minimal-list";
+
+export const MENU_LAYOUTS: {
+  id: MenuLayoutId;
+  label: string;
+  description: string;
+}[] = [
   {
-    page: string;
-    header: string;
-    headerTitle: string;
-    headerSubtitle: string;
-    categoryTitle: string;
-    // Margin pulling the "Our Best" row up so it overlaps the header's
-    // curved bottom edge. Nordic's header has no curve to overlap, so it
-    // uses normal spacing instead.
-    featuredOverlap: string;
-    // Nordic's cards/detail view follow the Stitch prototype's own layout
-    // (flat bordered cards, plain mono prices, item spec codes, a sticky
-    // labeled back bar in the detail view) rather than the shared markup
-    // the other two templates use — this switches the whole component,
-    // not just its classes. Botanical only overrides the item detail view
-    // (real fields only: description/ingredients/allergy/cook time, no
-    // invented provenance copy) — its row cards and review sheet stay on
-    // the shared "default" markup, just recolored via its CSS theme.
-    variant: "default" | "nordic" | "botanical";
-  }
-> = {
-  terracotta: {
-    page: "bg-background",
-    header: "rounded-b-3xl bg-header-dark px-4 pb-14 pt-5",
-    headerTitle: "text-lg font-extrabold text-header-dark-foreground",
-    headerSubtitle: "text-xs text-header-dark-foreground/60",
-    categoryTitle:
-      "mb-2 inline-block rounded-full bg-brand/15 px-3 py-1 text-[13px] font-bold uppercase tracking-wide text-brand",
-    featuredOverlap: "-mt-10",
-    variant: "default",
+    id: "classic",
+    label: "Classic",
+    description: "Rounded header, horizontally scrolling category rows, full-screen item detail — Menuko's original menu shape.",
   },
-  heritage: {
-    page: "bg-background",
-    header: "bg-header-dark px-4 pb-14 pt-5",
-    headerTitle: "text-lg font-extrabold tracking-wide text-header-dark-foreground",
-    headerSubtitle: "text-xs uppercase tracking-[0.2em] text-header-dark-foreground/60",
-    categoryTitle:
-      "mb-2 border-b border-brand/40 pb-1 text-[13px] font-semibold uppercase tracking-[0.2em] text-brand",
-    featuredOverlap: "-mt-10",
-    variant: "default",
+  {
+    id: "minimal-list",
+    label: "Minimal List",
+    description: "Compact header, one promo banner, flat list-style item rows — closest to a printed menu.",
   },
-  nordic: {
-    page: "bg-background",
-    header: "border-b border-border bg-header-dark px-4 pb-5 pt-5",
-    headerTitle: "text-lg font-extrabold tracking-tight text-header-dark-foreground",
-    headerSubtitle: "text-xs uppercase tracking-[0.15em] text-header-dark-foreground/60",
-    categoryTitle:
-      "mb-2 border-b border-border pb-1 text-[13px] font-semibold uppercase tracking-[0.2em] text-foreground",
-    featuredOverlap: "mt-4",
-    variant: "nordic",
-  },
-  botanical: {
-    page: "bg-background",
-    header: "rounded-b-3xl bg-header-dark px-4 pb-14 pt-5",
-    headerTitle: "text-lg font-extrabold tracking-tight text-header-dark-foreground",
-    headerSubtitle: "text-xs uppercase tracking-[0.08em] text-header-dark-foreground/70",
-    categoryTitle:
-      "mb-2 border-b border-brand/25 pb-1 text-[13px] font-semibold uppercase tracking-[0.15em] text-foreground",
-    featuredOverlap: "-mt-10",
-    variant: "botanical",
-  },
-};
+];
+
+export function isMenuLayoutId(value: string): value is MenuLayoutId {
+  return MENU_LAYOUTS.some((l) => l.id === value);
+}

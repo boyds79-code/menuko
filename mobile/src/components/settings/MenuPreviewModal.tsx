@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatPeso } from "@/lib/money";
-import { MOBILE_TEMPLATE_STYLES, type MobileMenuTemplateId, type MobileTemplateStyle } from "@/lib/menu-templates";
+import { MOBILE_COLOR_PALETTES, type MobileMenuColorId, type MobileMenuLayoutId, type MobileColorPalette } from "@/lib/menu-templates";
 
 type Category = { id: string; name: string; sort_order: number };
 type Item = {
@@ -22,20 +22,20 @@ type Item = {
 // A rough, local approximation of the real customer ordering UI — not the
 // real /order/[qrToken] page itself (that needs EXPO_PUBLIC_WEB_ORIGIN,
 // which isn't set until there's a real domain — see the Preview tab), but
-// the same interaction and tone as the selected menu design
-// (Terracotta/Heritage/Nordic — src/lib/menu-templates.ts): featured items
-// in a horizontal row, categories as horizontal-scrolling rows of cards
-// with photos always visible (no accordion), tap a card for a full-screen
-// detail view, a floating "Review Order" bar that opens an order review
-// sheet. None of this places a real order — "Send Order" just confirms the
-// preview closed — and unavailable items are left out, same as the real
-// order page.
+// the same interaction and tone as the selected menu design (Classic vs.
+// Minimal List layout, Terracotta/Heritage/Nordic/Botanical color — see
+// src/lib/menu-templates.ts and the web order-client.tsx it mirrors): tap a
+// card for a full-screen detail view, a floating "Review Order" bar that
+// opens an order review sheet. None of this places a real order — "Send
+// Order" just confirms the preview closed — and unavailable items are left
+// out, same as the real order page.
 export function MenuPreviewModal({
   visible,
   onClose,
   categories,
   items,
-  menuTemplate,
+  menuLayout,
+  menuColor,
   subtitle,
   onApply,
 }: {
@@ -43,7 +43,8 @@ export function MenuPreviewModal({
   onClose: () => void;
   categories: Category[];
   items: Item[];
-  menuTemplate: MobileMenuTemplateId;
+  menuLayout: MobileMenuLayoutId;
+  menuColor: MobileMenuColorId;
   // Sample-browsing mode (MenuSection's "pick a design" flow, sample data,
   // not the owner's real menu) passes both of these; the normal "preview my
   // real live menu" mode passes neither.
@@ -55,7 +56,7 @@ export function MenuPreviewModal({
   const [cartOpen, setCartOpen] = useState(false);
   const available = items.filter((i) => i.is_available);
   const featured = available.filter((i) => i.is_featured).slice(0, 3);
-  const t = MOBILE_TEMPLATE_STYLES[menuTemplate];
+  const p = MOBILE_COLOR_PALETTES[menuColor];
 
   const cartLines = Object.entries(cart)
     .filter(([, qty]) => qty > 0)
@@ -83,7 +84,7 @@ export function MenuPreviewModal({
       onRequestClose={close}
       onDismiss={close}
     >
-      <SafeAreaView style={[styles.safe, { backgroundColor: t.pageBackground }]} edges={["top", "bottom"]}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: p.pageBackground }]} edges={["top", "bottom"]}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeButton} onPress={close} hitSlop={10}>
             <Text style={styles.closeIcon}>✕</Text>
@@ -95,122 +96,21 @@ export function MenuPreviewModal({
             </Text>
           </View>
           {onApply && (
-            <TouchableOpacity style={[styles.applyButton, { backgroundColor: t.addButtonColor }]} onPress={onApply}>
+            <TouchableOpacity style={[styles.applyButton, { backgroundColor: p.brand }]} onPress={onApply}>
               <Text style={styles.applyButtonText}>Apply</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
-          {featured.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.featuredRow}>
-              {featured.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.featuredCard}
-                  activeOpacity={0.85}
-                  onPress={() => setDetailItem(item)}
-                >
-                  {item.photo_url ? (
-                    <Image source={{ uri: item.photo_url }} style={styles.featuredImage} />
-                  ) : (
-                    <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
-                      <Text style={styles.photoPlaceholder}>Menuko</Text>
-                    </View>
-                  )}
-                  <View style={styles.featuredOverlay} />
-                  <View style={[styles.featuredBadge, { backgroundColor: t.addButtonColor }]}>
-                    <Text style={styles.featuredBadgeText}>Our Best!</Text>
-                  </View>
-                  <Text style={styles.featuredName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-
-          {categories.map((category) => {
-            const categoryItems = available.filter((i) => i.category_id === category.id);
-            if (categoryItems.length === 0) return null;
-            return (
-              <View key={category.id} style={styles.categorySection}>
-                <Text
-                  style={[
-                    styles.categoryTitle,
-                    { color: t.categoryLabelColor },
-                    t.categoryLabelUppercase && styles.categoryTitleUppercase,
-                    t.categoryLabelTracked && styles.categoryTitleTracked,
-                    t.categoryUnderline && {
-                      borderBottomWidth: 1.5,
-                      borderBottomColor: t.categoryLabelColor,
-                      paddingBottom: 2,
-                    },
-                    t.categoryLabelBackground && {
-                      backgroundColor: t.categoryLabelBackground,
-                      borderRadius: t.categoryLabelRadius,
-                      paddingHorizontal: 10,
-                      paddingVertical: 3,
-                      alignSelf: "flex-start",
-                    },
-                  ]}
-                >
-                  {category.name}
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
-                  {categoryItems.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[
-                        styles.rowCard,
-                        {
-                          backgroundColor: t.cardBackground,
-                          borderColor: t.cardBorderColor,
-                          borderWidth: t.cardBorderWidth,
-                          borderRadius: t.cardBorderRadius,
-                        },
-                      ]}
-                      activeOpacity={0.8}
-                      onPress={() => setDetailItem(item)}
-                    >
-                      <View
-                        style={[
-                          styles.rowCardPhoto,
-                          {
-                            backgroundColor: t.photoBackground,
-                            borderTopLeftRadius: t.cardBorderRadius,
-                            borderTopRightRadius: t.cardBorderRadius,
-                          },
-                        ]}
-                      >
-                        {item.photo_url ? (
-                          <Image source={{ uri: item.photo_url }} style={styles.rowCardImage} />
-                        ) : (
-                          <Text style={styles.photoPlaceholder}>Menuko</Text>
-                        )}
-                      </View>
-                      <View style={styles.rowCardTextWrap}>
-                        <View style={[styles.rowCardPriceBadge, { backgroundColor: t.addButtonColor }]}>
-                          <Text style={styles.rowCardPriceText}>{formatPeso(item.price)}</Text>
-                        </View>
-                        <Text style={[styles.rowCardName, { color: t.itemNameColor }]} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            );
-          })}
-          {available.length === 0 && (
-            <Text style={styles.empty}>No available menu items yet.</Text>
-          )}
-        </ScrollView>
+        {menuLayout === "minimal-list" ? (
+          <MinimalListMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
+        ) : (
+          <ClassicMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
+        )}
 
         {cartCount > 0 && !detailItem && !cartOpen && (
           <TouchableOpacity
-            style={[styles.checkoutBar, { backgroundColor: t.addButtonColor }]}
+            style={[styles.checkoutBar, { backgroundColor: p.brand }]}
             onPress={() => setCartOpen(true)}
           >
             <Text style={styles.checkoutBarText}>Review Order ({cartCount})</Text>
@@ -230,7 +130,7 @@ export function MenuPreviewModal({
             setDetailItem(null);
             setCartOpen(true);
           }}
-          t={t}
+          p={p}
         />
       )}
 
@@ -243,10 +143,152 @@ export function MenuPreviewModal({
             setCartOpen(false);
             Alert.alert("Preview only", "This is just a design preview — no real order is placed.");
           }}
-          t={t}
+          p={p}
         />
       )}
     </Modal>
+  );
+}
+
+type MenuBodyProps = {
+  categories: Category[];
+  available: Item[];
+  featured: Item[];
+  p: MobileColorPalette;
+  cartCount: number;
+  onOpenItem: (item: Item) => void;
+};
+
+// Menuko's original shape: featured items in a horizontal row, categories
+// as horizontal-scrolling rows of rounded cards with photos always visible
+// (no accordion) — mirrors ClassicLayout/RowCard in the web order-client.tsx.
+function ClassicMenu({ categories, available, featured, p, cartCount, onOpenItem }: MenuBodyProps) {
+  return (
+    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
+      {featured.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.featuredRow}>
+          {featured.map((item) => (
+            <TouchableOpacity key={item.id} style={styles.featuredCard} activeOpacity={0.85} onPress={() => onOpenItem(item)}>
+              {item.photo_url ? (
+                <Image source={{ uri: item.photo_url }} style={styles.featuredImage} />
+              ) : (
+                <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
+                  <Text style={styles.photoPlaceholder}>Menuko</Text>
+                </View>
+              )}
+              <View style={styles.featuredOverlay} />
+              <View style={[styles.featuredBadge, { backgroundColor: p.brand }]}>
+                <Text style={styles.featuredBadgeText}>Our Best!</Text>
+              </View>
+              <Text style={styles.featuredName} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      {categories.map((category) => {
+        const categoryItems = available.filter((i) => i.category_id === category.id);
+        if (categoryItems.length === 0) return null;
+        return (
+          <View key={category.id} style={styles.categorySection}>
+            <Text style={[styles.categoryPillLabel, { backgroundColor: `${p.brand}26`, color: p.brand }]}>{category.name}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
+              {categoryItems.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.rowCard, { backgroundColor: p.cardBackground, borderColor: p.cardBorderColor }]}
+                  activeOpacity={0.8}
+                  onPress={() => onOpenItem(item)}
+                >
+                  <View style={styles.rowCardPhoto}>
+                    {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.rowCardImage} /> : <Text style={styles.photoPlaceholder}>Menuko</Text>}
+                  </View>
+                  <View style={styles.rowCardTextWrap}>
+                    <View style={[styles.rowCardPriceBadge, { backgroundColor: p.brand }]}>
+                      <Text style={styles.rowCardPriceText}>{formatPeso(item.price)}</Text>
+                    </View>
+                    <Text style={[styles.rowCardName, { color: p.foreground }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        );
+      })}
+      {available.length === 0 && <Text style={styles.empty}>No available menu items yet.</Text>}
+    </ScrollView>
+  );
+}
+
+// Benchmarked against a PosBytz-style menu: one promo banner from the
+// owner's "Our Best" picks, then a flat list of item rows per category —
+// mirrors MinimalListLayout in the web order-client.tsx.
+function MinimalListMenu({ categories, available, featured, p, cartCount, onOpenItem }: MenuBodyProps) {
+  const promoItem = featured[0] ?? null;
+  return (
+    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
+      {promoItem && (
+        <TouchableOpacity style={styles.promoBanner} activeOpacity={0.85} onPress={() => onOpenItem(promoItem)}>
+          {promoItem.photo_url ? (
+            <Image source={{ uri: promoItem.photo_url }} style={styles.featuredImage} />
+          ) : (
+            <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
+              <Text style={styles.photoPlaceholder}>Menuko</Text>
+            </View>
+          )}
+          <View style={styles.featuredOverlay} />
+          <View style={[styles.featuredBadge, { backgroundColor: p.brand }]}>
+            <Text style={styles.featuredBadgeText}>Our Best!</Text>
+          </View>
+          <Text style={styles.promoBannerName} numberOfLines={1}>
+            {promoItem.name}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {categories.map((category) => {
+        const categoryItems = available.filter((i) => i.category_id === category.id);
+        if (categoryItems.length === 0) return null;
+        return (
+          <View key={category.id} style={styles.categorySection}>
+            <Text style={styles.categoryFlatLabel}>{category.name}</Text>
+            <View style={[styles.listGroup, { borderColor: p.cardBorderColor, backgroundColor: p.cardBackground }]}>
+              {categoryItems.map((item, idx) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.listRow, idx > 0 && { borderTopWidth: 1, borderTopColor: p.cardBorderColor }]}
+                  activeOpacity={0.7}
+                  onPress={() => onOpenItem(item)}
+                >
+                  <View style={styles.listRowPhoto}>
+                    {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.listRowImage} /> : null}
+                  </View>
+                  <View style={styles.listRowTextWrap}>
+                    <Text style={[styles.listRowName, { color: p.foreground }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    {item.description && (
+                      <Text style={styles.listRowDescription} numberOfLines={1}>
+                        {item.description}
+                      </Text>
+                    )}
+                    <Text style={[styles.listRowPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
+                  </View>
+                  <View style={[styles.listRowAddChip, { backgroundColor: `${p.brand}1a` }]}>
+                    <Text style={[styles.listRowAddChipText, { color: p.brand }]}>+</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+      })}
+      {available.length === 0 && <Text style={styles.empty}>No available menu items yet.</Text>}
+    </ScrollView>
   );
 }
 
@@ -257,7 +299,7 @@ function DetailOverlay({
   onClose,
   canCheckout,
   onGoToCheckout,
-  t,
+  p,
 }: {
   item: Item;
   quantity: number;
@@ -265,10 +307,10 @@ function DetailOverlay({
   onClose: () => void;
   canCheckout: boolean;
   onGoToCheckout: () => void;
-  t: MobileTemplateStyle;
+  p: MobileColorPalette;
 }) {
   return (
-    <View style={[styles.overlay, { backgroundColor: t.cardBackground }]}>
+    <View style={[styles.overlay, { backgroundColor: p.cardBackground }]}>
       <View style={styles.overlayPhoto}>
         {item.photo_url ? (
           <Image source={{ uri: item.photo_url }} style={styles.overlayImage} />
@@ -283,7 +325,7 @@ function DetailOverlay({
       </View>
       <ScrollView contentContainerStyle={styles.overlayContent}>
         <Text style={styles.overlayName}>{item.name}</Text>
-        <Text style={[styles.overlayPrice, { color: t.priceColor }]}>{formatPeso(item.price)}</Text>
+        <Text style={[styles.overlayPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
         {item.description && <Text style={styles.overlayText}>{item.description}</Text>}
         {item.ingredients && (
           <Text style={styles.overlayText}>
@@ -304,7 +346,7 @@ function DetailOverlay({
         <View style={styles.overlayActions}>
           {quantity === 0 ? (
             <TouchableOpacity
-              style={[styles.overlayAddButton, { backgroundColor: t.addButtonColor }]}
+              style={[styles.overlayAddButton, { backgroundColor: p.brand }]}
               onPress={() => onChangeQty(1)}
             >
               <Text style={styles.overlayAddButtonText}>Add to Order</Text>
@@ -336,18 +378,18 @@ function CartSheet({
   total,
   onClose,
   onConfirm,
-  t,
+  p,
 }: {
   lines: { item: Item; quantity: number }[];
   total: number;
   onClose: () => void;
   onConfirm: () => void;
-  t: MobileTemplateStyle;
+  p: MobileColorPalette;
 }) {
   return (
     <View style={styles.sheetBackdrop}>
       <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: t.cardBackground }]}>
+      <View style={[styles.sheet, { backgroundColor: p.cardBackground }]}>
         <View style={styles.sheetHandle} />
         <Text style={styles.sheetTitle}>Review your order</Text>
         {lines.map((line) => (
@@ -362,7 +404,7 @@ function CartSheet({
           <Text style={styles.sheetTotalLabel}>Total</Text>
           <Text style={styles.sheetTotalValue}>{formatPeso(total)}</Text>
         </View>
-        <TouchableOpacity style={[styles.sheetConfirm, { backgroundColor: t.addButtonColor }]} onPress={onConfirm}>
+        <TouchableOpacity style={[styles.sheetConfirm, { backgroundColor: p.brand }]} onPress={onConfirm}>
           <Text style={styles.sheetConfirmText}>Send Order</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.sheetBack} onPress={onClose}>
@@ -435,18 +477,40 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
+  promoBanner: { height: 120, borderRadius: 16, overflow: "hidden" },
+  promoBannerName: {
+    position: "absolute",
+    left: 10,
+    bottom: 12,
+    maxWidth: "70%",
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
   categorySection: { gap: 10 },
-  categoryTitle: { fontSize: 13, fontWeight: "700" },
-  categoryTitleUppercase: { textTransform: "uppercase" },
-  categoryTitleTracked: { letterSpacing: 1.5 },
+  categoryPillLabel: {
+    alignSelf: "flex-start",
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  categoryFlatLabel: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   categoryRow: { flexGrow: 0 },
-  rowCard: { width: 132, marginRight: 10 },
+  rowCard: { width: 132, marginRight: 10, borderWidth: 1, borderRadius: 16, overflow: "visible" },
   rowCardPhoto: {
     width: "100%",
     height: 92,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    backgroundColor: "#f2ede6",
   },
   rowCardImage: { ...StyleSheet.absoluteFill },
   rowCardTextWrap: { position: "relative", paddingHorizontal: 8, paddingTop: 12, paddingBottom: 8 },
@@ -465,6 +529,17 @@ const styles = StyleSheet.create({
   rowCardPriceText: { color: "#ffffff", fontSize: 11, fontWeight: "700" },
   rowCardName: { fontSize: 12, fontWeight: "500", marginTop: 4 },
   photoPlaceholder: { fontSize: 10, color: "#8a7c68" },
+
+  listGroup: { borderWidth: 1, borderRadius: 12, overflow: "hidden" },
+  listRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10 },
+  listRowPhoto: { width: 48, height: 48, borderRadius: 8, overflow: "hidden", backgroundColor: "#f2ede6" },
+  listRowImage: { width: "100%", height: "100%" },
+  listRowTextWrap: { flex: 1, gap: 1 },
+  listRowName: { fontSize: 13, fontWeight: "600" },
+  listRowDescription: { fontSize: 11, color: "#8a7c68" },
+  listRowPrice: { fontSize: 12, fontWeight: "700", marginTop: 1 },
+  listRowAddChip: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  listRowAddChipText: { fontSize: 13, fontWeight: "700" },
 
   checkoutBar: {
     position: "absolute",

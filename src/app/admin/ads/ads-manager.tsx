@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdBanner } from "@/components/ad-banner";
-import { MENU_TEMPLATES, type MenuTemplateId } from "@/lib/menu-templates";
+import { MENU_COLORS, type MenuColorId } from "@/lib/menu-templates";
 import { uploadPhoto } from "@/lib/upload-photo";
 import { createAd, updateAd, deleteAd } from "../ads-actions";
 
@@ -18,7 +18,7 @@ type Ad = {
   created_at: string;
 };
 
-function toMenuTemplateId(value: string): MenuTemplateId {
+function toMenuColorId(value: string): MenuColorId {
   return value === "heritage" || value === "nordic" ? value : "terracotta";
 }
 
@@ -42,7 +42,7 @@ export function AdsManager({
           <h2 className="text-sm font-semibold">Your ads</h2>
           {initialAds.map((ad) => (
             <div key={ad.id} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center">
-              <div data-menu-theme={toMenuTemplateId(ad.template_id)} className="flex-1">
+              <div data-menu-theme={toMenuColorId(ad.template_id)} className="flex-1">
                 <AdBanner
                   ad={{
                     headline: ad.headline,
@@ -50,7 +50,7 @@ export function AdsManager({
                     imageUrl: ad.image_url,
                     linkUrl: ad.link_url,
                     advertiserName: restaurantName,
-                    templateId: toMenuTemplateId(ad.template_id),
+                    templateId: toMenuColorId(ad.template_id),
                   }}
                 />
               </div>
@@ -91,7 +91,7 @@ function AdComposer({
   restaurantName: string;
   onMutate: () => void;
 }) {
-  const [templateId, setTemplateId] = useState<MenuTemplateId>("terracotta");
+  const [templateId, setTemplateId] = useState<MenuColorId>("terracotta");
   const [headline, setHeadline] = useState("");
   const [subcopy, setSubcopy] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -130,7 +130,7 @@ function AdComposer({
       <h2 className="text-sm font-semibold">Create a new ad</h2>
 
       <div className="flex flex-wrap gap-2">
-        {MENU_TEMPLATES.map((tpl) => (
+        {MENU_COLORS.map((tpl) => (
           <button
             key={tpl.id}
             type="button"

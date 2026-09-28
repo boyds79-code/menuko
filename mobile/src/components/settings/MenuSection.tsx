@@ -3,7 +3,7 @@ import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } fro
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { pickAndUploadPhoto } from "@/lib/upload-photo";
-import { MOBILE_MENU_TEMPLATES, MOBILE_TEMPLATE_STYLES, type MobileMenuTemplateId } from "@/lib/menu-templates";
+import { MOBILE_MENU_LAYOUTS, MOBILE_MENU_COLORS, MOBILE_COLOR_PALETTES, type MobileMenuLayoutId, type MobileMenuColorId } from "@/lib/menu-templates";
 import { formatPeso } from "@/lib/money";
 import { MenuPreviewModal } from "./MenuPreviewModal";
 import { MenuImportModal } from "./MenuImportModal";
@@ -35,11 +35,13 @@ export function MenuSection() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const categoryInputRef = useRef<TextInput>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [menuTemplate, setMenuTemplate] = useState<MobileMenuTemplateId>("terracotta");
-  // The chip the owner has tapped to browse, which may not be applied yet —
-  // stays equal to menuTemplate until they tap a different one. Only
-  // "Apply" inside the preview modal actually writes menuTemplate.
-  const [candidateTemplate, setCandidateTemplate] = useState<MobileMenuTemplateId>("terracotta");
+  const [menuLayout, setMenuLayout] = useState<MobileMenuLayoutId>("classic");
+  const [menuColor, setMenuColor] = useState<MobileMenuColorId>("terracotta");
+  // The chips the owner has tapped to browse, which may not be applied yet —
+  // stay equal to menuLayout/menuColor until they tap a different one. Only
+  // "Apply" inside the preview modal actually writes menuLayout/menuColor.
+  const [candidateLayout, setCandidateLayout] = useState<MobileMenuLayoutId>("classic");
+  const [candidateColor, setCandidateColor] = useState<MobileMenuColorId>("terracotta");
 
   const load = useCallback(async () => {
     if (!restaurantId) return;
@@ -56,23 +58,30 @@ export function MenuSection() {
         )
         .eq("restaurant_id", restaurantId)
         .order("sort_order"),
-      supabase.from("restaurants").select("menu_template").eq("id", restaurantId).single(),
+      supabase.from("restaurants").select("menu_layout, menu_color").eq("id", restaurantId).single(),
     ]);
     setCategories(cats ?? []);
     setItems(itemRows ?? []);
-    if (restaurant?.menu_template) {
-      const applied = restaurant.menu_template as MobileMenuTemplateId;
-      setMenuTemplate(applied);
-      setCandidateTemplate(applied);
+    if (restaurant?.menu_layout) {
+      const applied = restaurant.menu_layout as MobileMenuLayoutId;
+      setMenuLayout(applied);
+      setCandidateLayout(applied);
+    }
+    if (restaurant?.menu_color) {
+      const applied = restaurant.menu_color as MobileMenuColorId;
+      setMenuColor(applied);
+      setCandidateColor(applied);
     }
   }, [restaurantId]);
 
-  async function applyMenuTemplate(id: MobileMenuTemplateId) {
-    setMenuTemplate(id);
-    setCandidateTemplate(id);
+  async function applyMenuDesign(layout: MobileMenuLayoutId, color: MobileMenuColorId) {
+    setMenuLayout(layout);
+    setMenuColor(color);
+    setCandidateLayout(layout);
+    setCandidateColor(color);
     setPreviewOpen(false);
     if (!restaurantId) return;
-    await supabase.from("restaurants").update({ menu_template: id }).eq("id", restaurantId);
+    await supabase.from("restaurants").update({ menu_layout: layout, menu_color: color }).eq("id", restaurantId);
   }
 
   useEffect(() => {
@@ -233,26 +242,39 @@ export function MenuSection() {
       <View style={styles.designCard}>
         <Text style={styles.designCardTitle}>Menu design</Text>
         <Text style={styles.designCardHint}>Applies to your customer-facing web menu.</Text>
+        <Text style={styles.designAxisLabel}>Layout</Text>
         <View style={styles.templateRow}>
-          {MOBILE_MENU_TEMPLATES.map((t) => (
+          {MOBILE_MENU_LAYOUTS.map((l) => (
             <TouchableOpacity
-              key={t.id}
-              onPress={() => setCandidateTemplate(t.id)}
-              style={[styles.templateChip, candidateTemplate === t.id && styles.templateChipActive]}
+              key={l.id}
+              onPress={() => setCandidateLayout(l.id)}
+              style={[styles.templateChip, candidateLayout === l.id && styles.templateChipActive]}
             >
-              <Text style={styles.templateChipText}>{t.label}</Text>
+              <Text style={styles.templateChipText}>{l.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.designAxisLabel}>Color</Text>
+        <View style={styles.templateRow}>
+          {MOBILE_MENU_COLORS.map((c) => (
+            <TouchableOpacity
+              key={c.id}
+              onPress={() => setCandidateColor(c.id)}
+              style={[styles.templateChip, candidateColor === c.id && styles.templateChipActive]}
+            >
+              <Text style={styles.templateChipText}>{c.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {candidateTemplate === menuTemplate ? (
+        {candidateLayout === menuLayout && candidateColor === menuColor ? (
           <TouchableOpacity onPress={() => setPreviewOpen(true)} activeOpacity={0.85}>
-            <MiniMenuPreview menuTemplate={menuTemplate} categories={categories} items={items} />
+            <MiniMenuPreview menuLayout={menuLayout} menuColor={menuColor} categories={categories} items={items} />
             <Text style={styles.swatchCaption}>This is your live design — tap to see the full preview →</Text>
           </TouchableOpacity>
         ) : (
           <View>
-            <PaletteCard menuTemplate={candidateTemplate} />
+            <PaletteCard menuColor={candidateColor} />
             <Text style={styles.swatchCaption}>Not applied yet</Text>
             <TouchableOpacity style={styles.previewButton} onPress={() => setPreviewOpen(true)}>
               <Text style={styles.previewButtonText}>Preview this design</Text>
@@ -261,39 +283,44 @@ export function MenuSection() {
         )}
       </View>
 
-      {/* Always the real menu, themed as candidateTemplate — previewing a
-          design should show the owner their own items in it, not a fake
-          "Grilled Chicken Plate" mockup. Only offers Apply when browsing a
-          template that isn't already applied. */}
+      {/* Always the real menu, themed as candidateLayout/candidateColor —
+          previewing a design should show the owner their own items in it,
+          not a fake "Grilled Chicken Plate" mockup. Only offers Apply when
+          browsing a design that isn't already applied. */}
       <MenuPreviewModal
         visible={previewOpen}
         onClose={() => setPreviewOpen(false)}
         categories={categories}
         items={items}
-        menuTemplate={candidateTemplate}
-        onApply={candidateTemplate !== menuTemplate ? () => applyMenuTemplate(candidateTemplate) : undefined}
+        menuLayout={candidateLayout}
+        menuColor={candidateColor}
+        onApply={
+          candidateLayout !== menuLayout || candidateColor !== menuColor
+            ? () => applyMenuDesign(candidateLayout, candidateColor)
+            : undefined
+        }
       />
     </View>
   );
 }
 
-// The color feel of a template being browsed (not yet applied) — plain
-// labeled swatches rather than a fake menu, since there's nothing real to
-// preview until the owner commits to it. Tapping it (see caller) opens the
-// sample menu preview, where "Apply" actually commits the change.
-function PaletteCard({ menuTemplate }: { menuTemplate: MobileMenuTemplateId }) {
-  const t = MOBILE_TEMPLATE_STYLES[menuTemplate];
+// The color feel of a color identity being browsed (not yet applied) —
+// plain labeled swatches rather than a fake menu, since there's nothing
+// real to preview until the owner commits to it. Tapping it (see caller)
+// opens the sample menu preview, where "Apply" actually commits the change.
+function PaletteCard({ menuColor }: { menuColor: MobileMenuColorId }) {
+  const p = MOBILE_COLOR_PALETTES[menuColor];
   const swatches = [
-    { label: "Brand", color: t.categoryLabelColor },
-    { label: "Background", color: t.pageBackground },
-    { label: "Card", color: t.cardBackground },
-    { label: "Text", color: t.itemNameColor },
+    { label: "Brand", color: p.brand },
+    { label: "Background", color: p.pageBackground },
+    { label: "Card", color: p.cardBackground },
+    { label: "Text", color: p.foreground },
   ];
   return (
     <View style={styles.paletteCard}>
       {swatches.map((s) => (
         <View key={s.label} style={styles.paletteSwatch}>
-          <View style={[styles.paletteSwatchColor, { backgroundColor: s.color, borderColor: t.cardBorderColor }]} />
+          <View style={[styles.paletteSwatchColor, { backgroundColor: s.color, borderColor: p.cardBorderColor }]} />
           <Text style={styles.paletteSwatchLabel}>{s.label}</Text>
         </View>
       ))}
@@ -302,21 +329,24 @@ function PaletteCard({ menuTemplate }: { menuTemplate: MobileMenuTemplateId }) {
 }
 
 // A larger, real-data glance preview — up to 3 of the owner's own items
-// (photos included), styled with the selected template's tokens, so the
-// tone/shape of the chosen design is actually visible before committing to
-// it, without needing to open the full-screen preview first. Falls back to
-// 2 sample cards when there's no menu data yet. Tapping it (see caller)
-// opens the same full-screen preview, rendered with the real menu.
+// (photos included), styled with the selected design's tokens, so the
+// tone/shape of the chosen layout+color is actually visible before
+// committing to it, without needing to open the full-screen preview first.
+// Falls back to 2 sample cards when there's no menu data yet. Tapping it
+// (see caller) opens the same full-screen preview, rendered with the real
+// menu.
 function MiniMenuPreview({
-  menuTemplate,
+  menuLayout,
+  menuColor,
   categories,
   items,
 }: {
-  menuTemplate: MobileMenuTemplateId;
+  menuLayout: MobileMenuLayoutId;
+  menuColor: MobileMenuColorId;
   categories: Category[];
   items: Item[];
 }) {
-  const t = MOBILE_TEMPLATE_STYLES[menuTemplate];
+  const p = MOBILE_COLOR_PALETTES[menuColor];
   const available = items.filter((i) => i.is_available);
   const firstCategoryWithItems = categories.find((c) => available.some((i) => i.category_id === c.id));
   const sampleItems = firstCategoryWithItems
@@ -331,40 +361,43 @@ function MiniMenuPreview({
           { id: "sample-2", name: "Another Dish", price: 220, photo_url: null },
         ];
 
+  if (menuLayout === "minimal-list") {
+    return (
+      <View style={[styles.miniPreview, { backgroundColor: p.pageBackground }]}>
+        <Text style={[styles.swatchCategoryLabelFlat, { color: p.foreground }]}>{categoryLabel}</Text>
+        <View style={[styles.miniListGroup, { borderColor: p.cardBorderColor, backgroundColor: p.cardBackground }]}>
+          {cards.map((item, idx) => (
+            <View key={item.id} style={[styles.miniListRow, idx > 0 && { borderTopWidth: 1, borderTopColor: p.cardBorderColor }]}>
+              <View style={styles.miniListPhoto}>
+                {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.miniCardImage} /> : null}
+              </View>
+              <View style={styles.miniListTextWrap}>
+                <Text style={[styles.miniCardName, { color: p.foreground }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.miniListPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.miniPreview, { backgroundColor: t.pageBackground }]}>
+    <View style={[styles.miniPreview, { backgroundColor: p.pageBackground }]}>
       <Text
         style={[
           styles.swatchCategoryLabel,
-          { color: t.categoryLabelColor },
-          t.categoryLabelUppercase && { textTransform: "uppercase" },
-          t.categoryLabelTracked && { letterSpacing: 1.5 },
-          t.categoryLabelBackground && {
-            backgroundColor: t.categoryLabelBackground,
-            borderRadius: t.categoryLabelRadius,
-            paddingHorizontal: 8,
-            paddingVertical: 2,
-            alignSelf: "flex-start",
-          },
+          { color: p.brand, backgroundColor: `${p.brand}26` },
         ]}
       >
         {categoryLabel}
       </Text>
       <View style={styles.miniPreviewRow}>
         {cards.map((item) => (
-          <View
-            key={item.id}
-            style={[
-              styles.miniCard,
-              { backgroundColor: t.cardBackground, borderColor: t.cardBorderColor, borderWidth: t.cardBorderWidth, borderRadius: t.cardBorderRadius },
-            ]}
-          >
-            <View
-              style={[
-                styles.miniCardPhoto,
-                { backgroundColor: t.photoBackground, borderTopLeftRadius: t.cardBorderRadius, borderTopRightRadius: t.cardBorderRadius },
-              ]}
-            >
+          <View key={item.id} style={[styles.miniCard, { backgroundColor: p.cardBackground, borderColor: p.cardBorderColor, borderWidth: 1 }]}>
+            <View style={styles.miniCardPhoto}>
               {item.photo_url ? (
                 <Image source={{ uri: item.photo_url }} style={styles.miniCardImage} />
               ) : (
@@ -372,10 +405,10 @@ function MiniMenuPreview({
               )}
             </View>
             <View style={styles.miniCardTextWrap}>
-              <View style={[styles.miniCardPriceBadge, { backgroundColor: t.addButtonColor }]}>
+              <View style={[styles.miniCardPriceBadge, { backgroundColor: p.brand }]}>
                 <Text style={styles.miniCardPriceText}>{formatPeso(item.price)}</Text>
               </View>
-              <Text style={[styles.miniCardName, { color: t.itemNameColor }]} numberOfLines={1}>
+              <Text style={[styles.miniCardName, { color: p.foreground }]} numberOfLines={1}>
                 {item.name}
               </Text>
             </View>
@@ -678,11 +711,22 @@ const styles = StyleSheet.create({
   designCard: { backgroundColor: "#ffffff", borderRadius: 14, borderWidth: 1, borderColor: "#ece2d3", padding: 14, gap: 10 },
   designCardTitle: { fontSize: 14, fontWeight: "700", color: "#ea7c1f" },
   designCardHint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
+  designAxisLabel: { fontSize: 10.5, fontWeight: "700", color: "#8a7c68", textTransform: "uppercase", letterSpacing: 0.4, marginTop: 2 },
   templateRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   templateChip: { borderWidth: 1, borderColor: "#ece2d3", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   templateChipActive: { borderColor: "#ea7c1f", backgroundColor: "#fff0e0" },
   templateChipText: { fontSize: 12, fontWeight: "600" },
-  swatchCategoryLabel: { fontSize: 13, fontWeight: "700" },
+  swatchCategoryLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  swatchCategoryLabelFlat: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   swatchCaption: { fontSize: 12, color: "#8a7c68", textAlign: "center", marginTop: 8 },
   previewButton: {
     marginTop: 10,
@@ -707,11 +751,16 @@ const styles = StyleSheet.create({
   paletteSwatchLabel: { fontSize: 10.5, fontWeight: "700", color: "#3c3327" },
   miniPreview: { borderRadius: 14, padding: 14, marginTop: 4, gap: 10 },
   miniPreviewRow: { flexDirection: "row", gap: 10 },
-  miniCard: { width: 108, overflow: "hidden" },
-  miniCardPhoto: { width: "100%", height: 78, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  miniCard: { width: 108, borderRadius: 12, overflow: "hidden" },
+  miniCardPhoto: { width: "100%", height: 78, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#f2ede6" },
   miniCardImage: { width: "100%", height: "100%" },
   photoPlaceholderText: { fontSize: 10, color: "#8a7c68" },
   miniCardTextWrap: { position: "relative", paddingHorizontal: 8, paddingTop: 10, paddingBottom: 8 },
+  miniListGroup: { borderWidth: 1, borderRadius: 10, overflow: "hidden" },
+  miniListRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 8 },
+  miniListPhoto: { width: 32, height: 32, borderRadius: 6, overflow: "hidden", backgroundColor: "#f2ede6" },
+  miniListTextWrap: { flex: 1, gap: 1 },
+  miniListPrice: { fontSize: 10, fontWeight: "700" },
   miniCardPriceBadge: {
     position: "absolute",
     top: -9,

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isMenuTemplateId } from "@/lib/menu-templates";
+import { isMenuColorId } from "@/lib/menu-templates";
 import { QrPrintView } from "./qr-print-view";
 
 // Public — an owner hands this link to a print shop or opens it on any
@@ -17,7 +17,7 @@ export default async function PrintQrPage({
 
   const { data: restaurant } = await supabase
     .from("restaurants")
-    .select("id, name, menu_template")
+    .select("id, name, menu_color")
     .eq("id", restaurantId)
     .single();
 
@@ -30,7 +30,7 @@ export default async function PrintQrPage({
     .eq("is_virtual", false)
     .order("label");
 
-  const menuTemplate = isMenuTemplateId(restaurant.menu_template) ? restaurant.menu_template : "terracotta";
+  const menuColor = isMenuColorId(restaurant.menu_color) ? restaurant.menu_color : "terracotta";
 
-  return <QrPrintView restaurant={restaurant} tables={tables ?? []} menuTemplate={menuTemplate} />;
+  return <QrPrintView restaurant={restaurant} tables={tables ?? []} menuColor={menuColor} />;
 }

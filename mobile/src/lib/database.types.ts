@@ -483,7 +483,8 @@ export type Database = {
           latitude: number | null
           logo_url: string | null
           longitude: number | null
-          menu_template: string
+          menu_color: string
+          menu_layout: string
           name: string
           payment_link: string | null
           payment_qr_url: string | null
@@ -503,7 +504,8 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
-          menu_template?: string
+          menu_color?: string
+          menu_layout?: string
           name: string
           payment_link?: string | null
           payment_qr_url?: string | null
@@ -523,7 +525,8 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
-          menu_template?: string
+          menu_color?: string
+          menu_layout?: string
           name?: string
           payment_link?: string | null
           payment_qr_url?: string | null

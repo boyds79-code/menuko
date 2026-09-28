@@ -4,14 +4,15 @@ import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { BusinessType } from "@/lib/database.types";
-import type { MenuTemplateId } from "@/lib/menu-templates";
+import type { MenuColorId, MenuLayoutId } from "@/lib/menu-templates";
 
 export async function updateRestaurant(input: {
   name?: string;
   address?: string;
   about?: string;
   businessType?: BusinessType;
-  menuTemplate?: MenuTemplateId;
+  menuLayout?: MenuLayoutId;
+  menuColor?: MenuColorId;
   paymentQrUrl?: string | null;
   paymentLink?: string | null;
   logoUrl?: string | null;
@@ -28,7 +29,8 @@ export async function updateRestaurant(input: {
       ...(input.address !== undefined ? { address: input.address } : {}),
       ...(input.about !== undefined ? { about: input.about } : {}),
       ...(input.businessType !== undefined ? { business_type: input.businessType } : {}),
-      ...(input.menuTemplate !== undefined ? { menu_template: input.menuTemplate } : {}),
+      ...(input.menuLayout !== undefined ? { menu_layout: input.menuLayout } : {}),
+      ...(input.menuColor !== undefined ? { menu_color: input.menuColor } : {}),
       ...(input.paymentQrUrl !== undefined ? { payment_qr_url: input.paymentQrUrl } : {}),
       ...(input.paymentLink !== undefined ? { payment_link: input.paymentLink } : {}),
       ...(input.logoUrl !== undefined ? { logo_url: input.logoUrl } : {}),

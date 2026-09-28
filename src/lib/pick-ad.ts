@@ -1,5 +1,5 @@
 import type { BusinessType } from "@/lib/database.types";
-import type { MenuTemplateId } from "@/lib/menu-templates";
+import type { MenuColorId } from "@/lib/menu-templates";
 
 export type AdCandidate = {
   id: string;
@@ -32,6 +32,6 @@ export function pickCrossPromoAd(
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-export function adTemplateId(ad: AdCandidate): MenuTemplateId {
+export function adTemplateId(ad: AdCandidate): MenuColorId {
   return ad.template_id === "heritage" || ad.template_id === "nordic" ? ad.template_id : "terracotta";
 }

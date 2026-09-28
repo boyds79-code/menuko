@@ -1,6 +1,6 @@
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { isMenuTemplateId } from "@/lib/menu-templates";
+import { isMenuColorId, isMenuLayoutId } from "@/lib/menu-templates";
 import { SettingsManager } from "./settings-manager";
 
 export default async function AdminSettingsPage() {
@@ -12,7 +12,7 @@ export default async function AdminSettingsPage() {
       supabase
         .from("restaurants")
         .select(
-          "name, address, about, business_type, menu_template, payment_qr_url, payment_link, logo_url, grabfood_commission_pct, foodpanda_commission_pct, enabled_languages",
+          "name, address, about, business_type, menu_layout, menu_color, payment_qr_url, payment_link, logo_url, grabfood_commission_pct, foodpanda_commission_pct, enabled_languages",
         )
         .eq("id", ctx.restaurantId)
         .single(),
@@ -50,7 +50,8 @@ export default async function AdminSettingsPage() {
           restaurant
             ? {
                 ...restaurant,
-                menu_template: isMenuTemplateId(restaurant.menu_template) ? restaurant.menu_template : "terracotta",
+                menu_layout: isMenuLayoutId(restaurant.menu_layout) ? restaurant.menu_layout : "classic",
+                menu_color: isMenuColorId(restaurant.menu_color) ? restaurant.menu_color : "terracotta",
               }
             : null
         }

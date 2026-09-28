@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { MenuTemplateId } from "@/lib/menu-templates";
+import type { MenuColorId } from "@/lib/menu-templates";
 
 export async function createAd(input: {
-  templateId: MenuTemplateId;
+  templateId: MenuColorId;
   headline: string;
   subcopy: string;
   imageUrl: string | null;
@@ -29,7 +29,7 @@ export async function createAd(input: {
 export async function updateAd(
   adId: string,
   input: Partial<{
-    templateId: MenuTemplateId;
+    templateId: MenuColorId;
     headline: string;
     subcopy: string;
     imageUrl: string | null;

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { pickCrossPromoAd, adTemplateId, type AdCandidate } from "@/lib/pick-ad";
-import { isMenuTemplateId } from "@/lib/menu-templates";
+import { isMenuColorId, isMenuLayoutId } from "@/lib/menu-templates";
 import type { AdContent } from "@/components/ad-banner";
 import { OrderClient } from "./order-client";
 
@@ -32,7 +32,7 @@ export default async function OrderPage({
       supabase
         .from("restaurants")
         .select(
-          "id, name, about, payment_qr_url, payment_link, business_type, menu_template, plan, translations, enabled_languages",
+          "id, name, about, payment_qr_url, payment_link, business_type, menu_layout, menu_color, plan, translations, enabled_languages",
         )
         .eq("id", table.restaurant_id)
         .single(),
@@ -92,14 +92,16 @@ export default async function OrderPage({
       }
     : null;
 
-  const menuTemplate = isMenuTemplateId(restaurant.menu_template) ? restaurant.menu_template : "terracotta";
+  const menuLayout = isMenuLayoutId(restaurant.menu_layout) ? restaurant.menu_layout : "classic";
+  const menuColor = isMenuColorId(restaurant.menu_color) ? restaurant.menu_color : "terracotta";
 
   return (
     <OrderClient
       qrToken={qrToken}
       table={{ id: table.id, label: table.label }}
       restaurant={restaurant}
-      menuTemplate={menuTemplate}
+      menuLayout={menuLayout}
+      menuColor={menuColor}
       categories={categories ?? []}
       items={items ?? []}
       ad={ad}
