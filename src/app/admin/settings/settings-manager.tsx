@@ -484,7 +484,7 @@ function AccordionSection({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group rounded-xl border border-border bg-card">
+    <details name="settings-accordion" className="group rounded-xl border border-border bg-card">
       <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
         <span className="text-sm font-semibold">
           {title}
