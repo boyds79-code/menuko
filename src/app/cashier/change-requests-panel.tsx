@@ -40,6 +40,8 @@ export function ChangeRequestsPanel({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [denyingId, setDenyingId] = useState<string | null>(null);
   const [denyReason, setDenyReason] = useState("");
+  const [errorId, setErrorId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const supabase = createClient();
   const itemNameById = new Map(menuItems.map((i) => [i.id, i.name]));
 
@@ -77,8 +79,18 @@ export function ChangeRequestsPanel({
 
   async function approve(id: string) {
     setBusyId(id);
+    setErrorId(null);
     try {
-      await supabase.rpc("approve_order_change_request", { p_request_id: id });
+      const { error } = await supabase.rpc("approve_order_change_request", { p_request_id: id });
+      if (error) {
+        // Most likely someone else (owner/cashier) just resolved this same
+        // request — resync with the server instead of trusting our stale
+        // local list.
+        setErrorId(id);
+        setErrorMessage(error.message);
+        refresh();
+        return;
+      }
       setRequests((prev) => prev.filter((r) => r.id !== id));
     } finally {
       setBusyId(null);
@@ -87,8 +99,18 @@ export function ChangeRequestsPanel({
 
   async function deny(id: string) {
     setBusyId(id);
+    setErrorId(null);
     try {
-      await supabase.rpc("deny_order_change_request", { p_request_id: id, p_reason: denyReason || undefined });
+      const { error } = await supabase.rpc("deny_order_change_request", {
+        p_request_id: id,
+        p_reason: denyReason || undefined,
+      });
+      if (error) {
+        setErrorId(id);
+        setErrorMessage(error.message);
+        refresh();
+        return;
+      }
       setRequests((prev) => prev.filter((r) => r.id !== id));
       setDenyingId(null);
       setDenyReason("");
@@ -154,6 +176,10 @@ export function ChangeRequestsPanel({
             )}
 
             {req.note && <p className="mb-3 text-xs italic text-muted">&ldquo;{req.note}&rdquo;</p>}
+
+            {errorId === req.id && errorMessage && (
+              <p className="mb-3 text-sm text-red-600">{errorMessage}</p>
+            )}
 
             {denyingId === req.id ? (
               <div className="flex items-center gap-2">
