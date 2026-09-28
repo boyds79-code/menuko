@@ -8,7 +8,7 @@ import { formatPeso } from "@/lib/money";
 import { MenuPreviewModal } from "./MenuPreviewModal";
 import { MenuImportModal } from "./MenuImportModal";
 
-type Category = { id: string; name: string; sort_order: number };
+type Category = { id: string; name: string; sort_order: number; parent_id: string | null };
 type Item = {
   id: string;
   category_id: string | null;
@@ -33,6 +33,7 @@ export function MenuSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryParentId, setNewCategoryParentId] = useState<string | null>(null);
   const categoryInputRef = useRef<TextInput>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [menuLayout, setMenuLayout] = useState<MobileMenuLayoutId>("classic");
@@ -48,7 +49,7 @@ export function MenuSection() {
     const [{ data: cats }, { data: itemRows }, { data: restaurant }] = await Promise.all([
       supabase
         .from("menu_categories")
-        .select("id, name, sort_order")
+        .select("id, name, sort_order, parent_id")
         .eq("restaurant_id", restaurantId)
         .order("sort_order"),
       supabase
@@ -93,10 +94,18 @@ export function MenuSection() {
 
   async function addCategory() {
     if (!newCategoryName.trim() || !restaurantId) return;
-    await supabase
-      .from("menu_categories")
-      .insert({ restaurant_id: restaurantId, name: newCategoryName.trim(), sort_order: categories.length });
+    // New categories go to the end of their own sibling group (same
+    // parent_id) — mixing a subcategory's count with its major category's
+    // would misorder both.
+    const siblingCount = categories.filter((c) => c.parent_id === newCategoryParentId).length;
+    await supabase.from("menu_categories").insert({
+      restaurant_id: restaurantId,
+      name: newCategoryName.trim(),
+      parent_id: newCategoryParentId,
+      sort_order: siblingCount,
+    });
     setNewCategoryName("");
+    setNewCategoryParentId(null);
     load();
   }
 
@@ -116,7 +125,11 @@ export function MenuSection() {
   // client-side here since RLS already lets the owner write these rows
   // directly, no server action needed.
   async function moveCategory(categoryId: string, direction: "up" | "down") {
-    const ids = categories.map((c) => c.id);
+    // Only reorder among siblings (same parent_id) — a subcategory moving up
+    // should never cross into its major category's own ordering.
+    const self = categories.find((c) => c.id === categoryId);
+    if (!self) return;
+    const ids = categories.filter((c) => c.parent_id === self.parent_id).map((c) => c.id);
     const index = ids.indexOf(categoryId);
     const swapWith = direction === "up" ? index - 1 : index + 1;
     if (index === -1 || swapWith < 0 || swapWith >= ids.length) return;
@@ -163,13 +176,20 @@ export function MenuSection() {
     load();
   }
 
-  const featuredCount = items.filter((i) => i.is_featured).length;
+  // "Our Best" is capped per category (not restaurant-wide) — a subcategory
+  // like "Pizza" gets its own up-to-3 highlights independent of "Drinks".
+  const featuredCountByCategory = new Map<string | null, number>();
+  for (const item of items) {
+    if (!item.is_featured) continue;
+    featuredCountByCategory.set(item.category_id, (featuredCountByCategory.get(item.category_id) ?? 0) + 1);
+  }
 
   function toggleFeatured(item: Item) {
+    const featuredCount = featuredCountByCategory.get(item.category_id) ?? 0;
     if (!item.is_featured && featuredCount >= MAX_FEATURED_ITEMS) {
       Alert.alert(
         "Our Best is full",
-        `Only ${MAX_FEATURED_ITEMS} items can be featured at once — turn one off first.`,
+        `Only ${MAX_FEATURED_ITEMS} items can be featured at once in this category — turn one off first.`,
       );
       return;
     }
@@ -177,11 +197,19 @@ export function MenuSection() {
   }
 
   const uncategorized = items.filter((i) => i.category_id === null);
+  const topLevelCategories = categories.filter((c) => !c.parent_id);
+  const subcategoriesByParent = new Map<string, Category[]>();
+  for (const c of categories) {
+    if (!c.parent_id) continue;
+    const list = subcategoriesByParent.get(c.parent_id) ?? [];
+    list.push(c);
+    subcategoriesByParent.set(c.parent_id, list);
+  }
 
   return (
     <View style={styles.content}>
       <Text style={styles.featuredHint}>
-        ⭐ marks up to {MAX_FEATURED_ITEMS} items shown as &ldquo;Our Best!&rdquo; on the customer menu ({featuredCount}/{MAX_FEATURED_ITEMS} used)
+        ⭐ marks up to {MAX_FEATURED_ITEMS} items per category shown as &ldquo;Our Best!&rdquo; on the customer menu.
       </Text>
 
       <Text style={styles.addMenuLabel}>Add your menu</Text>
@@ -208,24 +236,69 @@ export function MenuSection() {
           <Text style={styles.primaryButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
+      {topLevelCategories.length > 0 && (
+        <View style={styles.parentPickerRow}>
+          <TouchableOpacity
+            onPress={() => setNewCategoryParentId(null)}
+            style={[styles.parentChip, newCategoryParentId === null && styles.parentChipActive]}
+          >
+            <Text style={styles.parentChipText}>Top-level</Text>
+          </TouchableOpacity>
+          {topLevelCategories.map((c) => (
+            <TouchableOpacity
+              key={c.id}
+              onPress={() => setNewCategoryParentId(c.id)}
+              style={[styles.parentChip, newCategoryParentId === c.id && styles.parentChipActive]}
+            >
+              <Text style={styles.parentChipText}>Under &ldquo;{c.name}&rdquo;</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
-      {categories.map((category, index) => (
-        <CategorySection
-          key={category.id}
-          category={category}
-          items={items.filter((i) => i.category_id === category.id)}
-          isFirst={index === 0}
-          isLast={index === categories.length - 1}
-          onMove={(dir) => moveCategory(category.id, dir)}
-          onRename={(name) => renameCategory(category.id, name)}
-          onDelete={() => deleteCategory(category.id)}
-          onAddItem={(name, price, photoUrl) => addItem(category.id, name, price, photoUrl)}
-          onUpdateItem={updateItem}
-          onDeleteItem={deleteItem}
-          onToggleFeatured={toggleFeatured}
-          restaurantId={restaurantId ?? ""}
-        />
-      ))}
+      {topLevelCategories.map((category, index) => {
+        const subcategories = subcategoriesByParent.get(category.id) ?? [];
+        return (
+          <View key={category.id} style={styles.categoryGroup}>
+            <CategorySection
+              category={category}
+              items={items.filter((i) => i.category_id === category.id)}
+              isFirst={index === 0}
+              isLast={index === topLevelCategories.length - 1}
+              onMove={(dir) => moveCategory(category.id, dir)}
+              onRename={(name) => renameCategory(category.id, name)}
+              onDelete={() => deleteCategory(category.id)}
+              onAddItem={(name, price, photoUrl) => addItem(category.id, name, price, photoUrl)}
+              onUpdateItem={updateItem}
+              onDeleteItem={deleteItem}
+              onToggleFeatured={toggleFeatured}
+              restaurantId={restaurantId ?? ""}
+              hasSubcategories={subcategories.length > 0}
+            />
+            {subcategories.length > 0 && (
+              <View style={styles.subcategoryList}>
+                {subcategories.map((sub, subIndex) => (
+                  <CategorySection
+                    key={sub.id}
+                    category={sub}
+                    items={items.filter((i) => i.category_id === sub.id)}
+                    isFirst={subIndex === 0}
+                    isLast={subIndex === subcategories.length - 1}
+                    onMove={(dir) => moveCategory(sub.id, dir)}
+                    onRename={(name) => renameCategory(sub.id, name)}
+                    onDelete={() => deleteCategory(sub.id)}
+                    onAddItem={(name, price, photoUrl) => addItem(sub.id, name, price, photoUrl)}
+                    onUpdateItem={updateItem}
+                    onDeleteItem={deleteItem}
+                    onToggleFeatured={toggleFeatured}
+                    restaurantId={restaurantId ?? ""}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      })}
 
       {uncategorized.length > 0 && (
         <CategorySection
@@ -432,6 +505,7 @@ function CategorySection({
   onDeleteItem,
   onToggleFeatured,
   restaurantId,
+  hasSubcategories,
 }: {
   category: Category | null;
   items: Item[];
@@ -445,6 +519,7 @@ function CategorySection({
   onDeleteItem: (id: string) => void;
   onToggleFeatured: (item: Item) => void;
   restaurantId: string;
+  hasSubcategories?: boolean;
 }) {
   const [name, setName] = useState(category?.name ?? "Uncategorized");
   const [newName, setNewName] = useState("");
@@ -477,7 +552,20 @@ function CategorySection({
           )}
         </View>
         {category && onDelete && (
-          <TouchableOpacity onPress={onDelete}>
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert(
+                `Delete "${category.name}"?`,
+                hasSubcategories
+                  ? "Its subcategories will be deleted too, and all their items will move to Uncategorized."
+                  : "Items in this category will move to Uncategorized.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Delete", style: "destructive", onPress: onDelete },
+                ],
+              );
+            }}
+          >
             <Text style={styles.link}>Delete category</Text>
           </TouchableOpacity>
         )}
@@ -697,6 +785,12 @@ const styles = StyleSheet.create({
   },
   manualEntryButtonText: { fontSize: 13, fontWeight: "600", color: "#8a7c68" },
   addCategoryRow: { flexDirection: "row", gap: 8 },
+  parentPickerRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  parentChip: { borderWidth: 1, borderColor: "#ece2d3", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  parentChipActive: { borderColor: "#ea7c1f", backgroundColor: "#fff0e0" },
+  parentChipText: { fontSize: 11, fontWeight: "600", color: "#3c3327" },
+  categoryGroup: { gap: 10 },
+  subcategoryList: { marginLeft: 16, gap: 10, borderLeftWidth: 2, borderLeftColor: "#ece2d3", paddingLeft: 12 },
   input: {
     borderWidth: 1,
     borderColor: "#ece2d3",

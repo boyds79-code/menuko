@@ -4,21 +4,25 @@ import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export async function addCategory(name: string) {
+export async function addCategory(name: string, parentId?: string | null) {
   const ctx = await requireStaff("owner");
   if (!name.trim()) return;
   const supabase = await createClient();
 
-  // New categories go to the end, not sort_order 0 — otherwise they'd jump
-  // ahead of everything an owner has already manually reordered.
-  const { count } = await supabase
+  // New categories go to the end of their own sibling group (same
+  // parent_id), not sort_order 0 — otherwise they'd jump ahead of
+  // everything an owner has already manually reordered, and mixing a
+  // subcategory's count with its major category's would misorder both.
+  let siblingQuery = supabase
     .from("menu_categories")
     .select("id", { count: "exact", head: true })
     .eq("restaurant_id", ctx.restaurantId);
+  siblingQuery = parentId ? siblingQuery.eq("parent_id", parentId) : siblingQuery.is("parent_id", null);
+  const { count } = await siblingQuery;
 
   await supabase
     .from("menu_categories")
-    .insert({ restaurant_id: ctx.restaurantId, name: name.trim(), sort_order: count ?? 0 });
+    .insert({ restaurant_id: ctx.restaurantId, name: name.trim(), parent_id: parentId ?? null, sort_order: count ?? 0 });
   revalidatePath("/admin/settings");
 }
 
@@ -41,12 +45,24 @@ export async function moveCategory(categoryId: string, direction: "up" | "down")
   const ctx = await requireStaff("owner");
   const supabase = await createClient();
 
-  const { data: categories } = await supabase
+  const { data: self } = await supabase
+    .from("menu_categories")
+    .select("parent_id")
+    .eq("id", categoryId)
+    .single();
+  if (!self) return;
+
+  // Only reorder among siblings (same parent_id) — a subcategory moving up
+  // should never cross into its major category's own ordering, and vice
+  // versa.
+  let siblingsQuery = supabase
     .from("menu_categories")
     .select("id")
     .eq("restaurant_id", ctx.restaurantId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
+  siblingsQuery = self.parent_id ? siblingsQuery.eq("parent_id", self.parent_id) : siblingsQuery.is("parent_id", null);
+  const { data: categories } = await siblingsQuery;
 
   if (!categories) return;
 

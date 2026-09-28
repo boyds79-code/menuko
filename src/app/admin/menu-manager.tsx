@@ -16,7 +16,7 @@ import {
 } from "./menu-actions";
 import { MenuImport } from "./menu-import";
 
-type Category = { id: string; name: string; sort_order: number };
+type Category = { id: string; name: string; sort_order: number; parent_id: string | null };
 type Item = {
   id: string;
   category_id: string | null;
@@ -45,6 +45,7 @@ export function MenuManager({
 }) {
   const router = useRouter();
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryParentId, setNewCategoryParentId] = useState("");
   const [pending, startTransition] = useTransition();
   const categoryInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,16 +53,29 @@ export function MenuManager({
     startTransition(() => router.refresh());
   }
 
+  const topLevelCategories = initialCategories.filter((c) => !c.parent_id);
+  const subcategoriesByParent = new Map<string, Category[]>();
+  for (const c of initialCategories) {
+    if (!c.parent_id) continue;
+    const list = subcategoriesByParent.get(c.parent_id) ?? [];
+    list.push(c);
+    subcategoriesByParent.set(c.parent_id, list);
+  }
   const uncategorized = initialItems.filter(
     (item) => item.category_id === null,
   );
-  const featuredCount = initialItems.filter((item) => item.is_featured).length;
+  // "Our Best" is capped per category (not restaurant-wide) — a subcategory
+  // like "Pizza" gets its own up-to-3 highlights independent of "Drinks".
+  const featuredCountByCategory = new Map<string | null, number>();
+  for (const item of initialItems) {
+    if (!item.is_featured) continue;
+    featuredCountByCategory.set(item.category_id, (featuredCountByCategory.get(item.category_id) ?? 0) + 1);
+  }
 
   return (
     <div className="flex flex-col gap-8">
       <p className="text-xs text-muted">
-        ⭐ marks up to {MAX_FEATURED_ITEMS} items shown as &ldquo;Our Best!&rdquo; on the customer menu (
-        {featuredCount}/{MAX_FEATURED_ITEMS} used)
+        ⭐ marks up to {MAX_FEATURED_ITEMS} items per category shown as &ldquo;Our Best!&rdquo; on the customer menu.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -82,18 +96,31 @@ export function MenuManager({
         onSubmit={(e) => {
           e.preventDefault();
           if (!newCategoryName.trim()) return;
-          addCategory(newCategoryName).then(afterMutate);
+          addCategory(newCategoryName, newCategoryParentId || null).then(afterMutate);
           setNewCategoryName("");
         }}
-        className="flex gap-2"
+        className="flex flex-wrap gap-2"
       >
         <input
           ref={categoryInputRef}
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
           placeholder="New category name (e.g. Drinks, Mains)"
-          className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+          className="min-w-40 flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
         />
+        <select
+          value={newCategoryParentId}
+          onChange={(e) => setNewCategoryParentId(e.target.value)}
+          title="Parent category — leave as None to add a top-level category"
+          className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+        >
+          <option value="">No parent (top-level category)</option>
+          {topLevelCategories.map((c) => (
+            <option key={c.id} value={c.id}>
+              Subcategory of &ldquo;{c.name}&rdquo;
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           disabled={pending}
@@ -103,20 +130,39 @@ export function MenuManager({
         </button>
       </form>
 
-      {initialCategories.map((category, index) => (
-        <CategorySection
-          key={category.id}
-          restaurantId={restaurantId}
-          category={category}
-          items={initialItems.filter(
-            (item) => item.category_id === category.id,
-          )}
-          onMutate={afterMutate}
-          isFirst={index === 0}
-          isLast={index === initialCategories.length - 1}
-          featuredCount={featuredCount}
-        />
-      ))}
+      {topLevelCategories.map((category, index) => {
+        const subcategories = subcategoriesByParent.get(category.id) ?? [];
+        return (
+          <div key={category.id} className="flex flex-col gap-4">
+            <CategorySection
+              restaurantId={restaurantId}
+              category={category}
+              items={initialItems.filter((item) => item.category_id === category.id)}
+              onMutate={afterMutate}
+              isFirst={index === 0}
+              isLast={index === topLevelCategories.length - 1}
+              featuredCount={featuredCountByCategory.get(category.id) ?? 0}
+              hasSubcategories={subcategories.length > 0}
+            />
+            {subcategories.length > 0 && (
+              <div className="ml-6 flex flex-col gap-4 border-l-2 border-border pl-4">
+                {subcategories.map((sub, subIndex) => (
+                  <CategorySection
+                    key={sub.id}
+                    restaurantId={restaurantId}
+                    category={sub}
+                    items={initialItems.filter((item) => item.category_id === sub.id)}
+                    onMutate={afterMutate}
+                    isFirst={subIndex === 0}
+                    isLast={subIndex === subcategories.length - 1}
+                    featuredCount={featuredCountByCategory.get(sub.id) ?? 0}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       {uncategorized.length > 0 && (
         <CategorySection
@@ -124,7 +170,7 @@ export function MenuManager({
           category={null}
           items={uncategorized}
           onMutate={afterMutate}
-          featuredCount={featuredCount}
+          featuredCount={featuredCountByCategory.get(null) ?? 0}
         />
       )}
     </div>
@@ -139,6 +185,7 @@ function CategorySection({
   isFirst,
   isLast,
   featuredCount,
+  hasSubcategories,
 }: {
   restaurantId: string;
   category: Category | null;
@@ -147,6 +194,7 @@ function CategorySection({
   isFirst?: boolean;
   isLast?: boolean;
   featuredCount: number;
+  hasSubcategories?: boolean;
 }) {
   const [name, setName] = useState(category?.name ?? "Uncategorized");
 
@@ -196,7 +244,9 @@ function CategorySection({
             onClick={() => {
               if (
                 confirm(
-                  `Delete category "${category.name}"? (Items move to Uncategorized)`,
+                  hasSubcategories
+                    ? `Delete category "${category.name}"? Its subcategories will be deleted too, and all their items will move to Uncategorized.`
+                    : `Delete category "${category.name}"? (Items move to Uncategorized)`,
                 )
               ) {
                 deleteCategory(category.id).then(onMutate);

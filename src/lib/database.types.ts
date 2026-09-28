@@ -194,6 +194,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          parent_id: string | null
           restaurant_id: string
           sort_order: number
           translations: Json
@@ -202,6 +203,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          parent_id?: string | null
           restaurant_id: string
           sort_order?: number
           translations?: Json
@@ -210,11 +212,19 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          parent_id?: string | null
           restaurant_id?: string
           sort_order?: number
           translations?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "menu_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "menu_categories_restaurant_id_fkey"
             columns: ["restaurant_id"]

@@ -18,7 +18,7 @@ export default async function AdminSettingsPage() {
         .single(),
       supabase
         .from("menu_categories")
-        .select("id, name, sort_order")
+        .select("id, name, sort_order, parent_id")
         .eq("restaurant_id", ctx.restaurantId)
         .order("sort_order"),
       supabase

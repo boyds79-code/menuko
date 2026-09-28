@@ -21,7 +21,7 @@ const COLOR_PALETTES: Record<MenuColorId, { brand: string; background: string; c
   botanical: { brand: "#1e3a2b", background: "#f7f9f6", card: "#eff3ee", foreground: "#212623" },
 };
 
-type MenuCategory = { id: string; name: string; sort_order: number };
+type MenuCategory = { id: string; name: string; sort_order: number; parent_id: string | null };
 type MenuItem = {
   id: string;
   category_id: string | null;
