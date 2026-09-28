@@ -628,7 +628,6 @@ function ClassicLayout({ restaurant, table, menuColor, lang, isPremium, changeLa
 // ItemDetailOverlay Classic uses for its detail popup.
 function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, featuredItems, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
   const promoItem = featuredItems[0] ?? null;
-  const [search, setSearch] = useState("");
 
   // Only categories that actually have items to show as tabs — an empty
   // category would otherwise be a dead-end tab with nothing under it.
@@ -645,10 +644,7 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
     : (categoriesWithItems[0]?.id ?? null);
   const activeCategory = categoriesWithItems.find((c) => c.id === resolvedActiveCategoryId) ?? null;
 
-  const query = search.trim().toLowerCase();
-  const visibleItems = items
-    .filter((i) => i.category_id === resolvedActiveCategoryId)
-    .filter((i) => !query || tr(i.translations, lang, "name", i.name).toLowerCase().includes(query));
+  const visibleItems = items.filter((i) => i.category_id === resolvedActiveCategoryId);
 
   return (
     <div data-menu-theme={menuColor} dir={RTL_LANGUAGES.has(lang) ? "rtl" : "ltr"} className="flex min-h-full flex-1 flex-col bg-background pb-24">
@@ -662,15 +658,6 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
           <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} lang={lang} />
         </div>
       </header>
-
-      <div className="px-4 pt-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={ui(lang, "searchMenu")}
-          className="w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground outline-none focus:border-brand"
-        />
-      </div>
 
       <TableOrderSummaryBanner tableOrderSummary={tableOrderSummary} />
 
