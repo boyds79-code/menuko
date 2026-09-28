@@ -41,7 +41,7 @@ export default async function OrderPage({
         .single(),
       supabase
         .from("menu_categories")
-        .select("id, name, sort_order, translations")
+        .select("id, name, sort_order, parent_id, translations")
         .eq("restaurant_id", table.restaurant_id)
         .order("sort_order"),
       supabase

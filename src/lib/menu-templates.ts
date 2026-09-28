@@ -42,7 +42,7 @@ export function isMenuColorId(value: string): value is MenuColorId {
   return MENU_COLORS.some((c) => c.id === value);
 }
 
-export type MenuLayoutId = "classic" | "minimal-list";
+export type MenuLayoutId = "classic" | "minimal-list" | "jamezz-dark";
 
 export const MENU_LAYOUTS: {
   id: MenuLayoutId;
@@ -58,6 +58,11 @@ export const MENU_LAYOUTS: {
     id: "minimal-list",
     label: "Minimal List",
     description: "Compact header, one promo banner, flat list-style item rows — closest to a printed menu.",
+  },
+  {
+    id: "jamezz-dark",
+    label: "Jamezz Dark",
+    description: "Dark theme with major-category tabs and subcategory filters — best with categories organized into subcategories (e.g. Food > Pizza, Pasta).",
   },
 ];
 

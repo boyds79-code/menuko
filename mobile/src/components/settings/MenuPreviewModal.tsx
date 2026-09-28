@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatPeso } from "@/lib/money";
-import { MOBILE_COLOR_PALETTES, type MobileMenuColorId, type MobileMenuLayoutId, type MobileColorPalette } from "@/lib/menu-templates";
+import { resolveMobilePalette, type MobileMenuColorId, type MobileMenuLayoutId, type MobileColorPalette } from "@/lib/menu-templates";
 
-type Category = { id: string; name: string; sort_order: number };
+type Category = { id: string; name: string; sort_order: number; parent_id: string | null };
 type Item = {
   id: string;
   category_id: string | null;
@@ -56,7 +56,7 @@ export function MenuPreviewModal({
   const [cartOpen, setCartOpen] = useState(false);
   const available = items.filter((i) => i.is_available);
   const featured = available.filter((i) => i.is_featured).slice(0, 3);
-  const p = MOBILE_COLOR_PALETTES[menuColor];
+  const p = resolveMobilePalette(menuLayout, menuColor);
 
   const cartLines = Object.entries(cart)
     .filter(([, qty]) => qty > 0)
@@ -104,6 +104,8 @@ export function MenuPreviewModal({
 
         {menuLayout === "minimal-list" ? (
           <MinimalListMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
+        ) : menuLayout === "jamezz-dark" ? (
+          <JamezzDarkMenu categories={categories} available={available} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         ) : (
           <ClassicMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         )}
@@ -287,6 +289,112 @@ function MinimalListMenu({ categories, available, featured, p, cartCount, onOpen
           </View>
         );
       })}
+      {available.length === 0 && <Text style={styles.empty}>No available menu items yet.</Text>}
+    </ScrollView>
+  );
+}
+
+// Benchmarked against a Jamezz-style dark menu: major-category tabs ->
+// subcategory pill filter -> the active subcategory's own "Our Best" hero
+// -> a flat item list below — mirrors JamezzDarkLayout in the web
+// order-client.tsx. A major category with no subcategories is treated as
+// its own leaf, so a flat menu still works.
+function JamezzDarkMenu({ categories, available, p, cartCount, onOpenItem }: Omit<MenuBodyProps, "featured">) {
+  const categoryIdsWithItems = new Set(available.map((i) => i.category_id));
+  const majors = categories.filter((c) => {
+    if (c.parent_id) return false;
+    const children = categories.filter((child) => child.parent_id === c.id);
+    return children.length > 0 ? children.some((child) => categoryIdsWithItems.has(child.id)) : categoryIdsWithItems.has(c.id);
+  });
+  const [activeMajorId, setActiveMajorId] = useState<string | null>(majors[0]?.id ?? null);
+  const resolvedActiveMajorId = majors.some((m) => m.id === activeMajorId) ? activeMajorId : (majors[0]?.id ?? null);
+  const activeMajor = majors.find((m) => m.id === resolvedActiveMajorId) ?? null;
+
+  const subs = activeMajor ? categories.filter((c) => c.parent_id === activeMajor.id && categoryIdsWithItems.has(c.id)) : [];
+  const leafOptions = subs.length > 0 ? subs : activeMajor ? [activeMajor] : [];
+  const [activeLeafId, setActiveLeafId] = useState<string | null>(null);
+  const resolvedActiveLeafId = leafOptions.some((l) => l.id === activeLeafId) ? activeLeafId : (leafOptions[0]?.id ?? null);
+
+  const leafItems = resolvedActiveLeafId ? available.filter((i) => i.category_id === resolvedActiveLeafId) : [];
+  const heroItem = leafItems.find((i) => i.is_featured) ?? null;
+
+  return (
+    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
+      {majors.length > 0 && (
+        <View style={styles.jamezzMajorRow}>
+          {majors.map((m) => (
+            <TouchableOpacity
+              key={m.id}
+              onPress={() => {
+                setActiveMajorId(m.id);
+                setActiveLeafId(null);
+              }}
+            >
+              <Text style={[styles.jamezzMajorLabel, { color: m.id === resolvedActiveMajorId ? p.brand : "#8a8a8a" }]}>{m.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      {subs.length > 0 && (
+        <View style={styles.jamezzSubRow}>
+          {subs.map((s) => {
+            const active = s.id === resolvedActiveLeafId;
+            return (
+              <TouchableOpacity key={s.id} onPress={() => setActiveLeafId(s.id)}>
+                <Text style={[styles.jamezzSubChip, active ? { backgroundColor: p.brand, color: "#ffffff" } : { borderWidth: 1, borderColor: p.cardBorderColor, color: "#8a8a8a" }]}>
+                  {s.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+      {heroItem && (
+        <TouchableOpacity style={styles.jamezzHero} activeOpacity={0.85} onPress={() => onOpenItem(heroItem)}>
+          {heroItem.photo_url ? (
+            <Image source={{ uri: heroItem.photo_url }} style={styles.featuredImage} />
+          ) : (
+            <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
+              <Text style={styles.photoPlaceholder}>Menuko</Text>
+            </View>
+          )}
+          <View style={styles.featuredOverlay} />
+          <View style={[styles.featuredBadge, { backgroundColor: p.brand }]}>
+            <Text style={styles.featuredBadgeText}>Our Best!</Text>
+          </View>
+          <Text style={styles.promoBannerName} numberOfLines={1}>
+            {heroItem.name}
+          </Text>
+        </TouchableOpacity>
+      )}
+      <View style={[styles.listGroup, { borderColor: p.cardBorderColor, backgroundColor: p.cardBackground }]}>
+        {leafItems.map((item, idx) => (
+          <TouchableOpacity
+            key={item.id}
+            style={[styles.listRow, idx > 0 && { borderTopWidth: 1, borderTopColor: p.cardBorderColor }]}
+            activeOpacity={0.7}
+            onPress={() => onOpenItem(item)}
+          >
+            <View style={styles.listRowPhoto}>
+              {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.listRowImage} /> : null}
+            </View>
+            <View style={styles.listRowTextWrap}>
+              <Text style={[styles.listRowName, { color: p.foreground }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+              {item.description && (
+                <Text style={styles.listRowDescription} numberOfLines={1}>
+                  {item.description}
+                </Text>
+              )}
+              <Text style={[styles.listRowPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
+            </View>
+            <View style={[styles.listRowAddChip, { backgroundColor: `${p.brand}33` }]}>
+              <Text style={[styles.listRowAddChipText, { color: p.brand }]}>+</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
       {available.length === 0 && <Text style={styles.empty}>No available menu items yet.</Text>}
     </ScrollView>
   );
@@ -487,6 +595,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
+
+  jamezzMajorRow: { flexDirection: "row", gap: 20, marginBottom: 12 },
+  jamezzMajorLabel: { fontSize: 14, fontWeight: "700" },
+  jamezzSubRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
+  jamezzSubChip: { fontSize: 11, fontWeight: "600", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden" },
+  jamezzHero: { height: 150, borderRadius: 16, overflow: "hidden", marginBottom: 14 },
 
   categorySection: { gap: 10 },
   categoryPillLabel: {

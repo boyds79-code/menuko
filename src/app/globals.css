@@ -136,6 +136,24 @@ body {
   --font-body: var(--font-jakarta);
 }
 
+/* Jamezz-dark forces a dark scheme regardless of which color identity is
+   selected — only --brand/--brand-foreground are left alone (still coming
+   from whichever [data-menu-theme="..."] block above applies): the layout
+   owns light vs. dark, the color axis only supplies the accent. Placed
+   after the four color blocks above so it wins the shared background/
+   foreground/card/border/muted tokens when both data-menu-theme and
+   data-menu-layout are set on the same element (equal specificity, source
+   order breaks the tie). */
+[data-menu-layout="jamezz-dark"] {
+  --background: #0a0a0a;
+  --foreground: #f2f2f2;
+  --card: #171717;
+  --border: #2e2e2e;
+  --muted: #a3a3a3;
+  --header-dark: #0a0a0a;
+  --header-dark-foreground: #f2f2f2;
+}
+
 @media print {
   body {
     background: #ffffff;

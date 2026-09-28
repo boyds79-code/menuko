@@ -20,7 +20,7 @@ import type { Json } from "@/lib/database.types";
 // in menu-i18n.ts casts to that shape internally.
 type Translations = Json;
 
-type Category = { id: string; name: string; sort_order: number; translations: Translations };
+type Category = { id: string; name: string; sort_order: number; parent_id: string | null; translations: Translations };
 type MenuItem = {
   id: string;
   category_id: string | null;
@@ -453,7 +453,9 @@ export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor,
     callServer,
   };
 
-  return menuLayout === "minimal-list" ? <MinimalListLayout {...layoutProps} /> : <ClassicLayout {...layoutProps} />;
+  if (menuLayout === "minimal-list") return <MinimalListLayout {...layoutProps} />;
+  if (menuLayout === "jamezz-dark") return <JamezzDarkLayout {...layoutProps} />;
+  return <ClassicLayout {...layoutProps} />;
 }
 
 // Props shared by every menu-browsing layout (everything except the
@@ -743,6 +745,207 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
           </section>
         )}
         {items.length === 0 && <p className="text-sm text-muted">{ui(lang, "noMenuItems")}</p>}
+        <p className="pt-2 text-center text-[11px] text-muted">
+          {ui(lang, "byOrderingAgree")}{" "}
+          <Link href="/terms" className="underline">
+            {ui(lang, "terms")}
+          </Link>{" "}
+          {ui(lang, "and")}{" "}
+          <Link href="/privacy" className="underline">
+            {ui(lang, "privacyPolicy")}
+          </Link>
+          .
+        </p>
+      </main>
+
+      <CartBar cartCount={cartCount} cartTotal={cartTotal} error={error} submitting={submitting} editingRequest={editingRequest} onOpenReview={() => setReviewOpen(true)} onSendEdit={onConfirmOrder} lang={lang} />
+
+      {reviewOpen && !editingRequest && (
+        <ReviewSheet
+          lines={cartLines}
+          total={cartTotal}
+          submitting={submitting}
+          onConfirm={async () => {
+            await onConfirmOrder();
+            setReviewOpen(false);
+          }}
+          onClose={() => setReviewOpen(false)}
+          lang={lang}
+        />
+      )}
+
+      {detailItem && (
+        <ItemDetailOverlay
+          item={detailItem}
+          quantity={cart[detailItem.id] ?? 0}
+          onChangeQty={(qty) => setQty(detailItem.id, qty)}
+          onClose={() => setDetailItem(null)}
+          canCheckout={cartCount > 0}
+          onGoToCheckout={() => {
+            setDetailItem(null);
+            setReviewOpen(true);
+          }}
+          lang={lang}
+        />
+      )}
+    </div>
+  );
+}
+
+// Benchmarked against a Jamezz-style dark menu: always a dark page
+// regardless of the selected menu_color (see [data-menu-layout="jamezz-dark"]
+// in globals.css — the layout owns light/dark, the color axis still only
+// supplies the --brand accent), major-category tabs -> subcategory pill
+// filter -> the active subcategory's own "Our Best" hero (reusing the
+// per-category is_featured cap from Phase 2a) -> a flat item list below
+// (Minimal List's row shape, recolored dark). A major category with no
+// subcategories is treated as its own leaf, so a flat menu still works
+// without forcing every restaurant into two levels.
+function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
+  const categoryIdsWithItems = useMemo(() => new Set(items.map((i) => i.category_id)), [items]);
+
+  const majorCategories = useMemo(
+    () =>
+      categories
+        .filter((c) => !c.parent_id)
+        .filter((major) => {
+          const children = categories.filter((c) => c.parent_id === major.id);
+          return children.length > 0
+            ? children.some((child) => categoryIdsWithItems.has(child.id))
+            : categoryIdsWithItems.has(major.id);
+        }),
+    [categories, categoryIdsWithItems],
+  );
+  const [activeMajorId, setActiveMajorId] = useState<string | null>(majorCategories[0]?.id ?? null);
+  const resolvedActiveMajorId = majorCategories.some((m) => m.id === activeMajorId) ? activeMajorId : (majorCategories[0]?.id ?? null);
+  const activeMajor = majorCategories.find((m) => m.id === resolvedActiveMajorId) ?? null;
+
+  const subcategoriesOfActiveMajor = useMemo(
+    () => (activeMajor ? categories.filter((c) => c.parent_id === activeMajor.id).filter((sub) => categoryIdsWithItems.has(sub.id)) : []),
+    [categories, categoryIdsWithItems, activeMajor],
+  );
+  const leafOptions = subcategoriesOfActiveMajor.length > 0 ? subcategoriesOfActiveMajor : activeMajor ? [activeMajor] : [];
+  const [activeLeafId, setActiveLeafId] = useState<string | null>(null);
+  const resolvedActiveLeafId = leafOptions.some((l) => l.id === activeLeafId) ? activeLeafId : (leafOptions[0]?.id ?? null);
+  const activeLeaf = leafOptions.find((l) => l.id === resolvedActiveLeafId) ?? null;
+
+  const leafItems = activeLeaf ? items.filter((i) => i.category_id === activeLeaf.id) : [];
+  const heroItem = leafItems.find((i) => i.is_featured) ?? null;
+
+  return (
+    <div data-menu-theme={menuColor} data-menu-layout="jamezz-dark" dir={RTL_LANGUAGES.has(lang) ? "rtl" : "ltr"} className="flex min-h-full flex-1 flex-col bg-background pb-24 text-foreground">
+      <header className="flex items-center justify-between gap-3 px-4 py-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-bold text-foreground">{restaurant.name}</h1>
+          <p className="text-xs text-muted">{table.label}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {isPremium && <LanguageSwitcher lang={lang} onChange={changeLang} enabledLanguages={restaurant.enabled_languages as MenuLanguage[] | null} />}
+          <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} lang={lang} />
+        </div>
+      </header>
+
+      <TableOrderSummaryBanner tableOrderSummary={tableOrderSummary} />
+
+      {majorCategories.length > 0 && (
+        <div className="flex gap-5 border-b border-border px-4">
+          {majorCategories.map((major) => {
+            const active = major.id === resolvedActiveMajorId;
+            return (
+              <button
+                key={major.id}
+                onClick={() => {
+                  setActiveMajorId(major.id);
+                  setActiveLeafId(null);
+                }}
+                className={`shrink-0 border-b-2 pb-2.5 text-sm font-semibold transition-colors ${active ? "border-brand text-brand" : "border-transparent text-muted hover:text-foreground"}`}
+              >
+                {tr(major.translations, lang, "name", major.name)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {subcategoriesOfActiveMajor.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto px-4 pt-3 pb-1">
+          {subcategoriesOfActiveMajor.map((sub) => {
+            const active = sub.id === resolvedActiveLeafId;
+            return (
+              <button
+                key={sub.id}
+                onClick={() => setActiveLeafId(sub.id)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active ? "border-brand bg-brand text-brand-foreground" : "border-border text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                {tr(sub.translations, lang, "name", sub.name)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {heroItem && (
+        <button onClick={() => setDetailItem(heroItem)} className="relative mx-4 mt-4 h-40 shrink-0 overflow-hidden rounded-xl text-left shadow-sm transition-opacity hover:opacity-95">
+          {heroItem.photo_url ? <Image src={heroItem.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center bg-card text-xs text-muted">Menuko</span>}
+          <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" aria-hidden />
+          <div className="absolute inset-x-0 bottom-0 p-3">
+            <span className="inline-block rounded-full bg-brand px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-foreground">{ui(lang, "ourBest")}</span>
+            <p className="mt-1 truncate text-sm font-semibold text-white">{tr(heroItem.translations, lang, "name", heroItem.name)}</p>
+            <p className="text-xs font-medium text-white/80">{formatPeso(heroItem.price)}</p>
+          </div>
+        </button>
+      )}
+
+      {editingRequest && (
+        <div className="mx-4 mt-4 flex items-center justify-between rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm">
+          <span>{ui(lang, "adjustItemsHint")}</span>
+          <button
+            onClick={() => {
+              setEditingRequest(false);
+              setCart({});
+              setError(null);
+            }}
+            className="text-xs text-muted underline"
+          >
+            {ui(lang, "cancel")}
+          </button>
+        </div>
+      )}
+
+      <main className="flex flex-1 flex-col gap-5 p-4">
+        {activeLeaf && (
+          <section>
+            {leafItems.length > 0 ? (
+              <div className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+                {leafItems.map((item) => {
+                  const name = tr(item.translations, lang, "name", item.name);
+                  const description = tr(item.translations, lang, "description", item.description);
+                  const qty = cart[item.id] ?? 0;
+                  return (
+                    <button key={item.id} onClick={() => setDetailItem(item)} className="flex items-center gap-3 p-3 text-left transition-colors hover:bg-background">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-background">
+                        {item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="56px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-[10px] text-muted">Menuko</span>}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{name}</p>
+                        {description && <p className="truncate text-xs text-muted">{description}</p>}
+                        <p className="mt-0.5 text-sm font-semibold text-brand">{formatPeso(item.price)}</p>
+                      </div>
+                      <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-bold text-brand">
+                        {qty > 0 ? qty : "+"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted">{ui(lang, "noMenuItems")}</p>
+            )}
+          </section>
+        )}
+        {majorCategories.length === 0 && <p className="text-sm text-muted">{ui(lang, "noMenuItems")}</p>}
         <p className="pt-2 text-center text-[11px] text-muted">
           {ui(lang, "byOrderingAgree")}{" "}
           <Link href="/terms" className="underline">

@@ -604,33 +604,89 @@ function MiniMenuPreview({
         },
       ];
 
+  // Jamezz Dark needs its own snapshot — a static illustration of the first
+  // major category's tabs/subcategory pills/item list, not the flat
+  // per-category loop the other two layouts use. Falls back to a plain
+  // dark list of sample/uncategorized items when there's no real
+  // major->subcategory structure yet to show.
+  let jamezzMajors: { id: string; name: string }[] = [];
+  let jamezzSubs: { id: string; name: string }[] = [];
+  let jamezzItems: PreviewItem[] = [];
+  if (layoutId === "jamezz-dark") {
+    const categoryIdsWithItems = new Set(items.map((i) => i.category_id));
+    const majors = categories.filter(
+      (c) =>
+        !c.parent_id &&
+        (categories.some((child) => child.parent_id === c.id) ? categories.some((child) => child.parent_id === c.id && categoryIdsWithItems.has(child.id)) : categoryIdsWithItems.has(c.id)),
+    );
+    const firstMajor = majors[0];
+    const subs = firstMajor ? categories.filter((c) => c.parent_id === firstMajor.id && categoryIdsWithItems.has(c.id)) : [];
+    const leafId = subs[0]?.id ?? firstMajor?.id ?? null;
+    jamezzMajors = majors.map((m) => ({ id: m.id, name: m.name }));
+    jamezzSubs = subs.map((s) => ({ id: s.id, name: s.name }));
+    jamezzItems = leafId
+      ? items.filter((i) => i.category_id === leafId).map((i) => ({ id: i.id, name: i.name, price: i.price, photo_url: i.photo_url }))
+      : SAMPLE_ITEMS.map((s, i) => ({ id: `sample-${i}`, name: s.name, price: s.price, photo_url: s.photo }));
+  }
+
   return (
     <div className="w-[300px] max-w-full shrink-0 overflow-hidden rounded-[26px] border border-border shadow-sm">
-      <div data-menu-theme={colorId} className="flex max-h-[640px] w-full flex-col bg-background">
+      <div data-menu-theme={colorId} data-menu-layout={layoutId === "jamezz-dark" ? "jamezz-dark" : undefined} className="flex max-h-[640px] w-full flex-col bg-background">
         <MiniHeader layoutId={layoutId} restaurantName={restaurantName} />
-        <div className="flex-1 overflow-y-auto p-2.5">
-          {displayCategories.map((category) =>
-            layoutId === "minimal-list" ? (
-              <div key={category.id} className="mb-3.5">
-                <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wide text-foreground">{category.name}</span>
-                <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-                  {category.items.map((item) => (
-                    <MiniListRow key={item.id} item={item} />
-                  ))}
-                </div>
+        {layoutId === "jamezz-dark" ? (
+          <div className="flex-1 overflow-y-auto p-2.5">
+            {jamezzMajors.length > 0 && (
+              <div className="mb-2 flex gap-3 border-b border-border pb-1.5">
+                {jamezzMajors.map((m, idx) => (
+                  <span key={m.id} className={`text-[9px] font-bold ${idx === 0 ? "text-brand" : "text-muted"}`}>
+                    {m.name}
+                  </span>
+                ))}
               </div>
-            ) : (
-              <div key={category.id} className="mb-3.5">
-                <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-brand">{category.name}</span>
-                <div className="grid grid-cols-3 gap-2">
-                  {category.items.map((item) => (
-                    <MiniCard key={item.id} item={item} />
-                  ))}
-                </div>
+            )}
+            {jamezzSubs.length > 0 && (
+              <div className="mb-2.5 flex gap-1.5">
+                {jamezzSubs.map((s, idx) => (
+                  <span
+                    key={s.id}
+                    className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ${idx === 0 ? "bg-brand text-brand-foreground" : "border border-border text-muted"}`}
+                  >
+                    {s.name}
+                  </span>
+                ))}
               </div>
-            ),
-          )}
-        </div>
+            )}
+            <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              {jamezzItems.map((item) => (
+                <MiniListRow key={item.id} item={item} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-2.5">
+            {displayCategories.map((category) =>
+              layoutId === "minimal-list" ? (
+                <div key={category.id} className="mb-3.5">
+                  <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wide text-foreground">{category.name}</span>
+                  <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+                    {category.items.map((item) => (
+                      <MiniListRow key={item.id} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div key={category.id} className="mb-3.5">
+                  <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-brand">{category.name}</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {category.items.map((item) => (
+                      <MiniCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -640,6 +696,14 @@ function MiniMenuPreview({
 // Classic, plain bordered bar for Minimal List — at a scale that fits the
 // 300px preview frame instead of a full page.
 function MiniHeader({ layoutId, restaurantName }: { layoutId: MenuLayoutId; restaurantName: string }) {
+  if (layoutId === "jamezz-dark") {
+    return (
+      <div className="shrink-0 px-2.5 py-2.5">
+        <p className="truncate text-[13px] font-bold text-foreground">{restaurantName || "Your Restaurant"}</p>
+        <p className="mt-0.5 text-[9px] text-muted">Table 1</p>
+      </div>
+    );
+  }
   if (layoutId === "minimal-list") {
     return (
       <div className="shrink-0 border-b border-border bg-card px-2.5 py-2.5">

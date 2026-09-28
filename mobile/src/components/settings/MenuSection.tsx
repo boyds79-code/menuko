@@ -3,7 +3,7 @@ import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } fro
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { pickAndUploadPhoto } from "@/lib/upload-photo";
-import { MOBILE_MENU_LAYOUTS, MOBILE_MENU_COLORS, MOBILE_COLOR_PALETTES, type MobileMenuLayoutId, type MobileMenuColorId } from "@/lib/menu-templates";
+import { MOBILE_MENU_LAYOUTS, MOBILE_MENU_COLORS, resolveMobilePalette, type MobileMenuLayoutId, type MobileMenuColorId } from "@/lib/menu-templates";
 import { formatPeso } from "@/lib/money";
 import { MenuPreviewModal } from "./MenuPreviewModal";
 import { MenuImportModal } from "./MenuImportModal";
@@ -347,7 +347,7 @@ export function MenuSection() {
           </TouchableOpacity>
         ) : (
           <View>
-            <PaletteCard menuColor={candidateColor} />
+            <PaletteCard menuLayout={candidateLayout} menuColor={candidateColor} />
             <Text style={styles.swatchCaption}>Not applied yet</Text>
             <TouchableOpacity style={styles.previewButton} onPress={() => setPreviewOpen(true)}>
               <Text style={styles.previewButtonText}>Preview this design</Text>
@@ -381,8 +381,8 @@ export function MenuSection() {
 // plain labeled swatches rather than a fake menu, since there's nothing
 // real to preview until the owner commits to it. Tapping it (see caller)
 // opens the sample menu preview, where "Apply" actually commits the change.
-function PaletteCard({ menuColor }: { menuColor: MobileMenuColorId }) {
-  const p = MOBILE_COLOR_PALETTES[menuColor];
+function PaletteCard({ menuLayout, menuColor }: { menuLayout: MobileMenuLayoutId; menuColor: MobileMenuColorId }) {
+  const p = resolveMobilePalette(menuLayout, menuColor);
   const swatches = [
     { label: "Brand", color: p.brand },
     { label: "Background", color: p.pageBackground },
@@ -419,7 +419,7 @@ function MiniMenuPreview({
   categories: Category[];
   items: Item[];
 }) {
-  const p = MOBILE_COLOR_PALETTES[menuColor];
+  const p = resolveMobilePalette(menuLayout, menuColor);
   const available = items.filter((i) => i.is_available);
   const firstCategoryWithItems = categories.find((c) => available.some((i) => i.category_id === c.id));
   const sampleItems = firstCategoryWithItems
@@ -433,6 +433,64 @@ function MiniMenuPreview({
           { id: "sample-1", name: "Sample Dish", price: 180, photo_url: null },
           { id: "sample-2", name: "Another Dish", price: 220, photo_url: null },
         ];
+
+  if (menuLayout === "jamezz-dark") {
+    const categoryIdsWithItems = new Set(available.map((i) => i.category_id));
+    const majors = categories.filter((c) => {
+      if (c.parent_id) return false;
+      const children = categories.filter((child) => child.parent_id === c.id);
+      return children.length > 0 ? children.some((child) => categoryIdsWithItems.has(child.id)) : categoryIdsWithItems.has(c.id);
+    });
+    const firstMajor = majors[0];
+    const subs = firstMajor ? categories.filter((c) => c.parent_id === firstMajor.id && categoryIdsWithItems.has(c.id)) : [];
+    const leafId = subs[0]?.id ?? firstMajor?.id ?? null;
+    const leafCards = (leafId ? available.filter((i) => i.category_id === leafId).slice(0, 3) : []).length > 0
+      ? available.filter((i) => i.category_id === leafId).slice(0, 3)
+      : cards;
+    return (
+      <View style={[styles.miniPreview, { backgroundColor: p.pageBackground }]}>
+        {majors.length > 0 && (
+          <View style={styles.jamezzMiniMajorRow}>
+            {majors.map((m, idx) => (
+              <Text key={m.id} style={[styles.jamezzMiniMajorLabel, { color: idx === 0 ? p.brand : "#8a8a8a" }]}>
+                {m.name}
+              </Text>
+            ))}
+          </View>
+        )}
+        {subs.length > 0 && (
+          <View style={styles.jamezzMiniSubRow}>
+            {subs.map((s, idx) => (
+              <Text
+                key={s.id}
+                style={[
+                  styles.jamezzMiniSubChip,
+                  idx === 0 ? { backgroundColor: p.brand, color: "#ffffff" } : { borderWidth: 1, borderColor: p.cardBorderColor, color: "#8a8a8a" },
+                ]}
+              >
+                {s.name}
+              </Text>
+            ))}
+          </View>
+        )}
+        <View style={[styles.miniListGroup, { borderColor: p.cardBorderColor, backgroundColor: p.cardBackground }]}>
+          {leafCards.map((item, idx) => (
+            <View key={item.id} style={[styles.miniListRow, idx > 0 && { borderTopWidth: 1, borderTopColor: p.cardBorderColor }]}>
+              <View style={styles.miniListPhoto}>
+                {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.miniCardImage} /> : null}
+              </View>
+              <View style={styles.miniListTextWrap}>
+                <Text style={[styles.miniCardName, { color: p.foreground }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.miniListPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   if (menuLayout === "minimal-list") {
     return (
@@ -844,6 +902,10 @@ const styles = StyleSheet.create({
   paletteSwatchColor: { width: "100%", height: 40, borderRadius: 8, borderWidth: 1 },
   paletteSwatchLabel: { fontSize: 10.5, fontWeight: "700", color: "#3c3327" },
   miniPreview: { borderRadius: 14, padding: 14, marginTop: 4, gap: 10 },
+  jamezzMiniMajorRow: { flexDirection: "row", gap: 12 },
+  jamezzMiniMajorLabel: { fontSize: 10.5, fontWeight: "700" },
+  jamezzMiniSubRow: { flexDirection: "row", gap: 5 },
+  jamezzMiniSubChip: { fontSize: 8.5, fontWeight: "600", borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, overflow: "hidden" },
   miniPreviewRow: { flexDirection: "row", gap: 10 },
   miniCard: { width: 108, borderRadius: 12, overflow: "hidden" },
   miniCardPhoto: { width: "100%", height: 78, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#f2ede6" },

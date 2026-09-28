@@ -17,11 +17,12 @@ export const MOBILE_MENU_COLORS: { id: MobileMenuColorId; label: string }[] = [
   { id: "botanical", label: "Botanical Linen" },
 ];
 
-export type MobileMenuLayoutId = "classic" | "minimal-list";
+export type MobileMenuLayoutId = "classic" | "minimal-list" | "jamezz-dark";
 
 export const MOBILE_MENU_LAYOUTS: { id: MobileMenuLayoutId; label: string }[] = [
   { id: "classic", label: "Classic" },
   { id: "minimal-list", label: "Minimal List" },
+  { id: "jamezz-dark", label: "Jamezz Dark" },
 ];
 
 export type MobileColorPalette = {
@@ -68,3 +69,20 @@ export const MOBILE_COLOR_PALETTES: Record<MobileMenuColorId, MobileColorPalette
     foreground: "#212623",
   },
 };
+
+// Jamezz Dark forces a dark scheme regardless of which color is selected —
+// mirrors web's [data-menu-layout="jamezz-dark"] CSS override in
+// globals.css. Only `brand` is left alone (still comes from the selected
+// color's own palette): the layout owns light vs. dark, the color axis
+// only supplies the accent.
+const JAMEZZ_DARK_OVERRIDES: Omit<MobileColorPalette, "brand"> = {
+  pageBackground: "#0a0a0a",
+  cardBackground: "#171717",
+  cardBorderColor: "#2e2e2e",
+  foreground: "#f2f2f2",
+};
+
+export function resolveMobilePalette(layout: MobileMenuLayoutId, color: MobileMenuColorId): MobileColorPalette {
+  const base = MOBILE_COLOR_PALETTES[color];
+  return layout === "jamezz-dark" ? { ...base, ...JAMEZZ_DARK_OVERRIDES } : base;
+}
