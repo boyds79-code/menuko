@@ -33,7 +33,7 @@ export function OnboardingChecklist({
 }) {
   const steps: Step[] = [
     {
-      label: "Restaurant info",
+      label: "Restaurant name & logo",
       hint: hasLogo
         ? "Name, business type, and logo are set."
         : "Name and business type are set from signup — add a logo if you have one (optional).",
