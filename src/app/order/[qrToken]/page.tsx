@@ -31,7 +31,9 @@ export default async function OrderPage({
     await Promise.all([
       supabase
         .from("restaurants")
-        .select("id, name, about, payment_qr_url, payment_link, business_type, menu_template, plan, translations")
+        .select(
+          "id, name, about, payment_qr_url, payment_link, business_type, menu_template, plan, translations, enabled_languages",
+        )
         .eq("id", table.restaurant_id)
         .single(),
       supabase

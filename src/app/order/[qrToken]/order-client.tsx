@@ -44,6 +44,7 @@ type Restaurant = {
   payment_link: string | null;
   plan: string;
   translations: Translations;
+  enabled_languages: string[] | null;
 };
 
 type CartLine = { item: MenuItem; quantity: number };
@@ -86,8 +87,21 @@ function CallServerButton({ calling, called, onCall, lang }: { calling: boolean;
 // a matched pair of controls, not one icon-only afterthought — opens a
 // grid of 2-letter language codes (full native name on hover/long-press
 // via the title attribute), closes on selection or outside click.
-function LanguageSwitcher({ lang, onChange }: { lang: MenuLanguage; onChange: (lang: MenuLanguage) => void }) {
+function LanguageSwitcher({
+  lang,
+  onChange,
+  enabledLanguages,
+}: {
+  lang: MenuLanguage;
+  onChange: (lang: MenuLanguage) => void;
+  enabledLanguages: MenuLanguage[] | null;
+}) {
   const [open, setOpen] = useState(false);
+  // English is always offered as the guaranteed fallback, regardless of
+  // which other languages the owner has enabled in Settings.
+  const options = MENU_LANGUAGES.filter(
+    (option) => option.code === "en" || !enabledLanguages || enabledLanguages.includes(option.code),
+  );
   return (
     <div className="relative shrink-0">
       <button
@@ -101,7 +115,7 @@ function LanguageSwitcher({ lang, onChange }: { lang: MenuLanguage; onChange: (l
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-40 mt-2 grid w-40 grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-            {MENU_LANGUAGES.map((option) => (
+            {options.map((option) => (
               <button
                 key={option.code}
                 title={option.native}
@@ -378,7 +392,7 @@ export function OrderClient({ qrToken, table, restaurant, menuTemplate, categori
           <p className={`${style.headerSubtitle} mt-1`}>{table.label}</p>
         </div>
         <div className="flex shrink-0 flex-col items-stretch gap-2">
-          {isPremium && <LanguageSwitcher lang={lang} onChange={changeLang} />}
+          {isPremium && <LanguageSwitcher lang={lang} onChange={changeLang} enabledLanguages={restaurant.enabled_languages as MenuLanguage[] | null} />}
           <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} lang={lang} />
         </div>
       </header>
@@ -846,7 +860,7 @@ function ConfirmationView({ restaurant, table, menuTemplate, confirmation, statu
           <p className="text-sm text-muted">{table.label}</p>
         </div>
         <div className="flex shrink-0 flex-col items-stretch gap-2">
-          {isPremium && <LanguageSwitcher lang={lang} onChange={onChangeLang} />}
+          {isPremium && <LanguageSwitcher lang={lang} onChange={onChangeLang} enabledLanguages={restaurant.enabled_languages as MenuLanguage[] | null} />}
           <CallServerButton calling={callingServer} called={serverCalled} onCall={onCallServer} lang={lang} />
         </div>
       </header>

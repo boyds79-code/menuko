@@ -15,6 +15,9 @@ export async function updateRestaurant(input: {
   paymentQrUrl?: string | null;
   paymentLink?: string | null;
   logoUrl?: string | null;
+  grabfoodCommissionPct?: number | null;
+  foodpandaCommissionPct?: number | null;
+  enabledLanguages?: string[] | null;
 }) {
   const ctx = await requireStaff("owner");
   const supabase = await createClient();
@@ -29,6 +32,11 @@ export async function updateRestaurant(input: {
       ...(input.paymentQrUrl !== undefined ? { payment_qr_url: input.paymentQrUrl } : {}),
       ...(input.paymentLink !== undefined ? { payment_link: input.paymentLink } : {}),
       ...(input.logoUrl !== undefined ? { logo_url: input.logoUrl } : {}),
+      ...(input.grabfoodCommissionPct !== undefined ? { grabfood_commission_pct: input.grabfoodCommissionPct } : {}),
+      ...(input.foodpandaCommissionPct !== undefined
+        ? { foodpanda_commission_pct: input.foodpandaCommissionPct }
+        : {}),
+      ...(input.enabledLanguages !== undefined ? { enabled_languages: input.enabledLanguages } : {}),
     })
     .eq("id", ctx.restaurantId);
   revalidatePath("/admin/settings");

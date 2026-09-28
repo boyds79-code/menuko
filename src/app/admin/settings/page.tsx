@@ -11,7 +11,9 @@ export default async function AdminSettingsPage() {
     await Promise.all([
       supabase
         .from("restaurants")
-        .select("name, address, about, business_type, menu_template, payment_qr_url, payment_link, logo_url")
+        .select(
+          "name, address, about, business_type, menu_template, payment_qr_url, payment_link, logo_url, grabfood_commission_pct, foodpanda_commission_pct, enabled_languages",
+        )
         .eq("id", ctx.restaurantId)
         .single(),
       supabase

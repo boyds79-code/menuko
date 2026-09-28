@@ -476,6 +476,7 @@ export type Database = {
           business_type: Database["public"]["Enums"]["business_type"]
           created_at: string
           cuisine_tags: string[]
+          enabled_languages: string[] | null
           foodpanda_commission_pct: number | null
           grabfood_commission_pct: number | null
           id: string
@@ -495,6 +496,7 @@ export type Database = {
           business_type?: Database["public"]["Enums"]["business_type"]
           created_at?: string
           cuisine_tags?: string[]
+          enabled_languages?: string[] | null
           foodpanda_commission_pct?: number | null
           grabfood_commission_pct?: number | null
           id?: string
@@ -514,6 +516,7 @@ export type Database = {
           business_type?: Database["public"]["Enums"]["business_type"]
           created_at?: string
           cuisine_tags?: string[]
+          enabled_languages?: string[] | null
           foodpanda_commission_pct?: number | null
           grabfood_commission_pct?: number | null
           id?: string

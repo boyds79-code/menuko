@@ -10,6 +10,7 @@ import { TablesManager } from "../tables/tables-manager";
 import { AccountsManager } from "../accounts/accounts-manager";
 import type { BusinessType } from "@/lib/database.types";
 import { MENU_TEMPLATES, type MenuTemplateId } from "@/lib/menu-templates";
+import { MENU_LANGUAGES, type MenuLanguage } from "@/lib/menu-i18n";
 
 // Kept in sync with each [data-menu-theme] block in globals.css — just the
 // 4 swatches shown while browsing a design that isn't applied yet.
@@ -56,6 +57,9 @@ type Restaurant = {
   payment_qr_url: string | null;
   payment_link: string | null;
   logo_url: string | null;
+  grabfood_commission_pct: number | null;
+  foodpanda_commission_pct: number | null;
+  enabled_languages: string[] | null;
 } | null;
 
 export function SettingsManager({
@@ -86,8 +90,26 @@ export function SettingsManager({
   const [logoUrl, setLogoUrl] = useState(initial?.logo_url ?? null);
   const [uploading, setUploading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [grabfoodPct, setGrabfoodPct] = useState(initial?.grabfood_commission_pct?.toString() ?? "");
+  const [foodpandaPct, setFoodpandaPct] = useState(initial?.foodpanda_commission_pct?.toString() ?? "");
+  const [enabledLanguages, setEnabledLanguages] = useState<MenuLanguage[]>(
+    (initial?.enabled_languages as MenuLanguage[] | null) ?? MENU_LANGUAGES.map((l) => l.code),
+  );
+  const [setupConfirmed, setSetupConfirmed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
+
+  const requiredFilledCount = [name, address, about, businessType].filter((v) => v && v.trim()).length;
+  const requiredComplete = requiredFilledCount === 4;
+
+  function toggleLanguage(code: MenuLanguage) {
+    if (code === "en") return; // English is always on — the guaranteed fallback.
+    setEnabledLanguages((prev) => {
+      const next = prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code];
+      updateRestaurant({ enabledLanguages: next });
+      return next;
+    });
+  }
 
   async function handleQrUpload(file: File) {
     setUploading(true);
@@ -127,7 +149,7 @@ export function SettingsManager({
 
   return (
     <div className="flex flex-col gap-3">
-      <AccordionSection title="Basic Information">
+      <AccordionSection title="Basic Information" badge={`${requiredFilledCount}/4`}>
         <label className="flex flex-col gap-1 text-sm">
           Logo (optional)
           <div className="flex items-center gap-3">
@@ -164,11 +186,12 @@ export function SettingsManager({
           </div>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Restaurant/Cafe name
+          Restaurant/Cafe name <span className="text-red-600">*</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={() => updateRestaurant({ name })}
+            required
             className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
           />
         </label>
@@ -187,22 +210,23 @@ export function SettingsManager({
           </span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          About your restaurant
+          About your restaurant <span className="text-red-600">*</span>
           <textarea
             value={about}
             onChange={(e) => setAbout(e.target.value)}
             onBlur={() => updateRestaurant({ about })}
             rows={3}
             maxLength={280}
+            required
             placeholder="A short line customers see on your menu page — e.g. what makes your food special, or your story."
             className="resize-none rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
           />
           <span className="text-xs text-muted">
-            Shown under your restaurant name on the customer menu page. Optional.
+            Shown under your restaurant name on the customer menu page.
           </span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          Business type
+          Business type <span className="text-red-600">*</span>
           <select
             value={businessType}
             onChange={(e) => {
@@ -343,12 +367,106 @@ export function SettingsManager({
         </div>
       </AccordionSection>
 
+      <AccordionSection title="Premium Settings">
+        <p className="text-xs text-muted">
+          Feeds your monthly Sales Report and the customer menu&apos;s language switcher — both
+          premium features.
+        </p>
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold">Delivery commission rates</h3>
+          <p className="text-xs text-muted">
+            Your actual commission rate per platform, so the Sales Report can show real net
+            revenue instead of an industry-average estimate. Optional.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex flex-col gap-1 text-sm">
+              GrabFood commission (%)
+              <input
+                value={grabfoodPct}
+                onChange={(e) => setGrabfoodPct(e.target.value)}
+                onBlur={() => {
+                  const parsed = grabfoodPct.trim() ? Number(grabfoodPct) : null;
+                  updateRestaurant({ grabfoodCommissionPct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
+                }}
+                placeholder="e.g. 26"
+                inputMode="decimal"
+                className="w-28 rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              foodpanda commission (%)
+              <input
+                value={foodpandaPct}
+                onChange={(e) => setFoodpandaPct(e.target.value)}
+                onBlur={() => {
+                  const parsed = foodpandaPct.trim() ? Number(foodpandaPct) : null;
+                  updateRestaurant({
+                    foodpandaCommissionPct: parsed !== null && Number.isNaN(parsed) ? null : parsed,
+                  });
+                }}
+                placeholder="e.g. 26"
+                inputMode="decimal"
+                className="w-28 rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <h3 className="text-sm font-semibold">Customer menu languages</h3>
+          <p className="text-xs text-muted">
+            English is always available. Tap the languages your customers actually use — fewer
+            options keeps the language menu quick to scan.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {MENU_LANGUAGES.map((l) => {
+              const on = l.code === "en" || enabledLanguages.includes(l.code);
+              return (
+                <button
+                  key={l.code}
+                  type="button"
+                  onClick={() => toggleLanguage(l.code)}
+                  disabled={l.code === "en"}
+                  title={l.native}
+                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                    on
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-border text-muted hover:border-brand hover:text-brand"
+                  } ${l.code === "en" ? "cursor-not-allowed opacity-70" : ""}`}
+                >
+                  {l.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </AccordionSection>
+
       <AccordionSection title="Invite Kitchen / Cashier Accounts" badge="Optional">
         <p className="text-xs text-muted">
           The free plan supports 1 owner + 1 kitchen + 1 cashier account. Additional accounts
           require the premium plan.
         </p>
         <AccountsManager initialAccounts={accounts} />
+
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={() => setSetupConfirmed(true)}
+            disabled={!requiredComplete}
+            className="self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Save
+          </button>
+          {!requiredComplete && (
+            <span className="text-xs text-muted">
+              Finish the required fields in Basic Information ({requiredFilledCount}/4) to enable this.
+            </span>
+          )}
+          {requiredComplete && setupConfirmed && (
+            <span className="text-xs font-semibold text-brand">✓ Setup complete!</span>
+          )}
+        </div>
       </AccordionSection>
     </div>
   );
