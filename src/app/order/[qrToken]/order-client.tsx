@@ -628,6 +628,27 @@ function ClassicLayout({ restaurant, table, menuColor, lang, isPremium, changeLa
 // ItemDetailOverlay Classic uses for its detail popup.
 function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, featuredItems, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
   const promoItem = featuredItems[0] ?? null;
+  const [search, setSearch] = useState("");
+
+  // Only categories that actually have items to show as tabs — an empty
+  // category would otherwise be a dead-end tab with nothing under it.
+  const categoriesWithItems = useMemo(
+    () => categories.filter((c) => items.some((i) => i.category_id === c.id)),
+    [categories, items],
+  );
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(categoriesWithItems[0]?.id ?? null);
+  // The owner's category list can change between renders (item added to a
+  // previously-empty category, etc.) — keep the active tab valid instead of
+  // silently showing an empty list.
+  const resolvedActiveCategoryId = categoriesWithItems.some((c) => c.id === activeCategoryId)
+    ? activeCategoryId
+    : (categoriesWithItems[0]?.id ?? null);
+  const activeCategory = categoriesWithItems.find((c) => c.id === resolvedActiveCategoryId) ?? null;
+
+  const query = search.trim().toLowerCase();
+  const visibleItems = items
+    .filter((i) => i.category_id === resolvedActiveCategoryId)
+    .filter((i) => !query || tr(i.translations, lang, "name", i.name).toLowerCase().includes(query));
 
   return (
     <div data-menu-theme={menuColor} dir={RTL_LANGUAGES.has(lang) ? "rtl" : "ltr"} className="flex min-h-full flex-1 flex-col bg-background pb-24">
@@ -642,17 +663,48 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
         </div>
       </header>
 
+      <div className="px-4 pt-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={ui(lang, "searchMenu")}
+          className="w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground outline-none focus:border-brand"
+        />
+      </div>
+
       <TableOrderSummaryBanner tableOrderSummary={tableOrderSummary} />
 
       {promoItem && (
-        <button onClick={() => setDetailItem(promoItem)} className="relative mx-4 mt-4 h-32 w-[calc(100%-2rem)] shrink-0 overflow-hidden rounded-xl text-left shadow-sm transition-opacity hover:opacity-95">
-          {promoItem.photo_url ? <Image src={promoItem.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center bg-border text-xs text-muted">Menuko</span>}
-          <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" aria-hidden />
-          <div className="absolute inset-x-0 bottom-0 p-3">
-            <span className="inline-block rounded-full bg-brand px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-foreground">{ui(lang, "ourBest")}</span>
-            <p className="mt-1 truncate text-sm font-semibold text-white">{tr(promoItem.translations, lang, "name", promoItem.name)}</p>
+        <button onClick={() => setDetailItem(promoItem)} className="mx-4 mt-4 flex h-28 items-stretch overflow-hidden rounded-xl border border-border bg-brand/10 text-left transition-opacity hover:opacity-90">
+          <div className="flex flex-1 flex-col justify-center gap-1 px-4">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-brand">{ui(lang, "ourBest")}</span>
+            <p className="truncate text-base font-bold text-foreground">{tr(promoItem.translations, lang, "name", promoItem.name)}</p>
+            <p className="text-sm font-semibold text-brand">{formatPeso(promoItem.price)}</p>
+          </div>
+          <div className="relative w-28 shrink-0 bg-background">
+            {promoItem.photo_url ? <Image src={promoItem.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-xs text-muted">Menuko</span>}
           </div>
         </button>
+      )}
+
+      {categoriesWithItems.length > 0 && (
+        <div className="mt-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {categoriesWithItems.map((category) => {
+            const categoryName = tr(category.translations, lang, "name", category.name);
+            const active = category.id === resolvedActiveCategoryId;
+            return (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategoryId(category.id)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active ? "border-brand bg-brand text-brand-foreground" : "border-border text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                {categoryName}
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {editingRequest && (
@@ -672,15 +724,12 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
       )}
 
       <main className="flex flex-1 flex-col gap-5 p-4">
-        {categories.map((category) => {
-          const categoryItems = items.filter((i) => i.category_id === category.id);
-          if (categoryItems.length === 0) return null;
-          const categoryName = tr(category.translations, lang, "name", category.name);
-          return (
-            <section key={category.id}>
-              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-foreground">{categoryName}</h2>
+        {activeCategory && (
+          <section>
+            <h2 className="mb-2 text-sm font-bold text-foreground">{tr(activeCategory.translations, lang, "name", activeCategory.name)}</h2>
+            {visibleItems.length > 0 ? (
               <div className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-                {categoryItems.map((item) => {
+                {visibleItems.map((item) => {
                   const name = tr(item.translations, lang, "name", item.name);
                   const description = tr(item.translations, lang, "description", item.description);
                   const qty = cart[item.id] ?? 0;
@@ -701,9 +750,11 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
                   );
                 })}
               </div>
-            </section>
-          );
-        })}
+            ) : (
+              <p className="text-sm text-muted">{ui(lang, "noMenuItems")}</p>
+            )}
+          </section>
+        )}
         {items.length === 0 && <p className="text-sm text-muted">{ui(lang, "noMenuItems")}</p>}
         <p className="pt-2 text-center text-[11px] text-muted">
           {ui(lang, "byOrderingAgree")}{" "}

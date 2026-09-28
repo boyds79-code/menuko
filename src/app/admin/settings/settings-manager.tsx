@@ -322,6 +322,18 @@ export function SettingsManager({
             <p className="text-xs text-muted">
               Roughly what customers see on their phone — full menu, scrollable.
             </p>
+            {tables.length > 0 ? (
+              <a
+                href={`/order/${tables[0].qr_token}?previewLayout=${candidateLayout}&previewColor=${candidateColor}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-semibold text-brand underline"
+              >
+                Open full-screen preview →
+              </a>
+            ) : (
+              <p className="text-xs text-muted">Add a table in Table Setting to open a full-screen preview.</p>
+            )}
           </div>
 
         </div>

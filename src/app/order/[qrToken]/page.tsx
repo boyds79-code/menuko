@@ -7,10 +7,13 @@ import { OrderClient } from "./order-client";
 
 export default async function OrderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ qrToken: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { qrToken } = await params;
+  const search = await searchParams;
   const supabase = await createClient();
 
   const { data: table } = await supabase
@@ -92,8 +95,33 @@ export default async function OrderPage({
       }
     : null;
 
-  const menuLayout = isMenuLayoutId(restaurant.menu_layout) ? restaurant.menu_layout : "classic";
-  const menuColor = isMenuColorId(restaurant.menu_color) ? restaurant.menu_color : "terracotta";
+  let menuLayout = isMenuLayoutId(restaurant.menu_layout) ? restaurant.menu_layout : "classic";
+  let menuColor = isMenuColorId(restaurant.menu_color) ? restaurant.menu_color : "terracotta";
+
+  // Settings > Menu Setting's "full-screen preview" link — lets the owner
+  // see a design they haven't applied yet rendered on the real customer
+  // page (the only way a preview can ever be trustworthy), without writing
+  // anything to the DB. Gated to that restaurant's own owner so a
+  // random customer can't use it to see a different-looking menu than
+  // what's actually live.
+  const previewLayoutParam = search.previewLayout;
+  const previewColorParam = search.previewColor;
+  if (typeof previewLayoutParam === "string" || typeof previewColorParam === "string") {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: account } = await supabase
+        .from("accounts")
+        .select("role, restaurant_id")
+        .eq("id", user.id)
+        .single();
+      if (account?.role === "owner" && account.restaurant_id === table.restaurant_id) {
+        if (typeof previewLayoutParam === "string" && isMenuLayoutId(previewLayoutParam)) menuLayout = previewLayoutParam;
+        if (typeof previewColorParam === "string" && isMenuColorId(previewColorParam)) menuColor = previewColorParam;
+      }
+    }
+  }
 
   return (
     <OrderClient
