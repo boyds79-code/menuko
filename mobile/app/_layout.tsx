@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession } from "@/ctx";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 export default function RootLayout() {
   return (
@@ -11,6 +12,7 @@ export default function RootLayout() {
       <SessionProvider>
         <RootNavigator />
       </SessionProvider>
+      <UpdateBanner />
     </SafeAreaProvider>
   );
 }

@@ -3,11 +3,10 @@
     "name": "Menuko Staff",
     "slug": "menuko-staff",
     "scheme": "menuko-staff",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "ph.menuko.staff",
@@ -57,7 +56,8 @@
           "backgroundColor": "#fffaf3"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-font"
     ],
     "extra": {
       "router": {},
@@ -65,6 +65,12 @@
         "projectId": "5faf62ec-339b-457c-92e6-4d2acd5d2a5c"
       }
     },
-    "owner": "chris_kim"
+    "owner": "chris_kim",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5faf62ec-339b-457c-92e6-4d2acd5d2a5c"
+    }
   }
 }
