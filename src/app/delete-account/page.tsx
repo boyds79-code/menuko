@@ -31,7 +31,7 @@ export default function DeleteAccountPage() {
         <p>Only the restaurant owner account can do this (it deletes the whole restaurant):</p>
         <ol className="list-decimal pl-5">
           <li>Open the Menuko Staff app and sign in as the owner</li>
-          <li>Go to <strong>My Page</strong>, then the <strong>Account</strong> tab</li>
+          <li>Open the <strong>Store</strong> tab, then switch to <strong>Account</strong></li>
           <li>Scroll to the <strong>Delete account</strong> card</li>
           <li>Type your restaurant&apos;s name to confirm, then tap <strong>Delete my account</strong></li>
         </ol>

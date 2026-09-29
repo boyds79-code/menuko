@@ -119,10 +119,10 @@ export function PrivacyContent() {
       <Section title="7. Your rights">
         <p>
           If you are a Restaurant owner, you can delete your entire restaurant account and all
-          associated data at any time directly in the Menuko Staff app (Settings → My Page → Delete
+          associated data at any time directly in the Menuko Staff app (Store → Account → Delete
           account) — this permanently removes your restaurant, its menu and order data, and every
           staff login tied to it. Kitchen and cashier staff accounts are managed by the Restaurant
-          owner and can be removed by the owner from the same screen; they do not currently have a
+          owner and can be removed by the owner under Store → My Business → Staff accounts; they do not currently have a
           separate self-service deletion option of their own.
         </p>
         <p className="mt-2">

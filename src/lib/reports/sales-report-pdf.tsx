@@ -564,12 +564,12 @@ export function SalesReportDocument({ data }: { data: SalesReportData }) {
             [
               "GrabFood commission rate",
               data.restaurant.grabfoodCommissionPct !== null ? `${data.restaurant.grabfoodCommissionPct}% entered` : "Not entered (using 26% estimate)",
-              "Settings > Delivery channels",
+              "Store > Delivery channels",
             ],
             [
               "foodpanda commission rate",
               data.restaurant.foodpandaCommissionPct !== null ? `${data.restaurant.foodpandaCommissionPct}% entered` : "Not entered (using 26% estimate)",
-              "Settings > Delivery channels",
+              "Store > Delivery channels",
             ],
             ["Table count", `${data.summary.tableCount} tables confirmed`, "— up to date"],
           ]}

@@ -41,7 +41,7 @@ export function CustomerPreviewModal({
             <Text style={styles.hint}>
               {qrToken
                 ? "This needs to know where the web app is deployed to load the real order page."
-                : "Add a table in Settings > Tables to preview its order page."}
+                : "Add a table in Store > Tables & QR codes to preview its order page."}
             </Text>
           </View>
         )}
