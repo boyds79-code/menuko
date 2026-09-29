@@ -67,7 +67,7 @@
     },
     "owner": "chris_kim",
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/5faf62ec-339b-457c-92e6-4d2acd5d2a5c"
