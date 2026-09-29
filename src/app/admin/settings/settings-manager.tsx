@@ -39,15 +39,6 @@ type MenuItem = {
 type Table = { id: string; label: string; qr_token: string; capacity: number };
 type Account = { id: string; email: string; role: string; created_at: string };
 
-// Shown only until the owner has added real menu items — lets a brand-new
-// restaurant still judge a design's color/style during onboarding, before
-// there's anything real to preview.
-const SAMPLE_ITEMS: { name: string; price: number; photo: string }[] = [
-  { name: "Grilled Chicken Plate", price: 220, photo: "/marketing/book-japanese.webp" },
-  { name: "Beef Pasta", price: 260, photo: "/marketing/book-italian.webp" },
-  { name: "Garden Salad", price: 150, photo: "/marketing/book-korean.webp" },
-];
-
 type Restaurant = {
   name: string;
   address: string | null;
@@ -319,21 +310,25 @@ export function SettingsManager({
           </div>
 
           <div className="flex flex-col items-center gap-2">
-            <MiniMenuPreview layoutId={candidateLayout} colorId={candidateColor} restaurantName={name} categories={categories} items={items} />
-            {tables.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(true)}
-                className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
-              >
-                Preview full menu →
-              </button>
-            ) : (
-              <p className="text-xs text-muted">Add a table in Table Setting to preview the full menu.</p>
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+            >
+              Open full-screen preview · compare all layouts →
+            </button>
+            {/* The real customer order page (owner-only /preview/menu route),
+                not a hand-drawn thumbnail — a scaled-down sketch made all
+                four layouts look the same. Scrollable, full phone size. */}
+            <iframe
+              key={`${candidateLayout}-${candidateColor}`}
+              src={menuPreviewSrc(candidateLayout, candidateColor)}
+              className="h-[760px] w-[390px] max-w-full rounded-[28px] border-4 border-foreground/80 bg-background shadow-lg"
+              title="Customer menu preview"
+            />
+            {items.length === 0 && (
+              <p className="text-xs text-muted">Showing sample items until you add your own in Category &amp; item setting below.</p>
             )}
-            <p className="text-xs text-muted">
-              The thumbnail above is a rough sketch — &ldquo;Preview full menu&rdquo; shows the real, scrollable customer page.
-            </p>
           </div>
 
         </div>
@@ -511,35 +506,17 @@ export function SettingsManager({
         </div>
       </AccordionSection>
 
-      {previewOpen && tables.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPreviewOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="flex h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-card shadow-2xl">
-            <div className="flex items-center gap-3 border-b border-border p-3">
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(false)}
-                aria-label="Close"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-muted transition hover:text-foreground"
-              >
-                ×
-              </button>
-              <div>
-                <p className="text-sm font-semibold">Menu preview</p>
-                <p className="text-xs text-muted">Roughly what customers see — not final styling</p>
-              </div>
-            </div>
-            {/* Keying on the design so switching layout/color chips while the
-                modal is open reloads the iframe with the new candidate design
-                — this is the real customer order page, not a hand-built
-                approximation, so it can never drift from what actually ships. */}
-            <iframe
-              key={`${candidateLayout}-${candidateColor}`}
-              src={`/order/${tables[0].qr_token}?previewLayout=${candidateLayout}&previewColor=${candidateColor}`}
-              className="h-full w-full flex-1 border-0"
-              title="Menu preview"
-            />
-          </div>
-        </div>
+      {previewOpen && (
+        <FullScreenMenuPreview
+          layoutId={candidateLayout}
+          colorId={candidateColor}
+          applied={designApplied}
+          saving={savingDesign}
+          onLayoutChange={setCandidateLayout}
+          onColorChange={setCandidateColor}
+          onApply={() => applyDesign(candidateLayout, candidateColor)}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
     </div>
   );
@@ -596,247 +573,141 @@ function PaletteCard({ colorId }: { colorId: MenuColorId }) {
   );
 }
 
-type PreviewItem = { id: string; name: string; price: number; photo_url: string | null };
+function menuPreviewSrc(layoutId: MenuLayoutId, colorId: MenuColorId) {
+  return `/preview/menu?layout=${layoutId}&color=${colorId}`;
+}
 
-// A small, always-visible preview at roughly a phone's aspect ratio (the
-// same ~9:19.5 shape as the customer order page) — not the live
-// [qrToken]/order-client.tsx page itself (that stays untouched; this is a
-// deliberately separate, hand-scaled approximation), branching its markup
-// by `layoutId` to mirror order-client.tsx's ClassicLayout/MinimalListLayout
-// shapes, and coloring itself via the same `data-menu-theme` CSS scope.
-function MiniMenuPreview({
+// Takes over the whole viewport so each layout renders at real phone size.
+// "Compare" puts all four layouts side by side in the chosen color — the
+// only way the structural differences (tabs vs list vs grid vs dark) are
+// actually obvious; clicking a column picks that layout.
+function FullScreenMenuPreview({
   layoutId,
   colorId,
-  restaurantName,
-  categories,
-  items,
+  applied,
+  saving,
+  onLayoutChange,
+  onColorChange,
+  onApply,
+  onClose,
 }: {
   layoutId: MenuLayoutId;
   colorId: MenuColorId;
-  restaurantName: string;
-  categories: MenuCategory[];
-  items: MenuItem[];
+  applied: boolean;
+  saving: boolean;
+  onLayoutChange: (id: MenuLayoutId) => void;
+  onColorChange: (id: MenuColorId) => void;
+  onApply: () => void;
+  onClose: () => void;
 }) {
-  const hasItems = items.length > 0;
-
-  const displayCategories: { id: string; name: string; items: PreviewItem[] }[] = hasItems
-    ? categories
-        .map((c) => ({
-          id: c.id,
-          name: c.name,
-          items: items.filter((i) => i.category_id === c.id).map((i) => ({ id: i.id, name: i.name, price: i.price, photo_url: i.photo_url })),
-        }))
-        .filter((c) => c.items.length > 0)
-    : [
-        {
-          id: "sample-starters",
-          name: "Starters",
-          items: SAMPLE_ITEMS.map((s, i) => ({ id: `sample-${i}`, name: s.name, price: s.price, photo_url: s.photo })),
-        },
-      ];
-
-  // Jamezz Dark and Grid Popup both need a static illustration of the first
-  // major category's tabs/subcategory pills/item list, not the flat
-  // per-category loop the other two layouts use. Falls back to sample items
-  // when there's no real major->subcategory structure yet to show.
-  const needsSubcategoryPreview = layoutId === "jamezz-dark" || layoutId === "grid-popup";
-  let tieredMajors: { id: string; name: string }[] = [];
-  let tieredSubs: { id: string; name: string }[] = [];
-  let tieredItems: PreviewItem[] = [];
-  if (needsSubcategoryPreview) {
-    const categoryIdsWithItems = new Set(items.map((i) => i.category_id));
-    // A major category qualifies if it has items directly OR any of its
-    // subcategories do — not exclusively one or the other, since an owner
-    // can leave items directly under a major category even after adding
-    // subcategories to it.
-    const majors = categories.filter((c) => {
-      if (c.parent_id) return false;
-      const children = categories.filter((child) => child.parent_id === c.id);
-      const childrenHaveItems = children.some((child) => categoryIdsWithItems.has(child.id));
-      return childrenHaveItems || categoryIdsWithItems.has(c.id);
-    });
-    const firstMajor = majors[0];
-    if (firstMajor) {
-      const subs = categories.filter((c) => c.parent_id === firstMajor.id && categoryIdsWithItems.has(c.id));
-      const leafId = subs[0]?.id ?? firstMajor.id;
-      tieredMajors = majors.map((m) => ({ id: m.id, name: m.name }));
-      tieredSubs = subs.map((s) => ({ id: s.id, name: s.name }));
-      tieredItems = items.filter((i) => i.category_id === leafId).map((i) => ({ id: i.id, name: i.name, price: i.price, photo_url: i.photo_url }));
-    } else {
-      // No real major->subcategory structure yet — show a representative
-      // sample so the mini preview still demonstrates the tabs/pills shape,
-      // same as Classic/Minimal List's own sample-category fallback above.
-      tieredMajors = [{ id: "sample-major", name: "Food" }];
-      tieredSubs = [{ id: "sample-sub", name: "Starters" }];
-      tieredItems = SAMPLE_ITEMS.map((s, i) => ({ id: `sample-${i}`, name: s.name, price: s.price, photo_url: s.photo }));
-    }
-  }
+  const [compare, setCompare] = useState(true);
 
   return (
-    <div className="w-[300px] max-w-full shrink-0 overflow-hidden rounded-[26px] border border-border shadow-sm">
-      <div data-menu-theme={colorId} data-menu-layout={layoutId === "jamezz-dark" ? "jamezz-dark" : undefined} className="flex max-h-[640px] w-full flex-col bg-background">
-        <MiniHeader layoutId={layoutId} restaurantName={restaurantName} />
-        {layoutId === "jamezz-dark" && (
-          <div className="flex-1 overflow-y-auto p-2.5">
-            {tieredMajors.length > 0 && (
-              <div className="mb-2 flex gap-3 border-b border-border pb-1.5">
-                {tieredMajors.map((m, idx) => (
-                  <span key={m.id} className={`text-[9px] font-bold ${idx === 0 ? "text-brand" : "text-muted"}`}>
-                    {m.name}
-                  </span>
-                ))}
-              </div>
-            )}
-            {tieredSubs.length > 0 && (
-              <div className="mb-2.5 flex gap-1.5">
-                {tieredSubs.map((s, idx) => (
-                  <span
-                    key={s.id}
-                    className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ${idx === 0 ? "bg-brand text-brand-foreground" : "border border-border text-muted"}`}
-                  >
-                    {s.name}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-              {tieredItems.map((item) => (
-                <MiniListRow key={item.id} item={item} />
-              ))}
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-lg text-muted transition hover:text-foreground"
+        >
+          ×
+        </button>
+        <p className="text-sm font-semibold">Menu preview</p>
+
+        <div className="flex rounded-full border border-border p-0.5 text-sm">
+          {([true, false] as const).map((isCompare) => (
+            <button
+              key={String(isCompare)}
+              type="button"
+              onClick={() => setCompare(isCompare)}
+              className={`rounded-full px-3 py-1 transition ${compare === isCompare ? "bg-brand text-brand-foreground" : "text-muted hover:text-foreground"}`}
+            >
+              {isCompare ? "Compare all 4" : "Single"}
+            </button>
+          ))}
+        </div>
+
+        {!compare && (
+          <div className="flex flex-wrap gap-1.5">
+            {MENU_LAYOUTS.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => onLayoutChange(l.id)}
+                className={`rounded-full border px-3 py-1 text-sm transition ${
+                  layoutId === l.id ? "border-brand bg-brand/10 text-brand" : "border-border text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-1.5">
+          {MENU_COLORS.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onColorChange(c.id)}
+              className={`rounded-full border px-3 py-1 text-sm transition ${
+                colorId === c.id ? "border-brand bg-brand/10 text-brand" : "border-border text-muted hover:border-brand hover:text-brand"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          {applied ? (
+            <span className="text-xs text-muted">This is your live design.</span>
+          ) : (
+            <button
+              type="button"
+              onClick={onApply}
+              disabled={saving}
+              className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+            >
+              {saving ? "Applying…" : `Apply ${MENU_LAYOUTS.find((l) => l.id === layoutId)?.label} · ${MENU_COLORS.find((c) => c.id === colorId)?.label}`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {compare ? (
+        <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto p-4">
+          {MENU_LAYOUTS.map((l) => (
+            <div key={l.id} className="flex min-h-0 w-[375px] shrink-0 flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => onLayoutChange(l.id)}
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                  layoutId === l.id ? "border-brand bg-brand text-brand-foreground" : "border-border text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                {layoutId === l.id ? `✓ ${l.label}` : `Choose ${l.label}`}
+              </button>
+              <iframe
+                key={`${l.id}-${colorId}`}
+                src={menuPreviewSrc(l.id, colorId)}
+                className={`min-h-0 w-full flex-1 rounded-2xl border-2 bg-background ${layoutId === l.id ? "border-brand" : "border-border"}`}
+                title={`${l.label} preview`}
+              />
             </div>
-          </div>
-        )}
-        {layoutId === "grid-popup" && (
-          <div className="flex-1 overflow-y-auto p-2.5">
-            {tieredMajors.length > 0 && (
-              <div className="mb-2 flex justify-end">
-                <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[8px] font-semibold text-foreground">{tieredMajors[0].name}</span>
-              </div>
-            )}
-            {tieredSubs.length > 0 && (
-              <div className="mb-2.5 flex gap-1.5">
-                {tieredSubs.map((s, idx) => (
-                  <span
-                    key={s.id}
-                    className={`rounded-full px-2 py-0.5 text-[8px] font-semibold ${idx === 0 ? "bg-brand text-brand-foreground" : "border border-border text-muted"}`}
-                  >
-                    {s.name}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              {tieredItems.map((item) => (
-                <MiniGridCard key={item.id} item={item} />
-              ))}
-            </div>
-          </div>
-        )}
-        {!needsSubcategoryPreview && (
-          <div className="flex-1 overflow-y-auto p-2.5">
-            {displayCategories.map((category) =>
-              layoutId === "minimal-list" ? (
-                <div key={category.id} className="mb-3.5">
-                  <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-wide text-foreground">{category.name}</span>
-                  <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-                    {category.items.map((item) => (
-                      <MiniListRow key={item.id} item={item} />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div key={category.id} className="mb-3.5">
-                  <span className="mb-1.5 inline-block rounded-full bg-brand/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-brand">{category.name}</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {category.items.map((item) => (
-                      <MiniCard key={item.id} item={item} />
-                    ))}
-                  </div>
-                </div>
-              ),
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Structural echo of each layout's real header — rounded curved block for
-// Classic, plain bordered bar for Minimal List — at a scale that fits the
-// 300px preview frame instead of a full page.
-function MiniHeader({ layoutId, restaurantName }: { layoutId: MenuLayoutId; restaurantName: string }) {
-  if (layoutId === "jamezz-dark" || layoutId === "grid-popup") {
-    return (
-      <div className="shrink-0 px-2.5 py-2.5">
-        <p className="truncate text-[13px] font-bold text-foreground">{restaurantName || "Your Restaurant"}</p>
-        <p className="mt-0.5 text-[9px] text-muted">Table 1</p>
-      </div>
-    );
-  }
-  if (layoutId === "minimal-list") {
-    return (
-      <div className="shrink-0 border-b border-border bg-card px-2.5 py-2.5">
-        <p className="truncate text-[13px] font-bold text-foreground">{restaurantName || "Your Restaurant"}</p>
-        <p className="mt-0.5 text-[9px] text-muted">Table 1</p>
-      </div>
-    );
-  }
-  return (
-    <div className="shrink-0 rounded-b-xl bg-header-dark px-2.5 py-2.5">
-      <p className="truncate text-[13px] font-bold text-header-dark-foreground">{restaurantName || "Your Restaurant"}</p>
-      <p className="mt-0.5 text-[9px] uppercase tracking-wide text-header-dark-foreground/60">Table 1</p>
-    </div>
-  );
-}
-
-// Mirrors ClassicLayout's RowCard shape (order-client.tsx) at a smaller
-// scale: rounded card, price badge overlapping the photo.
-function MiniCard({ item }: { item: PreviewItem }) {
-  return (
-    <div className="overflow-visible rounded-lg border border-border bg-card">
-      <div className="relative h-16 w-full overflow-hidden rounded-t-lg bg-background">
-        {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="100px" />}
-      </div>
-      <div className="relative px-1.5 pt-2.5 pb-1.5">
-        <span className="absolute -top-2 left-1.5 rounded-full bg-brand px-2 py-0.5 text-[7.5px] font-bold whitespace-nowrap text-brand-foreground shadow">
-          ₱{item.price}
-        </span>
-        <p className="truncate text-[8.5px] font-medium text-foreground">{item.name}</p>
-      </div>
-    </div>
-  );
-}
-
-// Mirrors GridPopupLayout's card shape (order-client.tsx): photo with a
-// price sticker over its top-left corner, a round "+" chip overlapping the
-// card's top-right corner, and just the title below — no description.
-function MiniGridCard({ item }: { item: PreviewItem }) {
-  return (
-    <div className="relative overflow-visible rounded-lg border border-border bg-card">
-      <div className="relative h-16 w-full overflow-hidden rounded-t-lg bg-background">
-        {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="100px" />}
-        <span className="absolute top-1 left-1 rounded-full bg-brand px-1.5 py-0.5 text-[7px] font-bold whitespace-nowrap text-brand-foreground shadow">₱{item.price}</span>
-      </div>
-      <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-brand-foreground shadow">+</span>
-      <p className="truncate px-1.5 py-1.5 text-[8.5px] font-medium text-foreground">{item.name}</p>
-    </div>
-  );
-}
-
-// Mirrors MinimalListLayout's list row shape (order-client.tsx): small
-// square thumbnail, name + price, a round "+" chip.
-function MiniListRow({ item }: { item: PreviewItem }) {
-  return (
-    <div className="flex items-center gap-2 p-1.5">
-      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-background">
-        {item.photo_url && <Image src={item.photo_url} alt={item.name} fill className="object-cover" sizes="32px" />}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[8.5px] font-medium text-foreground">{item.name}</p>
-        <p className="text-[7.5px] font-semibold text-brand">₱{item.price}</p>
-      </div>
-      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[8px] font-bold text-brand">+</span>
+          ))}
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 justify-center p-4">
+          <iframe
+            key={`${layoutId}-${colorId}`}
+            src={menuPreviewSrc(layoutId, colorId)}
+            className="h-full w-[430px] max-w-full rounded-[28px] border-4 border-foreground/80 bg-background shadow-xl"
+            title="Menu preview"
+          />
+        </div>
+      )}
     </div>
   );
 }

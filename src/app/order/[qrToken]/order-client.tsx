@@ -135,7 +135,7 @@ function LanguageSwitcher({
   );
 }
 
-export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor, categories, items, ad }: { qrToken: string; table: { id: string; label: string }; restaurant: Restaurant; menuLayout: MenuLayoutId; menuColor: MenuColorId; categories: Category[]; items: MenuItem[]; ad: AdContent | null }) {
+export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor, categories, items, ad, preview = false }: { qrToken: string; table: { id: string; label: string }; restaurant: Restaurant; menuLayout: MenuLayoutId; menuColor: MenuColorId; categories: Category[]; items: MenuItem[]; ad: AdContent | null; preview?: boolean }) {
   const supabase = createClient();
   const isPremium = restaurant.plan === "premium";
   // Remembered per browser (not per restaurant) — a customer who picks
@@ -200,6 +200,8 @@ export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor,
   // call per table (see 0020_server_calls.sql), so this cooldown is just
   // UI feedback, not the real dedup guard.
   async function callServer() {
+    // Owner's Settings preview (/preview/menu) — no real table to call from.
+    if (preview) return;
     setCallingServer(true);
     try {
       await supabase.rpc("request_server_call", { p_qr_token: qrToken });
@@ -212,6 +214,10 @@ export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor,
 
   async function placeOrder() {
     if (cartLines.length === 0) return;
+    if (preview) {
+      setError("This is a preview — orders are disabled here.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -294,6 +300,7 @@ export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor,
   }
 
   useEffect(() => {
+    if (preview) return;
     // Deliberate mount-time fetch — the realtime subscription below keeps
     // it live after this.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -320,11 +327,12 @@ export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor,
     // Only re-subscribe if the table/restaurant identity actually changes —
     // supabase/qrToken are stable for the component's lifetime in practice.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table.id, restaurant.id]);
+  }, [table.id, restaurant.id, preview]);
 
   // Rehydrate the confirmation screen if the customer reloads the page
   // (e.g. phone screen locked) after already placing an order.
   useEffect(() => {
+    if (preview) return;
     let stored: { orderId: string; accessToken: string } | null = null;
     try {
       const raw = sessionStorage.getItem(storageKey(qrToken));
