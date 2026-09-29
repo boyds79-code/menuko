@@ -12,7 +12,7 @@ export default async function AdminSettingsPage() {
       supabase
         .from("restaurants")
         .select(
-          "name, address, about, business_type, menu_layout, menu_color, payment_qr_url, payment_link, logo_url, grabfood_commission_pct, foodpanda_commission_pct, enabled_languages",
+          "name, address, about, business_type, menu_layout, menu_color, payment_qr_url, payment_link, logo_url, grabfood_commission_pct, foodpanda_commission_pct, enabled_languages, plan",
         )
         .eq("id", ctx.restaurantId)
         .single(),

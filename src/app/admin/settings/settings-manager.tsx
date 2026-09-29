@@ -53,6 +53,7 @@ type Restaurant = {
   grabfood_commission_pct: number | null;
   foodpanda_commission_pct: number | null;
   enabled_languages: string[] | null;
+  plan: string;
 } | null;
 
 export function SettingsManager({
@@ -71,6 +72,7 @@ export function SettingsManager({
   accounts: Account[];
 }) {
   const router = useRouter();
+  const isPremium = initial?.plan === "premium";
   const [name, setName] = useState(initial?.name ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
   const [about, setAbout] = useState(initial?.about ?? "");
@@ -356,10 +358,21 @@ export function SettingsManager({
       </AccordionSection>
 
       <AccordionSection title="Payment Info">
+        <div className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <p className="font-semibold">⚠️ Not connected to any payment system</p>
+          <p>
+            The QR image and link you add here are only <strong>shown</strong> to customers (order
+            screen) and your cashier — nothing more. Menuko does not receive, process, or verify
+            payments, and orders are <strong>not</strong> marked paid automatically.
+          </p>
+          <p>
+            Your cashier must check each payment in your own GCash/Maya/bank app before confirming
+            it in Menuko.
+          </p>
+        </div>
         <p className="text-xs text-muted">
           Upload a payment QR image you already have (GCash/Maya, etc.) and it&apos;s shown as-is
-          on the customer order screen and cashier screen. Menuko never processes payments
-          directly.
+          on the customer order screen and cashier screen.
         </p>
         <div className="flex items-center gap-3">
           <button
@@ -403,11 +416,22 @@ export function SettingsManager({
         </div>
       </AccordionSection>
 
-      <AccordionSection title="Premium Settings">
-        <p className="text-xs text-muted">
-          Feeds your monthly Sales Report and the customer menu&apos;s language switcher — both
-          premium features.
-        </p>
+      <AccordionSection title="Premium Settings" badge={isPremium ? "Active" : "Premium only"}>
+        {isPremium ? (
+          <p className="rounded-lg border border-brand/30 bg-brand/5 p-3 text-xs">
+            ✓ Your Premium plan is active — these settings feed your monthly Sales Report and the
+            customer menu&apos;s language switcher.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+            <p className="font-semibold">⚠️ Not used on the Free plan</p>
+            <p>
+              You&apos;re on the Free (basic) plan, so <strong>nothing in this section has any effect</strong>:
+              there&apos;s no monthly Sales Report, and customers only see the menu in English. You can
+              fill these in now — they&apos;re saved and start working only after you upgrade to Premium.
+            </p>
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">Delivery commission rates</h3>
           <p className="text-xs text-muted">

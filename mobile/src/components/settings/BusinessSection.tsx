@@ -40,6 +40,7 @@ export function BusinessSection() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [grabfoodPct, setGrabfoodPct] = useState("");
   const [foodpandaPct, setFoodpandaPct] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [hasLocation, setHasLocation] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
@@ -57,7 +58,7 @@ export function BusinessSection() {
     const { data } = await supabase
       .from("restaurants")
       .select(
-        "name, address, about, business_type, payment_qr_url, payment_link, logo_url, latitude, longitude, grabfood_commission_pct, foodpanda_commission_pct",
+        "name, address, about, business_type, payment_qr_url, payment_link, logo_url, latitude, longitude, grabfood_commission_pct, foodpanda_commission_pct, plan",
       )
       .eq("id", restaurantId)
       .single();
@@ -72,6 +73,7 @@ export function BusinessSection() {
       setHasLocation(data.latitude !== null && data.longitude !== null);
       setGrabfoodPct(data.grabfood_commission_pct?.toString() ?? "");
       setFoodpandaPct(data.foodpanda_commission_pct?.toString() ?? "");
+      setIsPremium(data.plan === "premium");
     }
     setLoaded(true);
   }, [restaurantId]);
@@ -293,9 +295,18 @@ export function BusinessSection() {
       </AccordionCard>
 
       <AccordionCard title="Payment info">
+        <View style={styles.warnBox}>
+          <Text style={styles.warnTitle}>⚠️ Not connected to any payment system</Text>
+          <Text style={styles.warnText}>
+            The QR image and link you add here are only shown to customers and your cashier.
+            Menuko does not receive, process, or verify payments, and orders are not marked paid
+            automatically. Your cashier must check each payment in your own GCash/Maya/bank app
+            before confirming it in Menuko.
+          </Text>
+        </View>
         <Text style={styles.hint}>
           Upload a payment QR image you already have (GCash/Maya, etc.) — shown as-is to
-          customers and the cashier. Menuko never processes payments directly.
+          customers and the cashier.
         </Text>
         <TouchableOpacity
           style={styles.photoBox}
@@ -324,7 +335,18 @@ export function BusinessSection() {
         />
       </AccordionCard>
 
-      <AccordionCard title="Delivery channels">
+      <AccordionCard title={isPremium ? "Delivery channels (Premium)" : "Delivery channels (Premium only)"}>
+        {isPremium ? (
+          <Text style={styles.hint}>✓ Your Premium plan is active — these rates are used in your Sales Report.</Text>
+        ) : (
+          <View style={styles.warnBox}>
+            <Text style={styles.warnTitle}>⚠️ Not used on the Free plan</Text>
+            <Text style={styles.warnText}>
+              These rates only feed the Premium Sales Report, so on the Free (basic) plan they have no
+              effect. You can fill them in now — they&apos;re saved and start working after you upgrade.
+            </Text>
+          </View>
+        )}
         <Text style={styles.hint}>
           Your actual commission rate for each delivery platform, so the Sales Report can show
           real net revenue instead of an industry-average estimate (26%). Optional.
@@ -389,6 +411,9 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 14, fontWeight: "700", color: "#ea7c1f" },
   label: { fontSize: 12, color: "#8a7c68" },
   hint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
+  warnBox: { gap: 4, borderWidth: 1, borderColor: "#fcd34d", backgroundColor: "#fffbeb", borderRadius: 10, padding: 10 },
+  warnTitle: { fontSize: 12, fontWeight: "700", color: "#78350f" },
+  warnText: { fontSize: 11, color: "#78350f", lineHeight: 16 },
   inputMultiline: { minHeight: 64, textAlignVertical: "top" },
   input: {
     borderWidth: 1,
