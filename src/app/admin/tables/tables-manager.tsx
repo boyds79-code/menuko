@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { addTable, deleteTable, renameTable, updateTableCapacity } from "../tables-actions";
+import { ORDER_ORIGIN } from "@/lib/constants";
 
 type Table = { id: string; label: string; qr_token: string; capacity: number };
 
@@ -67,9 +68,11 @@ export function TablesManager({ restaurantId, initialTables }: { restaurantId: s
 function TableCard({ restaurantId, table, onMutate }: { restaurantId: string; table: Table; onMutate: () => void }) {
   const [label, setLabel] = useState(table.label);
   const [capacity, setCapacity] = useState(String(table.capacity));
-  const [orderUrl] = useState(() =>
-    typeof window === "undefined" ? "" : `${window.location.origin}/order/${table.qr_token}`,
-  );
+  // Fixed production origin (not window.location) — the old
+  // window-based value was "" on the server and a URL in the browser, which
+  // caused a hydration mismatch, and on localhost/previews produced QR
+  // codes that don't work once downloaded.
+  const orderUrl = `${ORDER_ORIGIN}/order/${table.qr_token}`;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
