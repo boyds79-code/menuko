@@ -1,13 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1c2222;
-  --brand: #ce8c59;
-  --brand-foreground: #1c2222;
+  /* "Market Green" (2026-09 redesign) — shared with the staff app's
+     mobile/src/theme.ts. Customer menu pages don't use these: every
+     [data-menu-theme] block below redefines its own tokens. */
+  --background: #f2f4ee;
+  --foreground: #15261e;
+  --brand: #1f5c45;
+  --brand-foreground: #ffffff;
+  --brand-soft: #dcebe2;
+  --brand-ink: #184b38;
+  --saffron: #eaa93b;
+  --saffron-soft: #fdf3df;
   --card: #ffffff;
-  --border: #e3e8e7;
-  --muted: #7c8686;
+  --surface: #f7f9f4;
+  --border: #e0e6dc;
+  --muted: #55645b;
   /* The dark header band (restaurant name/table/Call Server) is a fixed
      design choice, not a light/dark-theme concern — it stays this color
      in both color schemes, so it isn't redefined in the dark-mode block
@@ -24,21 +32,31 @@
   --color-card: var(--card);
   --color-border: var(--border);
   --color-muted: var(--muted);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-saffron: var(--saffron);
+  --color-saffron-soft: var(--saffron-soft);
+  --color-surface: var(--surface);
   --color-header-dark: var(--header-dark);
   --color-header-dark-foreground: var(--header-dark-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #14181a;
-    --foreground: #eef1f0;
-    --brand: #dba274;
-    --brand-foreground: #1c2222;
-    --card: #1c2226;
-    --border: #2c3438;
-    --muted: #90a0a0;
+    --background: #0f1712;
+    --foreground: #eef3ef;
+    --brand: #6fc39c;
+    --brand-foreground: #0f1712;
+    --brand-soft: #1d3329;
+    --brand-ink: #9ad8b9;
+    --saffron-soft: #3a2c14;
+    --card: #17221c;
+    --surface: #1b2720;
+    --border: #2a3a31;
+    --muted: #9aaba1;
   }
 }
 
