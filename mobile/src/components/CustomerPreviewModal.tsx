@@ -51,7 +51,7 @@ export function CustomerPreviewModal({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fffaf3" },
+  safe: { flex: 1, backgroundColor: "#F2F4EE" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
+    borderBottomColor: "#E0E6DC",
   },
   closeButton: {
     width: 36,
@@ -70,12 +70,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  closeIcon: { fontSize: 16, color: "#231f1a", fontWeight: "700" },
+  closeIcon: { fontSize: 16, color: "#15261E", fontWeight: "700" },
   headerTextBlock: { flex: 1 },
   headerTitle: { fontSize: 15, fontWeight: "700" },
-  headerSubtitle: { fontSize: 11, color: "#8a7c68", marginTop: 1 },
+  headerSubtitle: { fontSize: 11, color: "#55645B", marginTop: 1 },
   webview: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 8 },
   hintTitle: { fontSize: 14, fontWeight: "700" },
-  hint: { fontSize: 12, color: "#8a7c68", textAlign: "center", lineHeight: 17 },
+  hint: { fontSize: 12, color: "#55645B", textAlign: "center", lineHeight: 17 },
 });

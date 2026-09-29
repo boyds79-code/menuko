@@ -17,6 +17,8 @@ import { registerForPushNotifications } from "@/lib/push";
 import { formatPeso } from "@/lib/money";
 import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { AdminHeader } from "@/components/AdminHeader";
+import { fonts } from "@/theme";
 
 const ORDER_SELECT =
   "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
@@ -24,7 +26,7 @@ const ORDER_SELECT =
 type MarkServedPayload = { orderId: string };
 
 export default function Kitchen() {
-  const { session, account, signOut } = useSession();
+  const { session, account } = useSession();
   const restaurantId = account?.restaurantId;
   const cacheKey = restaurantId ? `menuko:kitchen:${restaurantId}` : null;
 
@@ -119,15 +121,7 @@ export default function Kitchen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <OfflineBanner />
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Menuko</Text>
-          <Text style={styles.headerSubtitle}>{account?.restaurantName} · Kitchen</Text>
-        </View>
-        <TouchableOpacity onPress={() => signOut()}>
-          <Text style={styles.signOut}>Sign out</Text>
-        </TouchableOpacity>
-      </View>
+      <AdminHeader title="Kitchen" showSignOut />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -194,7 +188,7 @@ function OrderCard({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fffaf3" },
+  safe: { flex: 1, backgroundColor: "#F2F4EE" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -203,27 +197,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
+    borderBottomColor: "#E0E6DC",
   },
-  headerTitle: { fontWeight: "700", color: "#ea7c1f" },
-  headerSubtitle: { fontSize: 12, color: "#8a7c68" },
-  signOut: { fontSize: 13, color: "#8a7c68" },
-  content: { padding: 16, gap: 10 },
-  sectionTitle: { fontSize: 13, fontWeight: "600", color: "#8a7c68", marginBottom: 4 },
-  empty: { fontSize: 13, color: "#8a7c68" },
+  headerTitle: { fontWeight: "700", color: "#1F5C45" },
+  headerSubtitle: { fontSize: 12, color: "#55645B" },
+  signOut: { fontSize: 13, color: "#55645B" },
+  content: { padding: 16, gap: 12 },
+  sectionTitle: { fontSize: 12, fontWeight: "700", color: "#55645B", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
+  empty: { fontSize: 13, color: "#55645B" },
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 14,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#ece2d3",
-    padding: 14,
+    borderColor: "#E0E6DC",
+    padding: 16,
     gap: 4,
   },
   cardDone: { opacity: 0.6 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between" },
-  cardTable: { fontWeight: "700" },
-  cardTime: { fontSize: 11, color: "#8a7c68" },
-  cardNote: { fontSize: 11, fontStyle: "italic", color: "#8a7c68" },
+  cardTable: { fontSize: 18, fontFamily: fonts.display, color: "#15261E" },
+  cardTime: { fontSize: 11, color: "#55645B" },
+  cardNote: { fontSize: 11, fontStyle: "italic", color: "#55645B" },
   item: { fontSize: 14 },
   cardFooter: {
     flexDirection: "row",
@@ -231,7 +225,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 6,
   },
-  total: { fontSize: 13, color: "#8a7c68" },
-  doneButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  total: { fontSize: 13, color: "#55645B" },
+  doneButton: { backgroundColor: "#1F5C45", borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10, minHeight: 44, justifyContent: "center", alignItems: "center" },
   doneButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
 });

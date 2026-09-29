@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { form } from "@/components/form-styles";
+import { colors } from "@/theme";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/lib/supabase";
@@ -183,7 +186,8 @@ export function MenuImportModal({
   return (
     <>
       <TouchableOpacity style={styles.openButton} onPress={() => setOpen(true)}>
-        <Text style={styles.openButtonText}>Import menu from photo/PDF</Text>
+        <Ionicons name="scan-outline" size={18} color={colors.onAccent} />
+        <Text style={styles.openButtonText}>Import from photo/PDF</Text>
       </TouchableOpacity>
 
       <Modal visible={open} animationType="slide" onRequestClose={closeAll}>
@@ -240,7 +244,7 @@ export function MenuImportModal({
                           onChangeText={(v) => updateItem(catIndex, itemIndex, { price: v })}
                           keyboardType="decimal-pad"
                           placeholder="Price"
-                          placeholderTextColor="#8a7c68"
+                          placeholderTextColor="#55645B"
                           style={[styles.input, { width: 70 }]}
                         />
                         <TouchableOpacity onPress={() => removeItem(catIndex, itemIndex)}>
@@ -270,17 +274,9 @@ export function MenuImportModal({
 }
 
 const styles = StyleSheet.create({
-  openButton: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#ece2d3",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-  },
-  openButtonText: { fontSize: 13, fontWeight: "600", color: "#8a7c68" },
-  modal: { flex: 1, backgroundColor: "#fffaf3" },
+  openButton: { ...form.primaryButton, minHeight: 44, flexDirection: "row", gap: 6, paddingHorizontal: 16 },
+  openButtonText: { ...form.primaryButtonText, fontSize: 14 },
+  modal: { flex: 1, backgroundColor: "#F2F4EE" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -290,20 +286,20 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
+    borderBottomColor: "#E0E6DC",
   },
   title: { fontSize: 15, fontWeight: "700" },
-  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
+  link: { fontSize: 13, color: "#184B38", fontWeight: "700", paddingVertical: 6 },
   content: { padding: 16, gap: 16 },
-  hint: { fontSize: 12, color: "#8a7c68", lineHeight: 17 },
-  pickButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 12, alignItems: "center" },
+  hint: { fontSize: 12, color: "#55645B", lineHeight: 17 },
+  pickButton: { backgroundColor: "#1F5C45", borderRadius: 999, paddingVertical: 12, alignItems: "center", minHeight: 44, justifyContent: "center" },
   pickButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  error: { color: "#dc2626", fontSize: 12 },
+  error: { color: "#B42318", fontSize: 12 },
   categoryBlock: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
     padding: 12,
     gap: 8,
   },
@@ -312,14 +308,15 @@ const styles = StyleSheet.create({
   itemRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   input: {
     borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#fffaf3",
-    borderRadius: 8,
+    borderColor: "#E0E6DC",
+    backgroundColor: "#F7F9F4",
+    borderRadius: 14,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    fontSize: 13,
+    fontSize: 15,
+    minHeight: 44,
   },
-  footer: { padding: 16, borderTopWidth: 1, borderTopColor: "#ece2d3", backgroundColor: "#ffffff" },
-  confirmButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 12, alignItems: "center" },
+  footer: { padding: 16, borderTopWidth: 1, borderTopColor: "#E0E6DC", backgroundColor: "#ffffff" },
+  confirmButton: { backgroundColor: "#1F5C45", borderRadius: 999, paddingVertical: 12, alignItems: "center", minHeight: 44, justifyContent: "center" },
   confirmButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
 });

@@ -1,5 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/ctx";
+import { colors, fonts } from "@/theme";
 
 // Reached when a signed-in user's account role couldn't be resolved to
 // kitchen/cashier/owner — e.g. the accounts row is missing or malformed.
@@ -10,9 +12,12 @@ export default function Unavailable() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Menuko</Text>
+      <View style={styles.icon}>
+        <Ionicons name="storefront-outline" size={28} color={colors.accentText} />
+      </View>
+      <Text style={styles.title}>No restaurant found</Text>
       <Text style={styles.body}>We couldn&apos;t find a restaurant linked to this account.</Text>
-      <TouchableOpacity style={styles.button} onPress={() => signOut()}>
+      <TouchableOpacity style={styles.button} onPress={() => signOut()} accessibilityRole="button">
         <Text style={styles.buttonText}>Sign out</Text>
       </TouchableOpacity>
     </View>
@@ -22,21 +27,30 @@ export default function Unavailable() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fffaf3",
+    backgroundColor: colors.bg,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 32,
-    gap: 16,
+    gap: 12,
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#ea7c1f" },
-  body: { textAlign: "center", color: "#201a12", fontSize: 15, lineHeight: 22 },
+  icon: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: colors.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  title: { fontSize: 26, fontFamily: fonts.display, color: colors.ink },
+  body: { textAlign: "center", color: colors.muted, fontSize: 15, lineHeight: 22 },
   button: {
-    borderWidth: 1,
-    borderColor: "#ea7c1f",
+    minHeight: 48,
+    justifyContent: "center",
     borderRadius: 999,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginTop: 8,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 28,
+    marginTop: 12,
   },
-  buttonText: { color: "#ea7c1f", fontWeight: "600" },
+  buttonText: { color: colors.onAccent, fontWeight: "700", fontSize: 15 },
 });

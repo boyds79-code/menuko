@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
+import { form } from "@/components/form-styles";
+import { colors } from "@/theme";
 
 type Table = { id: string; label: string; capacity: number; qr_token: string };
 
@@ -64,6 +67,7 @@ export function TablesSection() {
       </Text>
       {WEB_ORIGIN && restaurantId && (
         <TouchableOpacity style={styles.printButton} onPress={() => Linking.openURL(`${WEB_ORIGIN}/print/${restaurantId}/qr`)}>
+          <Ionicons name="print-outline" size={18} color={colors.onAccent} />
           <Text style={styles.primaryButtonText}>Print QR codes — choose a design</Text>
         </TouchableOpacity>
       )}
@@ -74,7 +78,7 @@ export function TablesSection() {
             value={newLabel}
             onChangeText={setNewLabel}
             placeholder="e.g. Table 5"
-            placeholderTextColor="#8a7c68"
+            placeholderTextColor={colors.faint}
             style={styles.input}
           />
         </View>
@@ -85,7 +89,7 @@ export function TablesSection() {
             onChangeText={setNewCapacity}
             keyboardType="number-pad"
             placeholder="4"
-            placeholderTextColor="#8a7c68"
+            placeholderTextColor={colors.faint}
             style={[styles.input, { width: 96, textAlign: "center" }]}
           />
         </View>
@@ -156,16 +160,32 @@ function TableCard({
         </View>
       </View>
       <View style={styles.cardActions}>
-        <TouchableOpacity onPress={onToggleQr}>
-          <Text style={styles.link}>{expanded ? "Hide QR" : "Show QR"}</Text>
+        <TouchableOpacity style={styles.actionChip} onPress={onToggleQr}>
+          <Ionicons name="qr-code-outline" size={16} color={colors.ink} />
+          <Text style={styles.actionChipText}>{expanded ? "Hide QR" : "Show QR"}</Text>
         </TouchableOpacity>
         {WEB_ORIGIN && restaurantId && (
-          <TouchableOpacity onPress={() => Linking.openURL(`${WEB_ORIGIN}/print/${restaurantId}/qr?table=${table.id}`)}>
-            <Text style={styles.link}>Print with design</Text>
+          <TouchableOpacity
+            style={styles.actionChip}
+            onPress={() => Linking.openURL(`${WEB_ORIGIN}/print/${restaurantId}/qr?table=${table.id}`)}
+          >
+            <Ionicons name="print-outline" size={16} color={colors.ink} />
+            <Text style={styles.actionChipText}>Print</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={onDelete}>
-          <Text style={styles.link}>Delete</Text>
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity
+          style={form.iconButton}
+          onPress={() =>
+            Alert.alert(`Delete ${table.label}?`, "Its QR code will stop working.", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Delete", style: "destructive", onPress: onDelete },
+            ])
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${table.label}`}
+        >
+          <Ionicons name="trash-outline" size={18} color={colors.danger} />
         </TouchableOpacity>
       </View>
       {expanded && (
@@ -188,28 +208,37 @@ function TableCard({
 
 const styles = StyleSheet.create({
   content: { gap: 12 },
-  hint: { fontSize: 12, color: "#8a7c68", lineHeight: 17 },
+  hint: form.hint,
   addRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  field: { gap: 4 },
-  fieldLabel: { fontSize: 11, fontWeight: "600", color: "#8a7c68" },
-  addButton: { paddingVertical: 10 },
-  printButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 11, alignItems: "center" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
-  },
-  primaryButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 16, justifyContent: "center" },
-  primaryButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  card: { backgroundColor: "#ffffff", borderRadius: 14, borderWidth: 1, borderColor: "#ece2d3", padding: 14, gap: 8 },
+  field: { gap: 6 },
+  fieldLabel: { fontSize: 12, fontWeight: "700", color: colors.muted },
+  addButton: { paddingHorizontal: 18 },
+  printButton: { ...form.primaryButton, flexDirection: "row", gap: 8 },
+  input: form.input,
+  primaryButton: form.primaryButton,
+  primaryButtonText: form.primaryButtonText,
+  card: { backgroundColor: colors.surfaceAlt, borderRadius: 18, padding: 14, gap: 12 },
   cardRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  cardActions: { flexDirection: "row", gap: 16 },
-  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
-  qrBox: { alignItems: "center", gap: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#ece2d3" },
-  qrUrl: { fontSize: 10, color: "#8a7c68", textAlign: "center" },
-  empty: { fontSize: 13, color: "#8a7c68" },
+  cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  actionChip: {
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+  },
+  actionChipText: { fontSize: 13, fontWeight: "600", color: colors.ink },
+  qrBox: {
+    alignItems: "center",
+    gap: 8,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+  },
+  qrUrl: { fontSize: 11, color: colors.muted, textAlign: "center" },
+  empty: { fontSize: 13, color: colors.muted },
 });

@@ -3,6 +3,8 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "reac
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { CustomerPreviewModal } from "@/components/CustomerPreviewModal";
+import { form } from "@/components/form-styles";
+import { colors, fonts } from "@/theme";
 
 export function AccountSection() {
   const { account, session, signOut } = useSession();
@@ -161,7 +163,7 @@ export function AccountSection() {
           onChangeText={setNewPassword}
           secureTextEntry
           placeholder="6+ characters"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           style={styles.input}
         />
         <Text style={styles.label}>Confirm new password</Text>
@@ -183,7 +185,7 @@ export function AccountSection() {
           value={confirmName}
           onChangeText={setConfirmName}
           placeholder={restaurantName}
-          placeholderTextColor="#c99"
+          placeholderTextColor={colors.faint}
           style={styles.input}
           autoCapitalize="none"
         />
@@ -209,49 +211,29 @@ export function AccountSection() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 20 },
+  content: { gap: 12 },
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#ece2d3",
-    padding: 14,
+    borderColor: colors.line,
+    padding: 18,
     gap: 10,
-    shadowColor: "#3d2f1f",
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
   },
-  cardTitle: { fontSize: 14, fontWeight: "700" },
-  hint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
-  label: { fontSize: 12, color: "#8a7c68" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
-  },
-  status: { fontSize: 11, color: "#8a7c68" },
-  secondaryButton: {
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderColor: "#ea7c1f",
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  secondaryButtonText: { color: "#ea7c1f", fontWeight: "700", fontSize: 12 },
-  divider: { height: 1, backgroundColor: "#ece2d3", marginVertical: 2 },
-  dangerCard: { borderColor: "#fca5a5", backgroundColor: "#fff5f5" },
-  dangerTitle: { color: "#b3402f" },
-  dangerButton: { backgroundColor: "#b3402f", borderRadius: 999, paddingVertical: 10, alignItems: "center" },
+  cardTitle: { fontSize: 18, fontFamily: fonts.display, color: colors.ink },
+  hint: form.hint,
+  label: { ...form.label, marginTop: 4 },
+  input: form.input,
+  status: { fontSize: 13, color: colors.accentText },
+  secondaryButton: { ...form.secondaryButton, alignSelf: "flex-start" },
+  secondaryButtonText: form.secondaryButtonText,
+  divider: form.divider,
+  dangerCard: { borderColor: "#F3C7C2", backgroundColor: "#FFF7F6" },
+  dangerTitle: { color: colors.danger },
+  dangerButton: { ...form.primaryButton, backgroundColor: colors.danger },
   dangerButtonDisabled: { opacity: 0.4 },
-  dangerButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  devCard: { borderStyle: "dashed", borderColor: "#8a7c68" },
-  devCardTitle: { fontSize: 12, fontWeight: "700", color: "#8a7c68", textTransform: "uppercase", letterSpacing: 1 },
+  dangerButtonText: form.primaryButtonText,
+  devCard: { borderStyle: "dashed", borderColor: colors.faint },
+  devCardTitle: { fontSize: 12, fontWeight: "700", color: colors.muted, textTransform: "uppercase", letterSpacing: 1 },
   devRow: { flexDirection: "row", gap: 8 },
 });

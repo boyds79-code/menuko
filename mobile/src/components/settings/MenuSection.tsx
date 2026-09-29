@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, LayoutAnimation, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { pickAndUploadPhoto } from "@/lib/upload-photo";
@@ -7,6 +8,8 @@ import { MOBILE_MENU_LAYOUTS, MOBILE_MENU_COLORS, resolveMobilePalette, type Mob
 import { formatPeso } from "@/lib/money";
 import { MenuPreviewModal } from "./MenuPreviewModal";
 import { MenuImportModal } from "./MenuImportModal";
+import { form } from "@/components/form-styles";
+import { colors, fonts } from "@/theme";
 
 type Category = { id: string; name: string; sort_order: number; parent_id: string | null };
 type Item = {
@@ -194,13 +197,16 @@ export function MenuSection() {
         onSetFeatured={(itemId, isFeatured) => updateItem(itemId, { is_featured: isFeatured })}
       />
 
-      <Text style={styles.addMenuLabel}>Add your menu</Text>
+      <View style={styles.addCard}>
+      <Text style={styles.sectionTitle}>Add to your menu</Text>
+      <Text style={form.hint}>Import a photo or PDF of your paper menu, or type categories and items yourself.</Text>
       <View style={styles.addMenuRow}>
         {restaurantId && <MenuImportModal restaurantId={restaurantId} onImported={load} />}
         <TouchableOpacity
           style={styles.manualEntryButton}
           onPress={() => categoryInputRef.current?.focus()}
         >
+          <Ionicons name="create-outline" size={18} color={colors.ink} />
           <Text style={styles.manualEntryButtonText}>Enter manually</Text>
         </TouchableOpacity>
       </View>
@@ -211,7 +217,7 @@ export function MenuSection() {
           value={newCategoryName}
           onChangeText={setNewCategoryName}
           placeholder="New category (e.g. Drinks, Mains)"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           style={styles.input}
         />
         <TouchableOpacity style={styles.primaryButton} onPress={addCategory}>
@@ -224,7 +230,7 @@ export function MenuSection() {
             onPress={() => setNewCategoryParentId(null)}
             style={[styles.parentChip, newCategoryParentId === null && styles.parentChipActive]}
           >
-            <Text style={styles.parentChipText}>Top-level</Text>
+            <Text style={[styles.parentChipText, newCategoryParentId === null && form.chipTextActive]}>Top-level</Text>
           </TouchableOpacity>
           {topLevelCategories.map((c) => (
             <TouchableOpacity
@@ -232,11 +238,14 @@ export function MenuSection() {
               onPress={() => setNewCategoryParentId(c.id)}
               style={[styles.parentChip, newCategoryParentId === c.id && styles.parentChipActive]}
             >
-              <Text style={styles.parentChipText}>Under &ldquo;{c.name}&rdquo;</Text>
+              <Text style={[styles.parentChipText, newCategoryParentId === c.id && form.chipTextActive]}>
+                Under &ldquo;{c.name}&rdquo;
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
+      </View>
 
       {topLevelCategories.map((category, index) => {
         const subcategories = subcategoriesByParent.get(category.id) ?? [];
@@ -302,7 +311,7 @@ export function MenuSection() {
               onPress={() => setCandidateLayout(l.id)}
               style={[styles.templateChip, candidateLayout === l.id && styles.templateChipActive]}
             >
-              <Text style={styles.templateChipText}>{l.label}</Text>
+              <Text style={[styles.templateChipText, candidateLayout === l.id && form.chipTextActive]}>{l.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -314,7 +323,7 @@ export function MenuSection() {
               onPress={() => setCandidateColor(c.id)}
               style={[styles.templateChip, candidateColor === c.id && styles.templateChipActive]}
             >
-              <Text style={styles.templateChipText}>{c.label}</Text>
+              <Text style={[styles.templateChipText, candidateColor === c.id && form.chipTextActive]}>{c.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -390,7 +399,10 @@ function OurBestPicker({
   return (
     <View style={styles.bestCard}>
       <View style={styles.bestHeader}>
-        <Text style={styles.bestTitle}>⭐ Our Best</Text>
+        <View style={styles.bestTitleRow}>
+          <Ionicons name="star" size={18} color={colors.saffron} />
+          <Text style={styles.bestTitle}>Our Best</Text>
+        </View>
         <Text style={styles.bestCount}>
           {featured.length}/{MAX_FEATURED_ITEMS}
         </Text>
@@ -422,7 +434,7 @@ function OurBestPicker({
                 onPress={() => onSetFeatured(item.id, false)}
                 accessibilityLabel={`Remove ${item.name} from Our Best`}
               >
-                <Text style={styles.bestSlotRemoveText}>×</Text>
+                <Ionicons name="close" size={14} color="#ffffff" />
               </TouchableOpacity>
             </View>
           );
@@ -435,7 +447,8 @@ function OurBestPicker({
         <Text style={styles.featuredHint}>Add menu items below first.</Text>
       ) : (
         <TouchableOpacity style={styles.manualEntryButton} onPress={() => setAdding((open) => !open)}>
-          <Text style={styles.manualEntryButtonText}>{adding ? "Done" : "+ Add a dish to Our Best"}</Text>
+          <Ionicons name={adding ? "checkmark" : "add"} size={18} color={colors.ink} />
+          <Text style={styles.manualEntryButtonText}>{adding ? "Done" : "Add a dish to Our Best"}</Text>
         </TouchableOpacity>
       )}
 
@@ -450,7 +463,7 @@ function OurBestPicker({
                     {item.name}
                   </Text>
                   <Text style={styles.bestPickerPrice}>{formatPeso(item.price)}</Text>
-                  <Text style={styles.bestPickerAdd}>＋</Text>
+                  <Ionicons name="add-circle" size={24} color={colors.accent} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -724,12 +737,24 @@ function CategorySection({
       <View style={styles.categoryHeader}>
         <View style={styles.categoryTitleRow}>
           {category && onMove && (
-            <View>
-              <TouchableOpacity disabled={isFirst} onPress={() => onMove("up")}>
-                <Text style={[styles.moveArrow, isFirst && styles.moveArrowDisabled]}>▲</Text>
+            <View style={styles.moveGroup}>
+              <TouchableOpacity
+                disabled={isFirst}
+                onPress={() => onMove("up")}
+                style={[styles.moveButton, isFirst && styles.moveArrowDisabled]}
+                accessibilityRole="button"
+                accessibilityLabel={`Move ${category.name} up`}
+              >
+                <Ionicons name="chevron-up" size={16} color={colors.ink} />
               </TouchableOpacity>
-              <TouchableOpacity disabled={isLast} onPress={() => onMove("down")}>
-                <Text style={[styles.moveArrow, isLast && styles.moveArrowDisabled]}>▼</Text>
+              <TouchableOpacity
+                disabled={isLast}
+                onPress={() => onMove("down")}
+                style={[styles.moveButton, isLast && styles.moveArrowDisabled]}
+                accessibilityRole="button"
+                accessibilityLabel={`Move ${category.name} down`}
+              >
+                <Ionicons name="chevron-down" size={16} color={colors.ink} />
               </TouchableOpacity>
             </View>
           )}
@@ -746,6 +771,9 @@ function CategorySection({
         </View>
         {category && onDelete && (
           <TouchableOpacity
+            style={form.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete category ${category.name}`}
             onPress={() => {
               Alert.alert(
                 `Delete "${category.name}"?`,
@@ -759,7 +787,7 @@ function CategorySection({
               );
             }}
           >
-            <Text style={styles.link}>Delete category</Text>
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
           </TouchableOpacity>
         )}
       </View>
@@ -777,6 +805,8 @@ function CategorySection({
       <View style={styles.addItemRow}>
         <TouchableOpacity
           style={styles.photoBox}
+          accessibilityRole="button"
+          accessibilityLabel="Add a photo for the new item"
           onPress={async () => {
             const url = await pickAndUploadPhoto("menu-photos", restaurantId);
             if (url) setNewPhoto(url);
@@ -785,26 +815,28 @@ function CategorySection({
           {newPhoto ? (
             <Image source={{ uri: newPhoto }} style={styles.photoBoxImage} />
           ) : (
-            <Text style={styles.photoBoxText}>Photo</Text>
+            <Ionicons name="camera-outline" size={20} color={colors.muted} />
           )}
         </TouchableOpacity>
         <TextInput
           value={newName}
           onChangeText={setNewName}
           placeholder="Item name"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           style={[styles.input, { flex: 1 }]}
         />
         <TextInput
           value={newPrice}
           onChangeText={setNewPrice}
           placeholder="₱"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           keyboardType="decimal-pad"
-          style={[styles.input, { width: 60 }]}
+          style={[styles.input, styles.priceInput]}
         />
         <TouchableOpacity
           style={styles.primaryButton}
+          accessibilityRole="button"
+          accessibilityLabel="Add item"
           onPress={() => {
             const parsed = Number(newPrice);
             if (!newName.trim() || Number.isNaN(parsed)) return;
@@ -814,7 +846,7 @@ function CategorySection({
             setNewPhoto(null);
           }}
         >
-          <Text style={styles.primaryButtonText}>Add</Text>
+          <Ionicons name="add" size={22} color={colors.onAccent} />
         </TouchableOpacity>
       </View>
     </View>
@@ -854,10 +886,12 @@ function ItemRow({
   }
 
   return (
-    <View style={styles.itemBlock}>
+    <View style={[styles.itemBlock, !item.is_available && styles.itemBlockOff]}>
       <View style={styles.itemRow}>
         <TouchableOpacity
           style={styles.photoBox}
+          accessibilityRole="button"
+          accessibilityLabel={item.photo_url ? `Change photo of ${item.name}` : `Add a photo of ${item.name}`}
           onPress={async () => {
             const url = await pickAndUploadPhoto("menu-photos", restaurantId);
             if (url) onUpdate({ photo_url: url });
@@ -866,38 +900,80 @@ function ItemRow({
           {item.photo_url ? (
             <Image source={{ uri: item.photo_url }} style={styles.photoBoxImage} />
           ) : (
-            <Text style={styles.photoBoxText}>Photo</Text>
+            <Ionicons name="camera-outline" size={20} color={colors.muted} />
           )}
         </TouchableOpacity>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          onBlur={() => name !== item.name && onUpdate({ name })}
-          style={[styles.input, { flex: 1 }]}
-        />
-        <TextInput
-          value={price}
-          onChangeText={setPrice}
-          onBlur={() => {
-            const parsed = Number(price);
-            if (!Number.isNaN(parsed) && parsed !== item.price) onUpdate({ price: parsed });
-          }}
-          keyboardType="decimal-pad"
-          style={[styles.input, { width: 60 }]}
-        />
-        <TouchableOpacity onPress={() => onUpdate({ is_available: !item.is_available })}>
-          <Text style={styles.availabilityToggle}>{item.is_available ? "✅" : "🚫"}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onDelete}>
-          <Text style={styles.link}>Delete</Text>
-        </TouchableOpacity>
+        <View style={styles.itemFields}>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            onBlur={() => name !== item.name && onUpdate({ name })}
+            style={[styles.input, styles.itemNameInput]}
+            accessibilityLabel="Item name"
+          />
+          <View style={styles.itemMetaRow}>
+            <View style={styles.priceField}>
+              <Text style={styles.pricePrefix}>₱</Text>
+              <TextInput
+                value={price}
+                onChangeText={setPrice}
+                onBlur={() => {
+                  const parsed = Number(price);
+                  if (!Number.isNaN(parsed) && parsed !== item.price) onUpdate({ price: parsed });
+                }}
+                keyboardType="decimal-pad"
+                style={styles.priceFieldInput}
+                accessibilityLabel={`Price of ${item.name}`}
+              />
+            </View>
+            <View style={styles.availability}>
+              <Text style={styles.availabilityText}>{item.is_available ? "On menu" : "Sold out"}</Text>
+              <Switch
+                value={item.is_available}
+                onValueChange={(v) => onUpdate({ is_available: v })}
+                trackColor={{ false: colors.line, true: colors.accent }}
+                thumbColor="#ffffff"
+                ios_backgroundColor={colors.line}
+                accessibilityLabel={`${item.name} available`}
+              />
+            </View>
+          </View>
+        </View>
       </View>
 
-      <TouchableOpacity onPress={() => setDetailsOpen((open) => !open)}>
-        <Text style={styles.detailsToggle}>
-          {detailsOpen ? "Hide details" : "Description / ingredients / allergy / time"}
+      <View style={styles.itemActions}>
+        <TouchableOpacity
+          style={styles.detailsChip}
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setDetailsOpen((open) => !open);
+          }}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: detailsOpen }}
+        >
+          <Ionicons name="document-text-outline" size={16} color={colors.ink} />
+          <Text style={styles.detailsChipText}>Details</Text>
+          <Ionicons name={detailsOpen ? "chevron-up" : "chevron-down"} size={14} color={colors.muted} />
+        </TouchableOpacity>
+        <Text style={styles.detailsSummary} numberOfLines={1}>
+          {[item.description && "description", item.ingredients && "ingredients", item.allergy_info && "allergy", item.cook_time_minutes && `${item.cook_time_minutes} min`]
+            .filter(Boolean)
+            .join(" · ")}
         </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={form.iconButton}
+          onPress={() =>
+            Alert.alert(`Delete ${item.name}?`, "It will be removed from your customer menu.", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Delete", style: "destructive", onPress: onDelete },
+            ])
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${item.name}`}
+        >
+          <Ionicons name="trash-outline" size={18} color={colors.danger} />
+        </TouchableOpacity>
+      </View>
 
       {detailsOpen && (
         <View style={styles.detailsForm}>
@@ -906,7 +982,7 @@ function ItemRow({
             onChangeText={setDescription}
             onBlur={saveDetails}
             placeholder="Short description customers see when they tap this item"
-            placeholderTextColor="#8a7c68"
+            placeholderTextColor={colors.faint}
             multiline
             style={[styles.input, styles.detailsTextarea]}
           />
@@ -915,7 +991,7 @@ function ItemRow({
             onChangeText={setIngredients}
             onBlur={saveDetails}
             placeholder="Ingredients (e.g. Pork belly, kimchi, tofu)"
-            placeholderTextColor="#8a7c68"
+            placeholderTextColor={colors.faint}
             style={styles.input}
           />
           <TextInput
@@ -923,7 +999,7 @@ function ItemRow({
             onChangeText={setAllergyInfo}
             onBlur={saveDetails}
             placeholder="Allergy info (e.g. Contains shellfish)"
-            placeholderTextColor="#8a7c68"
+            placeholderTextColor={colors.faint}
             style={styles.input}
           />
           <View style={{ flexDirection: "row", gap: 8 }}>
@@ -932,18 +1008,18 @@ function ItemRow({
               onChangeText={setCookTime}
               onBlur={saveDetails}
               placeholder="Cook time (minutes)"
-              placeholderTextColor="#8a7c68"
+              placeholderTextColor={colors.faint}
               keyboardType="number-pad"
-              style={[styles.input, { width: 140 }]}
+              style={[styles.input, { flex: 1, minWidth: 0 }]}
             />
             <TextInput
               value={ingredientCost}
               onChangeText={setIngredientCost}
               onBlur={saveDetails}
               placeholder="Ingredient cost (₱)"
-              placeholderTextColor="#8a7c68"
+              placeholderTextColor={colors.faint}
               keyboardType="decimal-pad"
-              style={[styles.input, { width: 140 }]}
+              style={[styles.input, { flex: 1, minWidth: 0 }]}
             />
           </View>
           <Text style={styles.costHint}>
@@ -956,66 +1032,46 @@ function ItemRow({
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 16 },
-  featuredHint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
-  bestCard: { gap: 10, borderWidth: 1, borderColor: "#f3c9a3", backgroundColor: "#fff7ef", borderRadius: 14, padding: 14 },
-  bestHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  bestTitle: { fontSize: 15, fontWeight: "700", color: "#3c3327" },
-  bestCount: { fontSize: 12, fontWeight: "700", color: "#ea7c1f" },
+  content: { gap: 14 },
+  featuredHint: form.hint,
+  bestCard: { gap: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 22, padding: 18 },
+  bestHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  bestTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.ink },
+  bestCount: { fontSize: 12, fontWeight: "700", color: colors.accentText, backgroundColor: colors.accentSoft, borderRadius: 999, overflow: "hidden", paddingHorizontal: 10, paddingVertical: 4 },
   bestSlots: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  bestSlot: { width: "31%", height: 92, borderWidth: 1, borderColor: "#ece2d3", borderRadius: 10, overflow: "hidden", backgroundColor: "#ffffff" },
-  bestSlotEmpty: { borderStyle: "dashed", alignItems: "center", justifyContent: "center", backgroundColor: "transparent" },
-  bestSlotEmptyText: { fontSize: 11, color: "#8a7c68" },
-  bestSlotPhoto: { height: 60, alignItems: "center", justifyContent: "center", backgroundColor: "#f2ede6" },
-  bestSlotName: { fontSize: 11, fontWeight: "600", color: "#3c3327", paddingHorizontal: 6, paddingTop: 6 },
-  bestSlotRemove: { position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.6)" },
-  bestSlotRemoveText: { color: "#ffffff", fontSize: 14, fontWeight: "700", lineHeight: 16 },
-  bestPicker: { gap: 12, borderTopWidth: 1, borderTopColor: "#ece2d3", paddingTop: 10 },
+  bestSlot: { width: "31%", height: 104, borderRadius: 16, overflow: "hidden", backgroundColor: colors.surfaceAlt },
+  bestSlotEmpty: { borderWidth: 1.5, borderColor: colors.line, borderStyle: "dashed", alignItems: "center", justifyContent: "center", backgroundColor: "transparent" },
+  bestSlotEmptyText: { fontSize: 12, color: colors.faint },
+  bestSlotPhoto: { height: 70, alignItems: "center", justifyContent: "center", backgroundColor: colors.track },
+  bestSlotName: { fontSize: 12, fontWeight: "600", color: colors.ink, paddingHorizontal: 8, paddingTop: 7 },
+  bestSlotRemove: { position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(21,38,30,0.7)" },
+  bestPicker: { gap: 14, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 12 },
   bestPickerGroup: { gap: 4 },
-  bestPickerGroupLabel: { fontSize: 11, fontWeight: "700", color: "#8a7c68", textTransform: "uppercase" },
-  bestPickerRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#f2ede6" },
-  bestPickerName: { flex: 1, fontSize: 13, color: "#3c3327" },
-  bestPickerPrice: { fontSize: 12, color: "#8a7c68" },
-  bestPickerAdd: { fontSize: 16, fontWeight: "700", color: "#ea7c1f" },
-  addMenuLabel: { fontSize: 13, fontWeight: "700" },
+  bestPickerGroupLabel: { fontSize: 11, fontWeight: "700", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.6 },
+  bestPickerRow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, borderBottomWidth: 1, borderBottomColor: colors.line },
+  bestPickerName: { flex: 1, fontSize: 14, color: colors.ink },
+  bestPickerPrice: { fontSize: 13, color: colors.muted },
   addMenuRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  manualEntryButton: {
-    borderWidth: 1,
-    borderColor: "#ece2d3",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#ffffff",
-  },
-  manualEntryButtonText: { fontSize: 13, fontWeight: "600", color: "#8a7c68" },
-  addCategoryRow: { flexDirection: "row", gap: 8 },
-  parentPickerRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  parentChip: { borderWidth: 1, borderColor: "#ece2d3", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  parentChipActive: { borderColor: "#ea7c1f", backgroundColor: "#fff0e0" },
-  parentChipText: { fontSize: 11, fontWeight: "600", color: "#3c3327" },
+  manualEntryButton: form.secondaryButton,
+  manualEntryButtonText: form.secondaryButtonText,
+  addCategoryRow: { flexDirection: "row", gap: 8, marginTop: 4 },
+  parentPickerRow: form.chipRow,
+  parentChip: { ...form.chip, minHeight: 36, paddingHorizontal: 12 },
+  parentChipActive: form.chipActive,
+  parentChipText: { fontSize: 12, fontWeight: "600", color: colors.ink },
   categoryGroup: { gap: 10 },
-  subcategoryList: { marginLeft: 16, gap: 10, borderLeftWidth: 2, borderLeftColor: "#ece2d3", paddingLeft: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
-  },
-  primaryButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 16, justifyContent: "center" },
-  primaryButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  designCard: { backgroundColor: "#ffffff", borderRadius: 14, borderWidth: 1, borderColor: "#ece2d3", padding: 14, gap: 10 },
-  designCardTitle: { fontSize: 14, fontWeight: "700", color: "#ea7c1f" },
-  designCardHint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
-  designAxisLabel: { fontSize: 10.5, fontWeight: "700", color: "#8a7c68", textTransform: "uppercase", letterSpacing: 0.4, marginTop: 2 },
-  templateRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  templateChip: { borderWidth: 1, borderColor: "#ece2d3", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  templateChipActive: { borderColor: "#ea7c1f", backgroundColor: "#fff0e0" },
-  templateChipText: { fontSize: 12, fontWeight: "600" },
+  subcategoryList: { marginLeft: 12, gap: 10, borderLeftWidth: 2, borderLeftColor: colors.accentSoft, paddingLeft: 10 },
+  input: { ...form.input, minHeight: 44, fontSize: 14 },
+  primaryButton: { ...form.primaryButton, minHeight: 44, paddingHorizontal: 16 },
+  primaryButtonText: form.primaryButtonText,
+  designCard: { backgroundColor: colors.surface, borderRadius: 22, borderWidth: 1, borderColor: colors.line, padding: 18, gap: 10 },
+  designCardTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.ink },
+  designCardHint: form.hint,
+  designAxisLabel: { fontSize: 11, fontWeight: "700", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.6, marginTop: 4 },
+  templateRow: form.chipRow,
+  templateChip: form.chip,
+  templateChipActive: form.chipActive,
+  templateChipText: form.chipText,
   swatchCategoryLabel: {
     fontSize: 13,
     fontWeight: "700",
@@ -1027,28 +1083,22 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   swatchCategoryLabelFlat: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-  swatchCaption: { fontSize: 12, color: "#8a7c68", textAlign: "center", marginTop: 8 },
-  previewButton: {
-    marginTop: 10,
-    backgroundColor: "#ea7c1f",
-    borderRadius: 999,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  previewButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
+  swatchCaption: { fontSize: 12.5, color: colors.muted, textAlign: "center", marginTop: 8 },
+  previewButton: { ...form.primaryButton, marginTop: 10 },
+  previewButtonText: form.primaryButtonText,
   paletteCard: {
     flexDirection: "row",
     gap: 10,
     marginTop: 4,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#F2F4EE",
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
   },
   paletteSwatch: { flex: 1, alignItems: "center", gap: 4 },
   paletteSwatchColor: { width: "100%", height: 40, borderRadius: 8, borderWidth: 1 },
-  paletteSwatchLabel: { fontSize: 10.5, fontWeight: "700", color: "#3c3327" },
+  paletteSwatchLabel: { fontSize: 10.5, fontWeight: "700", color: "#2A3A31" },
   miniPreview: { borderRadius: 14, padding: 14, marginTop: 4, gap: 10 },
   jamezzMiniMajorRow: { flexDirection: "row", gap: 12 },
   jamezzMiniMajorLabel: { fontSize: 10.5, fontWeight: "700" },
@@ -1078,7 +1128,7 @@ const styles = StyleSheet.create({
   miniCard: { width: 108, borderRadius: 12, overflow: "hidden" },
   miniCardPhoto: { width: "100%", height: 78, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#f2ede6" },
   miniCardImage: { width: "100%", height: "100%" },
-  photoPlaceholderText: { fontSize: 10, color: "#8a7c68" },
+  photoPlaceholderText: { fontSize: 10, color: "#55645B" },
   miniCardTextWrap: { position: "relative", paddingHorizontal: 8, paddingTop: 10, paddingBottom: 8 },
   miniListGroup: { borderWidth: 1, borderRadius: 10, overflow: "hidden" },
   miniListRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 8 },
@@ -1095,44 +1145,38 @@ const styles = StyleSheet.create({
   },
   miniCardPriceText: { color: "#ffffff", fontSize: 10, fontWeight: "700" },
   miniCardName: { fontSize: 11.5, fontWeight: "500", marginTop: 3 },
-  card: { backgroundColor: "#ffffff", borderRadius: 14, borderWidth: 1, borderColor: "#ece2d3", padding: 14, gap: 10 },
-  categoryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  card: { backgroundColor: colors.surface, borderRadius: 22, borderWidth: 1, borderColor: colors.line, padding: 14, gap: 10 },
+  categoryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
   categoryTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  categoryInput: {
-    fontSize: 13,
-    fontWeight: "700",
-    flex: 1,
-    color: "#ea7c1f",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  categoryTitleMuted: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#8a7c68",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  moveArrow: { fontSize: 11, color: "#8a7c68" },
-  moveArrowDisabled: { opacity: 0.25 },
-  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
-  itemBlock: { gap: 6 },
-  itemRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  detailsToggle: { fontSize: 11, color: "#8a7c68", textDecorationLine: "underline" },
-  detailsForm: { gap: 6, paddingLeft: 52 },
-  detailsTextarea: { minHeight: 50, textAlignVertical: "top" },
-  costHint: { fontSize: 10, color: "#8a7c68", lineHeight: 14 },
-  addItemRow: { flexDirection: "row", alignItems: "center", gap: 8, borderTopWidth: 1, borderTopColor: "#ece2d3", paddingTop: 10 },
-  photoBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: "#fffaf3",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
+  categoryInput: { flex: 1, minHeight: 44, fontSize: 19, fontFamily: fonts.display, color: colors.ink, paddingVertical: 4 },
+  categoryTitleMuted: { fontSize: 19, fontFamily: fonts.display, color: colors.muted },
+  moveArrowDisabled: { opacity: 0.3 },
+  itemBlock: { gap: 8, padding: 10, borderRadius: 18, backgroundColor: colors.surfaceAlt },
+  itemRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  detailsForm: { gap: 8 },
+  detailsTextarea: { minHeight: 72, textAlignVertical: "top" },
+  costHint: { fontSize: 12, color: colors.muted, lineHeight: 17 },
+  addItemRow: { flexDirection: "row", alignItems: "center", gap: 8, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 12, marginTop: 2 },
+  photoBox: { width: 56, height: 56, borderRadius: 16, backgroundColor: colors.track, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   photoBoxImage: { width: "100%", height: "100%" },
-  photoBoxText: { fontSize: 9, color: "#8a7c68" },
-  availabilityToggle: { fontSize: 16 },
+  photoBoxText: { fontSize: 10, color: colors.muted },
+  addCard: { gap: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 22, padding: 18 },
+  sectionTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.ink },
+  bestTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  moveGroup: { flexDirection: "row", gap: 4 },
+  moveButton: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceAlt },
+  itemBlockOff: { opacity: 0.6 },
+  itemFields: { flex: 1, gap: 8 },
+  itemNameInput: { backgroundColor: colors.surface, fontWeight: "600" },
+  itemMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  priceField: { flexDirection: "row", alignItems: "center", minHeight: 44, width: 116, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, paddingLeft: 12 },
+  pricePrefix: { fontSize: 14, fontWeight: "700", color: colors.muted },
+  priceFieldInput: { flex: 1, fontSize: 15, fontWeight: "700", color: colors.ink, paddingHorizontal: 6, paddingVertical: 8 },
+  priceInput: { width: 84 },
+  availability: { flexDirection: "row", alignItems: "center", gap: 6 },
+  availabilityText: { fontSize: 12, fontWeight: "600", color: colors.muted },
+  itemActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  detailsChip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface },
+  detailsChipText: { fontSize: 13, fontWeight: "600", color: colors.ink },
+  detailsSummary: { flex: 1, fontSize: 12, color: colors.faint },
 });

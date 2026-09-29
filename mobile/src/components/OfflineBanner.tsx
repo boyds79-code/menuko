@@ -22,7 +22,7 @@ export function OfflineBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: "#7c2d12",
+    backgroundColor: "#B42318",
     paddingVertical: 6,
     alignItems: "center",
   },

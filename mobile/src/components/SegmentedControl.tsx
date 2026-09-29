@@ -39,14 +39,14 @@ export function SegmentedControl<T extends string>({
 const styles = StyleSheet.create({
   track: {
     flexDirection: "row",
-    backgroundColor: "#efe6d8",
+    backgroundColor: "#E6EBE2",
     borderRadius: 999,
     padding: 4,
     gap: 2,
   },
   segment: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 11,
     borderRadius: 999,
     alignItems: "center",
   },
@@ -58,14 +58,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
-  segmentText: { fontSize: 12, fontWeight: "600", color: "#8a7c68" },
-  segmentTextActive: { color: "#231f1a", fontWeight: "700" },
+  segmentText: { fontSize: 13, fontWeight: "600", color: "#55645B" },
+  segmentTextActive: { color: "#15261E", fontWeight: "700" },
   segmentLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   badge: {
-    backgroundColor: "#fff0e0",
+    backgroundColor: "#DCEBE2",
     borderRadius: 999,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
-  badgeText: { fontSize: 9, fontWeight: "700", color: "#ea7c1f" },
+  badgeText: { fontSize: 9, fontWeight: "700", color: "#1F5C45" },
 });
