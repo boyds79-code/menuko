@@ -88,6 +88,7 @@ export function SettingsManager({
   const [menuColor, setMenuColor] = useState<MenuColorId>(initial?.menu_color ?? "terracotta");
   const [candidateColor, setCandidateColor] = useState<MenuColorId>(initial?.menu_color ?? "terracotta");
   const [savingDesign, setSavingDesign] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [paymentLink, setPaymentLink] = useState(initial?.payment_link ?? "");
   const [qrUrl, setQrUrl] = useState(initial?.payment_qr_url ?? null);
   const [logoUrl, setLogoUrl] = useState(initial?.logo_url ?? null);
@@ -319,21 +320,20 @@ export function SettingsManager({
 
           <div className="flex flex-col items-center gap-2">
             <MiniMenuPreview layoutId={candidateLayout} colorId={candidateColor} restaurantName={name} categories={categories} items={items} />
-            <p className="text-xs text-muted">
-              Roughly what customers see on their phone — full menu, scrollable.
-            </p>
             {tables.length > 0 ? (
-              <a
-                href={`/order/${tables[0].qr_token}?previewLayout=${candidateLayout}&previewColor=${candidateColor}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-semibold text-brand underline"
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
               >
-                Open full-screen preview →
-              </a>
+                Preview full menu →
+              </button>
             ) : (
-              <p className="text-xs text-muted">Add a table in Table Setting to open a full-screen preview.</p>
+              <p className="text-xs text-muted">Add a table in Table Setting to preview the full menu.</p>
             )}
+            <p className="text-xs text-muted">
+              The thumbnail above is a rough sketch — &ldquo;Preview full menu&rdquo; shows the real, scrollable customer page.
+            </p>
           </div>
 
         </div>
@@ -510,6 +510,37 @@ export function SettingsManager({
           )}
         </div>
       </AccordionSection>
+
+      {previewOpen && tables.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPreviewOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="flex h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-card shadow-2xl">
+            <div className="flex items-center gap-3 border-b border-border p-3">
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(false)}
+                aria-label="Close"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-muted transition hover:text-foreground"
+              >
+                ×
+              </button>
+              <div>
+                <p className="text-sm font-semibold">Menu preview</p>
+                <p className="text-xs text-muted">Roughly what customers see — not final styling</p>
+              </div>
+            </div>
+            {/* Keying on the design so switching layout/color chips while the
+                modal is open reloads the iframe with the new candidate design
+                — this is the real customer order page, not a hand-built
+                approximation, so it can never drift from what actually ships. */}
+            <iframe
+              key={`${candidateLayout}-${candidateColor}`}
+              src={`/order/${tables[0].qr_token}?previewLayout=${candidateLayout}&previewColor=${candidateColor}`}
+              className="h-full w-full flex-1 border-0"
+              title="Menu preview"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -614,19 +645,31 @@ function MiniMenuPreview({
   let tieredItems: PreviewItem[] = [];
   if (needsSubcategoryPreview) {
     const categoryIdsWithItems = new Set(items.map((i) => i.category_id));
-    const majors = categories.filter(
-      (c) =>
-        !c.parent_id &&
-        (categories.some((child) => child.parent_id === c.id) ? categories.some((child) => child.parent_id === c.id && categoryIdsWithItems.has(child.id)) : categoryIdsWithItems.has(c.id)),
-    );
+    // A major category qualifies if it has items directly OR any of its
+    // subcategories do — not exclusively one or the other, since an owner
+    // can leave items directly under a major category even after adding
+    // subcategories to it.
+    const majors = categories.filter((c) => {
+      if (c.parent_id) return false;
+      const children = categories.filter((child) => child.parent_id === c.id);
+      const childrenHaveItems = children.some((child) => categoryIdsWithItems.has(child.id));
+      return childrenHaveItems || categoryIdsWithItems.has(c.id);
+    });
     const firstMajor = majors[0];
-    const subs = firstMajor ? categories.filter((c) => c.parent_id === firstMajor.id && categoryIdsWithItems.has(c.id)) : [];
-    const leafId = subs[0]?.id ?? firstMajor?.id ?? null;
-    tieredMajors = majors.map((m) => ({ id: m.id, name: m.name }));
-    tieredSubs = subs.map((s) => ({ id: s.id, name: s.name }));
-    tieredItems = leafId
-      ? items.filter((i) => i.category_id === leafId).map((i) => ({ id: i.id, name: i.name, price: i.price, photo_url: i.photo_url }))
-      : SAMPLE_ITEMS.map((s, i) => ({ id: `sample-${i}`, name: s.name, price: s.price, photo_url: s.photo }));
+    if (firstMajor) {
+      const subs = categories.filter((c) => c.parent_id === firstMajor.id && categoryIdsWithItems.has(c.id));
+      const leafId = subs[0]?.id ?? firstMajor.id;
+      tieredMajors = majors.map((m) => ({ id: m.id, name: m.name }));
+      tieredSubs = subs.map((s) => ({ id: s.id, name: s.name }));
+      tieredItems = items.filter((i) => i.category_id === leafId).map((i) => ({ id: i.id, name: i.name, price: i.price, photo_url: i.photo_url }));
+    } else {
+      // No real major->subcategory structure yet — show a representative
+      // sample so the mini preview still demonstrates the tabs/pills shape,
+      // same as Classic/Minimal List's own sample-category fallback above.
+      tieredMajors = [{ id: "sample-major", name: "Food" }];
+      tieredSubs = [{ id: "sample-sub", name: "Starters" }];
+      tieredItems = SAMPLE_ITEMS.map((s, i) => ({ id: `sample-${i}`, name: s.name, price: s.price, photo_url: s.photo }));
+    }
   }
 
   return (
