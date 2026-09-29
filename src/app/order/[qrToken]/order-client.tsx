@@ -632,14 +632,12 @@ function ClassicLayout({ restaurant, table, menuColor, lang, isPremium, changeLa
   );
 }
 
-// Benchmarked against a PosBytz-style menu: compact header (no search), one
-// promo banner surfaced from the owner's "Our Best" picks, and a flat list
+// Benchmarked against a PosBytz-style menu: compact header (no search), a
+// swipeable row of promo banners from the owner's "Our Best" picks, and a flat list
 // of item rows per category — closer to a printed menu than Classic's
 // horizontally scrolling cards. Tapping a row reuses the same
 // ItemDetailOverlay Classic uses for its detail popup.
 function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, featuredItems, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
-  const promoItem = featuredItems[0] ?? null;
-
   // Only categories that actually have items to show as tabs — an empty
   // category would otherwise be a dead-end tab with nothing under it.
   const categoriesWithItems = useMemo(
@@ -672,17 +670,21 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
 
       <TableOrderSummaryBanner tableOrderSummary={tableOrderSummary} />
 
-      {promoItem && (
-        <button onClick={() => setDetailItem(promoItem)} className="mx-4 mt-4 flex h-28 items-stretch overflow-hidden rounded-xl border border-border bg-brand/10 text-left transition-opacity hover:opacity-90">
-          <div className="flex flex-1 flex-col justify-center gap-1 px-4">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-brand">{ui(lang, "ourBest")}</span>
-            <p className="truncate text-base font-bold text-foreground">{tr(promoItem.translations, lang, "name", promoItem.name)}</p>
-            <p className="text-sm font-semibold text-brand">{formatPeso(promoItem.price)}</p>
-          </div>
-          <div className="relative w-28 shrink-0 bg-background">
-            {promoItem.photo_url ? <Image src={promoItem.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-xs text-muted">Menuko</span>}
-          </div>
-        </button>
+      {featuredItems.length > 0 && (
+        <div className="mt-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
+          {featuredItems.map((item) => (
+            <button key={item.id} onClick={() => setDetailItem(item)} className={`flex h-28 shrink-0 snap-start items-stretch overflow-hidden rounded-xl border border-border bg-brand/10 text-left transition-opacity hover:opacity-90 ${featuredItems.length > 1 ? "w-[85%]" : "w-full"}`}>
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-4">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-brand">{ui(lang, "ourBest")}</span>
+                <p className="truncate text-base font-bold text-foreground">{tr(item.translations, lang, "name", item.name)}</p>
+                <p className="text-sm font-semibold text-brand">{formatPeso(item.price)}</p>
+              </div>
+              <div className="relative w-28 shrink-0 bg-background">
+                {item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="112px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-xs text-muted">Menuko</span>}
+              </div>
+            </button>
+          ))}
+        </div>
       )}
 
       {categoriesWithItems.length > 0 && (
@@ -804,13 +806,13 @@ function MinimalListLayout({ restaurant, table, menuColor, lang, isPremium, chan
 // Benchmarked against a Jamezz-style dark menu: always a dark page
 // regardless of the selected menu_color (see [data-menu-layout="jamezz-dark"]
 // in globals.css — the layout owns light/dark, the color axis still only
-// supplies the --brand accent), major-category tabs -> subcategory pill
-// filter -> the active subcategory's own "Our Best" hero (reusing the
-// per-category is_featured cap from Phase 2a) -> a flat item list below
+// supplies the --brand accent), a swipeable "Our Best" hero carousel (the
+// restaurant-wide picks, same as every other layout) -> major-category tabs
+// -> subcategory pill filter -> a flat item list below
 // (Minimal List's row shape, recolored dark). A major category with no
 // subcategories is treated as its own leaf, so a flat menu still works
 // without forcing every restaurant into two levels.
-function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
+function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, featuredItems, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
   const categoryIdsWithItems = useMemo(() => new Set(items.map((i) => i.category_id)), [items]);
 
   const majorCategories = useMemo(
@@ -839,7 +841,6 @@ function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, chang
   const activeLeaf = leafOptions.find((l) => l.id === resolvedActiveLeafId) ?? null;
 
   const leafItems = activeLeaf ? items.filter((i) => i.category_id === activeLeaf.id) : [];
-  const heroItem = leafItems.find((i) => i.is_featured) ?? null;
 
   return (
     <div data-menu-theme={menuColor} data-menu-layout="jamezz-dark" dir={RTL_LANGUAGES.has(lang) ? "rtl" : "ltr"} className="flex min-h-full flex-1 flex-col bg-background pb-24 text-foreground">
@@ -855,6 +856,22 @@ function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, chang
       </header>
 
       <TableOrderSummaryBanner tableOrderSummary={tableOrderSummary} />
+
+      {featuredItems.length > 0 && (
+        <div className="mb-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
+          {featuredItems.map((item) => (
+            <button key={item.id} onClick={() => setDetailItem(item)} className={`relative h-40 shrink-0 snap-start overflow-hidden rounded-xl text-left shadow-sm transition-opacity hover:opacity-95 ${featuredItems.length > 1 ? "w-[85%]" : "w-full"}`}>
+              {item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="360px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center bg-card text-xs text-muted">Menuko</span>}
+              <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" aria-hidden />
+              <div className="absolute inset-x-0 bottom-0 p-3">
+                <span className="inline-block rounded-full bg-brand px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-foreground">{ui(lang, "ourBest")}</span>
+                <p className="mt-1 truncate text-sm font-semibold text-white">{tr(item.translations, lang, "name", item.name)}</p>
+                <p className="text-xs font-medium text-white/80">{formatPeso(item.price)}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {majorCategories.length > 0 && (
         <div className="flex gap-5 border-b border-border px-4">
@@ -893,18 +910,6 @@ function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, chang
             );
           })}
         </div>
-      )}
-
-      {heroItem && (
-        <button onClick={() => setDetailItem(heroItem)} className="relative mx-4 mt-4 h-40 shrink-0 overflow-hidden rounded-xl text-left shadow-sm transition-opacity hover:opacity-95">
-          {heroItem.photo_url ? <Image src={heroItem.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center bg-card text-xs text-muted">Menuko</span>}
-          <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" aria-hidden />
-          <div className="absolute inset-x-0 bottom-0 p-3">
-            <span className="inline-block rounded-full bg-brand px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-foreground">{ui(lang, "ourBest")}</span>
-            <p className="mt-1 truncate text-sm font-semibold text-white">{tr(heroItem.translations, lang, "name", heroItem.name)}</p>
-            <p className="text-xs font-medium text-white/80">{formatPeso(heroItem.price)}</p>
-          </div>
-        </button>
       )}
 
       {editingRequest && (
@@ -1004,12 +1009,13 @@ function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, chang
 
 // Benchmarked against a grid-menu app: a major-category <select> at the top
 // right (the user's own "오른쪽 필터" spec) with a subcategory pill row
-// beneath it, then a 2-column photo-forward grid — cards show only photo,
+// beneath it (below an "Our Best" row of the owner's picks, same as every
+// other layout), then a 2-column photo-forward grid — cards show only photo,
 // price sticker, and title (no description on the card itself). Tapping
 // "+" opens the compact ItemPopover instead of a full-screen takeover. A
 // major category with no subcategories is treated as its own leaf, same
 // fallback as Jamezz Dark.
-function GridPopupLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
+function GridPopupLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, featuredItems, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
   const categoryIdsWithItems = useMemo(() => new Set(items.map((i) => i.category_id)), [items]);
 
   const majorCategories = useMemo(
@@ -1052,6 +1058,26 @@ function GridPopupLayout({ restaurant, table, menuColor, lang, isPremium, change
       </header>
 
       <TableOrderSummaryBanner tableOrderSummary={tableOrderSummary} />
+
+      {featuredItems.length > 0 && (
+        <section className="px-4 pt-4">
+          <h2 className="mb-2 text-sm font-bold text-foreground">{ui(lang, "ourBest")}</h2>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {featuredItems.map((item) => (
+              <button key={item.id} onClick={() => setDetailItem(item)} className="w-44 shrink-0 overflow-hidden rounded-xl border border-border bg-card text-left transition-opacity hover:opacity-90">
+                <div className="relative h-28 w-full bg-background">
+                  {item.photo_url ? <Image src={item.photo_url} alt="" fill sizes="176px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-xs text-muted">Menuko</span>}
+                  <span className="absolute top-2 left-2 rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-foreground shadow">{ui(lang, "ourBest")}</span>
+                </div>
+                <div className="px-2.5 py-2">
+                  <p className="truncate text-sm font-medium text-foreground">{tr(item.translations, lang, "name", item.name)}</p>
+                  <p className="text-xs font-semibold text-brand">{formatPeso(item.price)}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {majorCategories.length > 0 && (
         <div className="flex justify-end px-4 pt-3">

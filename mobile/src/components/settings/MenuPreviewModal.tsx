@@ -105,9 +105,9 @@ export function MenuPreviewModal({
         {menuLayout === "minimal-list" ? (
           <MinimalListMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         ) : menuLayout === "jamezz-dark" ? (
-          <JamezzDarkMenu categories={categories} available={available} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
+          <JamezzDarkMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         ) : menuLayout === "grid-popup" ? (
-          <GridPopupMenu categories={categories} available={available} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
+          <GridPopupMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         ) : (
           <ClassicMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         )}
@@ -242,30 +242,33 @@ function ClassicMenu({ categories, available, featured, p, cartCount, onOpenItem
   );
 }
 
-// Benchmarked against a PosBytz-style menu: one promo banner from the
-// owner's "Our Best" picks, then a flat list of item rows per category —
+// Benchmarked against a PosBytz-style menu: a swipeable row of promo banners
+// from the owner's "Our Best" picks, then a flat list of item rows per category —
 // mirrors MinimalListLayout in the web order-client.tsx.
 function MinimalListMenu({ categories, available, featured, p, cartCount, onOpenItem }: MenuBodyProps) {
-  const promoItem = featured[0] ?? null;
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
-      {promoItem && (
-        <TouchableOpacity style={styles.promoBanner} activeOpacity={0.85} onPress={() => onOpenItem(promoItem)}>
-          {promoItem.photo_url ? (
-            <Image source={{ uri: promoItem.photo_url }} style={styles.featuredImage} />
-          ) : (
-            <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
-              <Text style={styles.photoPlaceholder}>Menuko</Text>
-            </View>
-          )}
-          <View style={styles.featuredOverlay} />
-          <View style={[styles.featuredBadge, { backgroundColor: p.brand }]}>
-            <Text style={styles.featuredBadgeText}>Our Best!</Text>
-          </View>
-          <Text style={styles.promoBannerName} numberOfLines={1}>
-            {promoItem.name}
-          </Text>
-        </TouchableOpacity>
+      {featured.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.promoRow}>
+          {featured.map((item) => (
+            <TouchableOpacity key={item.id} style={[styles.promoBanner, featured.length > 1 && styles.promoBannerPeek]} activeOpacity={0.85} onPress={() => onOpenItem(item)}>
+              {item.photo_url ? (
+                <Image source={{ uri: item.photo_url }} style={styles.featuredImage} />
+              ) : (
+                <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
+                  <Text style={styles.photoPlaceholder}>Menuko</Text>
+                </View>
+              )}
+              <View style={styles.featuredOverlay} />
+              <View style={[styles.featuredBadge, { backgroundColor: p.brand }]}>
+                <Text style={styles.featuredBadgeText}>Our Best!</Text>
+              </View>
+              <Text style={styles.promoBannerName} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       )}
 
       {categories.map((category) => {
@@ -310,12 +313,12 @@ function MinimalListMenu({ categories, available, featured, p, cartCount, onOpen
   );
 }
 
-// Benchmarked against a Jamezz-style dark menu: major-category tabs ->
-// subcategory pill filter -> the active subcategory's own "Our Best" hero
-// -> a flat item list below — mirrors JamezzDarkLayout in the web
+// Benchmarked against a Jamezz-style dark menu: a swipeable "Our Best" hero
+// carousel (restaurant-wide picks, same as every layout) -> major-category
+// tabs -> subcategory pill filter -> a flat item list below — mirrors JamezzDarkLayout in the web
 // order-client.tsx. A major category with no subcategories is treated as
 // its own leaf, so a flat menu still works.
-function JamezzDarkMenu({ categories, available, p, cartCount, onOpenItem }: Omit<MenuBodyProps, "featured">) {
+function JamezzDarkMenu({ categories, available, featured, p, cartCount, onOpenItem }: MenuBodyProps) {
   const categoryIdsWithItems = new Set(available.map((i) => i.category_id));
   const majors = categories.filter((c) => {
     if (c.parent_id) return false;
@@ -332,10 +335,31 @@ function JamezzDarkMenu({ categories, available, p, cartCount, onOpenItem }: Omi
   const resolvedActiveLeafId = leafOptions.some((l) => l.id === activeLeafId) ? activeLeafId : (leafOptions[0]?.id ?? null);
 
   const leafItems = resolvedActiveLeafId ? available.filter((i) => i.category_id === resolvedActiveLeafId) : [];
-  const heroItem = leafItems.find((i) => i.is_featured) ?? null;
 
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
+      {featured.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.jamezzHeroRow}>
+          {featured.map((item) => (
+            <TouchableOpacity key={item.id} style={[styles.jamezzHero, featured.length > 1 && styles.promoBannerPeek]} activeOpacity={0.85} onPress={() => onOpenItem(item)}>
+              {item.photo_url ? (
+                <Image source={{ uri: item.photo_url }} style={styles.featuredImage} />
+              ) : (
+                <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
+                  <Text style={styles.photoPlaceholder}>Menuko</Text>
+                </View>
+              )}
+              <View style={styles.featuredOverlay} />
+              <View style={[styles.featuredBadge, { backgroundColor: p.brand }]}>
+                <Text style={styles.featuredBadgeText}>Our Best!</Text>
+              </View>
+              <Text style={styles.promoBannerName} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
       {majors.length > 0 && (
         <View style={styles.jamezzMajorRow}>
           {majors.map((m) => (
@@ -364,24 +388,6 @@ function JamezzDarkMenu({ categories, available, p, cartCount, onOpenItem }: Omi
             );
           })}
         </View>
-      )}
-      {heroItem && (
-        <TouchableOpacity style={styles.jamezzHero} activeOpacity={0.85} onPress={() => onOpenItem(heroItem)}>
-          {heroItem.photo_url ? (
-            <Image source={{ uri: heroItem.photo_url }} style={styles.featuredImage} />
-          ) : (
-            <View style={[styles.featuredImage, styles.featuredPlaceholder]}>
-              <Text style={styles.photoPlaceholder}>Menuko</Text>
-            </View>
-          )}
-          <View style={styles.featuredOverlay} />
-          <View style={[styles.featuredBadge, { backgroundColor: p.brand }]}>
-            <Text style={styles.featuredBadgeText}>Our Best!</Text>
-          </View>
-          <Text style={styles.promoBannerName} numberOfLines={1}>
-            {heroItem.name}
-          </Text>
-        </TouchableOpacity>
       )}
       <View style={[styles.listGroup, { borderColor: p.cardBorderColor, backgroundColor: p.cardBackground }]}>
         {leafItems.map((item, idx) => (
@@ -418,10 +424,11 @@ function JamezzDarkMenu({ categories, available, p, cartCount, onOpenItem }: Omi
 
 // Benchmarked against a grid-menu app: a major-category selector row aligned
 // to the right (the user's own "오른쪽 필터" spec) with a subcategory pill
-// row beneath it, then a 2-column photo-forward grid — cards show only
+// row beneath it (below an "Our Best" card row, same as every layout), then
+// a 2-column photo-forward grid — cards show only
 // photo, price sticker, and title (no description). Tapping "+" opens the
 // compact ItemPopoverCompact instead of a full-screen takeover.
-function GridPopupMenu({ categories, available, p, cartCount, onOpenItem }: Omit<MenuBodyProps, "featured">) {
+function GridPopupMenu({ categories, available, featured, p, cartCount, onOpenItem }: MenuBodyProps) {
   const categoryIdsWithItems = new Set(available.map((i) => i.category_id));
   const majors = categories.filter((c) => {
     if (c.parent_id) return false;
@@ -441,6 +448,27 @@ function GridPopupMenu({ categories, available, p, cartCount, onOpenItem }: Omit
 
   return (
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
+      {featured.length > 0 && (
+        <View style={styles.gridBestSection}>
+          <Text style={[styles.gridBestTitle, { color: p.foreground }]}>Our Best!</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {featured.map((item) => (
+              <TouchableOpacity key={item.id} style={[styles.gridBestCard, { backgroundColor: p.cardBackground, borderColor: p.cardBorderColor }]} activeOpacity={0.85} onPress={() => onOpenItem(item)}>
+                <View style={styles.gridCardPhoto}>
+                  {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.rowCardImage} /> : <Text style={styles.photoPlaceholder}>Menuko</Text>}
+                  <View style={[styles.gridCardPriceBadge, { backgroundColor: p.brand }]}>
+                    <Text style={styles.gridCardPriceText}>Our Best!</Text>
+                  </View>
+                </View>
+                <Text style={[styles.gridBestName, { color: p.foreground }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.gridBestPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
       {majors.length > 0 && (
         <View style={styles.gridMajorRow}>
           {majors.map((m) => {
@@ -746,7 +774,11 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
-  promoBanner: { height: 120, borderRadius: 16, overflow: "hidden" },
+  promoRow: { flexGrow: 0 },
+  promoBanner: { width: 320, height: 120, borderRadius: 16, overflow: "hidden" },
+  // With more than one pick, each card is narrower than the row so the next
+  // one peeks in — a visible cue that the row swipes.
+  promoBannerPeek: { width: 280, marginRight: 10 },
   promoBannerName: {
     position: "absolute",
     left: 10,
@@ -761,10 +793,16 @@ const styles = StyleSheet.create({
   jamezzMajorLabel: { fontSize: 14, fontWeight: "700" },
   jamezzSubRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
   jamezzSubChip: { fontSize: 11, fontWeight: "600", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden" },
-  jamezzHero: { height: 150, borderRadius: 16, overflow: "hidden", marginBottom: 14 },
+  jamezzHeroRow: { flexGrow: 0, marginBottom: 14 },
+  jamezzHero: { width: 320, height: 150, borderRadius: 16, overflow: "hidden" },
 
   gridMajorRow: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginBottom: 10 },
   gridMajorChip: { fontSize: 12, fontWeight: "700", borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden" },
+  gridBestSection: { gap: 8, marginBottom: 14 },
+  gridBestTitle: { fontSize: 14, fontWeight: "700" },
+  gridBestCard: { width: 150, borderWidth: 1, borderRadius: 14, overflow: "hidden", marginRight: 10 },
+  gridBestName: { fontSize: 12, fontWeight: "500", paddingHorizontal: 8, paddingTop: 8 },
+  gridBestPrice: { fontSize: 11, fontWeight: "700", paddingHorizontal: 8, paddingBottom: 8, paddingTop: 2 },
   gridWrap: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   gridCard: { width: "47%", borderWidth: 1, borderRadius: 14, overflow: "visible" },
   gridCardPhoto: { width: "100%", height: 100, borderTopLeftRadius: 14, borderTopRightRadius: 14, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: "#f2ede6" },
