@@ -132,8 +132,19 @@ function Tape({ style }: { style: CSSProperties }) {
   );
 }
 
-const KRAFT_NOISE =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.25 0 0 0 0 0.18 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+// Paper grain as a real SVG layer (not a CSS data-URI background) so it
+// survives both printing and the PDF export's DOM-to-image rasterizing.
+function PaperGrain() {
+  return (
+    <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full">
+      <filter id="qr-kraft-grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves={2} stitchTiles="stitch" />
+        <feColorMatrix values="0 0 0 0 0.3  0 0 0 0 0.25  0 0 0 0 0.18  0 0 0 0.16 0" />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#qr-kraft-grain)" />
+    </svg>
+  );
+}
 
 // ── Designs ──────────────────────────────────────────────────────────────
 
@@ -157,7 +168,8 @@ function PlainCard({ restaurantName, tableLabel, qrSvg }: QrCardProps) {
 function KraftCard({ restaurantName, tableLabel, logoUrl, qrSvg }: QrCardProps) {
   const ink = "#4e4638";
   return (
-    <CardFrame className="flex flex-col items-center text-center" style={{ background: `${KRAFT_NOISE}, #e9e1d3`, color: ink, fontFamily: "var(--font-qr-bebas)", paddingTop: cq(5) }}>
+    <CardFrame className="flex flex-col items-center text-center" style={{ backgroundColor: "#e9e1d3", color: ink, fontFamily: "var(--font-qr-bebas)", paddingTop: cq(5) }}>
+      <PaperGrain />
       <LogoMark logoUrl={logoUrl} size={8} color={ink}>
         <ForkSpoonIcon color="#e9e1d3" />
       </LogoMark>

@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { QR_DESIGNS, getQrDesign } from "./qr-designs";
 
 type Table = { id: string; label: string; qr_token: string };
+
+// Printed QR cards live on tables for months, so they always point at the
+// production site — never at whatever host this page happens to be open on
+// (a Vercel preview URL or localhost would print dead QR codes).
+const ORDER_ORIGIN = "https://menuko.net";
+
+// A4 at 300 dpi — standard resolution print shops ask for.
+const A4_WIDTH_PX_300DPI = 2480;
 type SheetSize = "small" | "large";
 
 const SHEET_SIZES: { id: SheetSize; label: string; hint: string }[] = [
@@ -50,21 +58,15 @@ export function QrPrintView({
   tables: Table[];
   initialTableId: string | null;
 }) {
-  const [origin, setOrigin] = useState("");
+  const [exporting, setExporting] = useState<string | null>(null);
+  const sheetRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [designId, setDesignId] = useState("kraft");
   const [size, setSize] = useState<SheetSize>("small");
   const [tableId, setTableId] = useState<string>(initialTableId && tables.some((t) => t.id === initialTableId) ? initialTableId : "all");
 
-  useEffect(() => {
-    // window isn't available during SSR — this only ever runs once on
-    // mount to read the real origin, not a re-render loop.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOrigin(window.location.origin);
-  }, []);
-
   const design = getQrDesign(designId);
   const selectedTables = tableId === "all" ? tables : tables.filter((t) => t.id === tableId);
-  const orderUrl = (t: Table) => (origin ? `${origin}/order/${t.qr_token}` : "");
+  const orderUrl = (t: Table) => `${ORDER_ORIGIN}/order/${t.qr_token}`;
   const sampleTable = selectedTables[0] ?? tables[0] ?? null;
 
   const getSvg = useQrSvgs([
@@ -75,6 +77,39 @@ export function QrPrintView({
   const perPage = size === "small" ? 4 : 1;
   const pages: Table[][] = [];
   for (let i = 0; i < selectedTables.length; i += perPage) pages.push(selectedTables.slice(i, i + perPage));
+
+  // Print-ready PDF (one A4 page per sheet, 300 dpi) to send to a print
+  // shop instead of printing locally. Each on-screen sheet is rasterized
+  // as-is, so the file matches the preview exactly, fonts included.
+  async function downloadPdf() {
+    const nodes = sheetRefs.current.slice(0, pages.length).filter((n): n is HTMLDivElement => n !== null);
+    if (nodes.length === 0) return;
+    setExporting(`Preparing page 1 of ${nodes.length}…`);
+    try {
+      const [{ toJpeg }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+      for (let i = 0; i < nodes.length; i++) {
+        setExporting(`Preparing page ${i + 1} of ${nodes.length}…`);
+        const node = nodes[i];
+        const image = await toJpeg(node, {
+          quality: 0.95,
+          pixelRatio: A4_WIDTH_PX_300DPI / node.offsetWidth,
+          backgroundColor: "#ffffff",
+          // Drop the on-screen drop shadow from the exported page.
+          style: { boxShadow: "none" },
+        });
+        if (i > 0) pdf.addPage();
+        pdf.addImage(image, "JPEG", 0, 0, 210, 297);
+      }
+      const tablePart = tableId === "all" ? "all-tables" : (selectedTables[0]?.label ?? "table");
+      const fileName = `${restaurant.name} - QR ${design.label} - ${tablePart} (${size === "small" ? "4 per A4" : "1 per A4"}).pdf`.replace(/[\\/:*?"<>|]/g, "");
+      pdf.save(fileName);
+    } catch {
+      alert("Couldn't create the PDF — please try again.");
+    } finally {
+      setExporting(null);
+    }
+  }
 
   const cardProps = (t: Table, d = design) => ({
     restaurantName: restaurant.name,
@@ -91,13 +126,22 @@ export function QrPrintView({
             <h1 className="text-lg font-semibold">{restaurant.name} — Table QR Codes</h1>
             <p className="text-sm text-neutral-500">Pick a design, print, and place one on each table.</p>
           </div>
-          <button
-            onClick={() => window.print()}
-            disabled={selectedTables.length === 0}
-            className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-40"
-          >
-            Print / Save as PDF
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={downloadPdf}
+              disabled={selectedTables.length === 0 || exporting !== null}
+              className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-40"
+            >
+              {exporting ?? "Download PDF for print shop"}
+            </button>
+            <button
+              onClick={() => window.print()}
+              disabled={selectedTables.length === 0 || exporting !== null}
+              className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 transition hover:border-neutral-900 disabled:opacity-40"
+            >
+              Print here
+            </button>
+          </div>
         </div>
 
         {tables.length === 0 ? (
@@ -164,7 +208,11 @@ export function QrPrintView({
             </div>
 
             <p className="text-xs text-neutral-500">
-              Tip: in the print dialog, set paper to A4, margins to &ldquo;None&rdquo;, and turn on &ldquo;Background graphics&rdquo; so the colors print.
+              <strong className="font-semibold text-neutral-700">Using a print shop?</strong> Download the PDF (A4, 300 dpi) and send it as-is — ask them to print at 100% scale on A4
+              {size === "small" ? " and cut along the dashed lines" : ""}.
+            </p>
+            <p className="text-xs text-neutral-500">
+              Printing yourself? In the print dialog, set paper to A4, margins to &ldquo;None&rdquo;, and turn on &ldquo;Background graphics&rdquo; so the colors print.
             </p>
           </>
         )}
@@ -175,6 +223,9 @@ export function QrPrintView({
         {pages.map((page, i) => (
           <div
             key={i}
+            ref={(node) => {
+              sheetRefs.current[i] = node;
+            }}
             className="relative aspect-[210/297] w-full max-w-[210mm] overflow-hidden bg-white shadow-lg print:h-[297mm] print:w-[210mm] print:max-w-none print:break-after-page print:shadow-none"
           >
             {size === "large" ? (
