@@ -455,6 +455,7 @@ export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor,
 
   if (menuLayout === "minimal-list") return <MinimalListLayout {...layoutProps} />;
   if (menuLayout === "jamezz-dark") return <JamezzDarkLayout {...layoutProps} />;
+  if (menuLayout === "grid-popup") return <GridPopupLayout {...layoutProps} />;
   return <ClassicLayout {...layoutProps} />;
 }
 
@@ -993,6 +994,188 @@ function JamezzDarkLayout({ restaurant, table, menuColor, lang, isPremium, chang
   );
 }
 
+// Benchmarked against a grid-menu app: a major-category <select> at the top
+// right (the user's own "오른쪽 필터" spec) with a subcategory pill row
+// beneath it, then a 2-column photo-forward grid — cards show only photo,
+// price sticker, and title (no description on the card itself). Tapping
+// "+" opens the compact ItemPopover instead of a full-screen takeover. A
+// major category with no subcategories is treated as its own leaf, same
+// fallback as Jamezz Dark.
+function GridPopupLayout({ restaurant, table, menuColor, lang, isPremium, changeLang, tableOrderSummary, categories, items, detailItem, setDetailItem, cart, setQty, cartLines, cartTotal, cartCount, error, submitting, editingRequest, setEditingRequest, setCart, setError, reviewOpen, setReviewOpen, onConfirmOrder, callingServer, serverCalled, callServer }: MenuLayoutProps) {
+  const categoryIdsWithItems = useMemo(() => new Set(items.map((i) => i.category_id)), [items]);
+
+  const majorCategories = useMemo(
+    () =>
+      categories
+        .filter((c) => !c.parent_id)
+        .filter((major) => {
+          const children = categories.filter((c) => c.parent_id === major.id);
+          return children.length > 0
+            ? children.some((child) => categoryIdsWithItems.has(child.id))
+            : categoryIdsWithItems.has(major.id);
+        }),
+    [categories, categoryIdsWithItems],
+  );
+  const [activeMajorId, setActiveMajorId] = useState<string | null>(majorCategories[0]?.id ?? null);
+  const resolvedActiveMajorId = majorCategories.some((m) => m.id === activeMajorId) ? activeMajorId : (majorCategories[0]?.id ?? null);
+  const activeMajor = majorCategories.find((m) => m.id === resolvedActiveMajorId) ?? null;
+
+  const subcategoriesOfActiveMajor = useMemo(
+    () => (activeMajor ? categories.filter((c) => c.parent_id === activeMajor.id).filter((sub) => categoryIdsWithItems.has(sub.id)) : []),
+    [categories, categoryIdsWithItems, activeMajor],
+  );
+  const leafOptions = subcategoriesOfActiveMajor.length > 0 ? subcategoriesOfActiveMajor : activeMajor ? [activeMajor] : [];
+  const [activeLeafId, setActiveLeafId] = useState<string | null>(null);
+  const resolvedActiveLeafId = leafOptions.some((l) => l.id === activeLeafId) ? activeLeafId : (leafOptions[0]?.id ?? null);
+
+  const leafItems = resolvedActiveLeafId ? items.filter((i) => i.category_id === resolvedActiveLeafId) : [];
+
+  return (
+    <div data-menu-theme={menuColor} dir={RTL_LANGUAGES.has(lang) ? "rtl" : "ltr"} className="flex min-h-full flex-1 flex-col bg-background pb-24">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-bold text-foreground">{restaurant.name}</h1>
+          <p className="text-xs text-muted">{table.label}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {isPremium && <LanguageSwitcher lang={lang} onChange={changeLang} enabledLanguages={restaurant.enabled_languages as MenuLanguage[] | null} />}
+          <CallServerButton calling={callingServer} called={serverCalled} onCall={callServer} lang={lang} />
+        </div>
+      </header>
+
+      <TableOrderSummaryBanner tableOrderSummary={tableOrderSummary} />
+
+      {majorCategories.length > 0 && (
+        <div className="flex justify-end px-4 pt-3">
+          <select
+            value={resolvedActiveMajorId ?? ""}
+            onChange={(e) => {
+              setActiveMajorId(e.target.value);
+              setActiveLeafId(null);
+            }}
+            className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-brand"
+          >
+            {majorCategories.map((m) => (
+              <option key={m.id} value={m.id}>
+                {tr(m.translations, lang, "name", m.name)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {subcategoriesOfActiveMajor.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto px-4 pt-3 pb-1">
+          {subcategoriesOfActiveMajor.map((sub) => {
+            const active = sub.id === resolvedActiveLeafId;
+            return (
+              <button
+                key={sub.id}
+                onClick={() => setActiveLeafId(sub.id)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active ? "border-brand bg-brand text-brand-foreground" : "border-border text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                {tr(sub.translations, lang, "name", sub.name)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {editingRequest && (
+        <div className="mx-4 mt-4 flex items-center justify-between rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm">
+          <span>{ui(lang, "adjustItemsHint")}</span>
+          <button
+            onClick={() => {
+              setEditingRequest(false);
+              setCart({});
+              setError(null);
+            }}
+            className="text-xs text-muted underline"
+          >
+            {ui(lang, "cancel")}
+          </button>
+        </div>
+      )}
+
+      <main className="flex flex-1 flex-col gap-3 p-4">
+        {leafItems.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3">
+            {leafItems.map((item) => {
+              const name = tr(item.translations, lang, "name", item.name);
+              return (
+                <div key={item.id} className="relative overflow-visible rounded-xl border border-border bg-card">
+                  <div className="relative h-28 w-full overflow-hidden rounded-t-xl bg-background">
+                    {item.photo_url ? (
+                      <Image src={item.photo_url} alt="" fill sizes="200px" className="object-cover" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-xs text-muted">Menuko</span>
+                    )}
+                    <span className="absolute top-2 left-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold whitespace-nowrap text-brand-foreground shadow">{formatPeso(item.price)}</span>
+                  </div>
+                  <button
+                    onClick={() => setDetailItem(item)}
+                    aria-label={`${ui(lang, "addToOrder")}: ${name}`}
+                    className="absolute -top-2 -right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-brand text-base font-bold text-brand-foreground shadow transition-opacity hover:opacity-90"
+                  >
+                    +
+                  </button>
+                  <p className="truncate px-2 py-2 text-xs font-medium text-foreground">{name}</p>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">{ui(lang, "noMenuItems")}</p>
+        )}
+        <p className="pt-2 text-center text-[11px] text-muted">
+          {ui(lang, "byOrderingAgree")}{" "}
+          <Link href="/terms" className="underline">
+            {ui(lang, "terms")}
+          </Link>{" "}
+          {ui(lang, "and")}{" "}
+          <Link href="/privacy" className="underline">
+            {ui(lang, "privacyPolicy")}
+          </Link>
+          .
+        </p>
+      </main>
+
+      <CartBar cartCount={cartCount} cartTotal={cartTotal} error={error} submitting={submitting} editingRequest={editingRequest} onOpenReview={() => setReviewOpen(true)} onSendEdit={onConfirmOrder} lang={lang} />
+
+      {reviewOpen && !editingRequest && (
+        <ReviewSheet
+          lines={cartLines}
+          total={cartTotal}
+          submitting={submitting}
+          onConfirm={async () => {
+            await onConfirmOrder();
+            setReviewOpen(false);
+          }}
+          onClose={() => setReviewOpen(false)}
+          lang={lang}
+        />
+      )}
+
+      {detailItem && (
+        <ItemPopover
+          item={detailItem}
+          quantity={cart[detailItem.id] ?? 0}
+          onChangeQty={(qty) => setQty(detailItem.id, qty)}
+          onClose={() => setDetailItem(null)}
+          canCheckout={cartCount > 0}
+          onGoToCheckout={() => {
+            setDetailItem(null);
+            setReviewOpen(true);
+          }}
+          lang={lang}
+        />
+      )}
+    </div>
+  );
+}
+
 // Fixed bottom checkout trigger — identical across every layout, since the
 // checkout flow itself is layout-agnostic.
 function CartBar({ cartCount, cartTotal, error, submitting, editingRequest, onOpenReview, onSendEdit, lang }: { cartCount: number; cartTotal: number; error: string | null; submitting: boolean; editingRequest: boolean; onOpenReview: () => void; onSendEdit: () => void; lang: MenuLanguage }) {
@@ -1056,11 +1239,68 @@ function RowCard({ item, onClick, lang }: { item: MenuItem; onClick: () => void;
   );
 }
 
-function ItemDetailOverlay({ item, quantity, onChangeQty, onClose, canCheckout, onGoToCheckout, lang }: { item: MenuItem; quantity: number; onChangeQty: (quantity: number) => void; onClose: () => void; canCheckout: boolean; onGoToCheckout: () => void; lang: MenuLanguage }) {
+// Shared by the full-screen ItemDetailOverlay (Classic/Minimal
+// List/Jamezz Dark) and the compact ItemPopover (Grid Popup) — same name/
+// price/description/ingredients/allergy/cook-time/qty-stepper content,
+// just wrapped in a different shell per layout.
+function ItemDetailContent({ item, quantity, onChangeQty, canCheckout, onGoToCheckout, lang }: { item: MenuItem; quantity: number; onChangeQty: (quantity: number) => void; canCheckout: boolean; onGoToCheckout: () => void; lang: MenuLanguage }) {
   const name = tr(item.translations, lang, "name", item.name);
   const description = tr(item.translations, lang, "description", item.description);
   const ingredients = tr(item.translations, lang, "ingredients", item.ingredients);
   const allergyInfo = tr(item.translations, lang, "allergy_info", item.allergy_info);
+
+  return (
+    <>
+      <h2 className="text-lg font-bold text-balance">{name}</h2>
+      <p className="font-semibold text-brand">{formatPeso(item.price)}</p>
+      {description && <p className="text-sm text-foreground">{description}</p>}
+      {ingredients && (
+        <p className="text-sm text-muted">
+          <span className="font-medium text-foreground">{ui(lang, "ingredients")}: </span>
+          {ingredients}
+        </p>
+      )}
+      {allergyInfo && (
+        <p className="text-sm text-muted">
+          <span className="font-medium text-foreground">{ui(lang, "allergy")}: </span>
+          {allergyInfo}
+        </p>
+      )}
+      {item.cook_time_minutes && (
+        <p className="flex items-center gap-1 text-sm text-muted">
+          <span aria-hidden>🕐</span>
+          {item.cook_time_minutes} {ui(lang, "min")}
+        </p>
+      )}
+
+      <div className="mt-auto flex flex-col items-center gap-3 pt-6">
+        {quantity === 0 ? (
+          <button onClick={() => onChangeQty(1)} className="w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90">
+            {ui(lang, "addToOrder")}
+          </button>
+        ) : (
+          <div className="flex items-center gap-5">
+            <button onClick={() => onChangeQty(quantity - 1)} aria-label="Decrease quantity" className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand">
+              −
+            </button>
+            <span className="w-6 text-center text-lg tabular-nums">{quantity}</span>
+            <button onClick={() => onChangeQty(quantity + 1)} aria-label="Increase quantity" className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand">
+              +
+            </button>
+          </div>
+        )}
+        {canCheckout && (
+          <button onClick={onGoToCheckout} className="text-sm text-muted underline">
+            {ui(lang, "reviewOrder")}
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ItemDetailOverlay({ item, quantity, onChangeQty, onClose, canCheckout, onGoToCheckout, lang }: { item: MenuItem; quantity: number; onChangeQty: (quantity: number) => void; onClose: () => void; canCheckout: boolean; onGoToCheckout: () => void; lang: MenuLanguage }) {
+  const name = tr(item.translations, lang, "name", item.name);
 
   return (
     <div role="dialog" aria-modal="true" aria-label={name} className="fixed inset-0 z-30 flex flex-col overflow-y-auto overscroll-contain bg-card">
@@ -1072,49 +1312,30 @@ function ItemDetailOverlay({ item, quantity, onChangeQty, onClose, canCheckout, 
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-5">
-        <h2 className="text-lg font-bold text-balance">{name}</h2>
-        <p className="font-semibold text-brand">{formatPeso(item.price)}</p>
-        {description && <p className="text-sm text-foreground">{description}</p>}
-        {ingredients && (
-          <p className="text-sm text-muted">
-            <span className="font-medium text-foreground">{ui(lang, "ingredients")}: </span>
-            {ingredients}
-          </p>
-        )}
-        {allergyInfo && (
-          <p className="text-sm text-muted">
-            <span className="font-medium text-foreground">{ui(lang, "allergy")}: </span>
-            {allergyInfo}
-          </p>
-        )}
-        {item.cook_time_minutes && (
-          <p className="flex items-center gap-1 text-sm text-muted">
-            <span aria-hidden>🕐</span>
-            {item.cook_time_minutes} {ui(lang, "min")}
-          </p>
-        )}
+        <ItemDetailContent item={item} quantity={quantity} onChangeQty={onChangeQty} canCheckout={canCheckout} onGoToCheckout={onGoToCheckout} lang={lang} />
+      </div>
+    </div>
+  );
+}
 
-        <div className="mt-auto flex flex-col items-center gap-3 pt-6">
-          {quantity === 0 ? (
-            <button onClick={() => onChangeQty(1)} className="w-full rounded-full bg-brand py-3 font-medium text-brand-foreground transition-opacity hover:opacity-90">
-              {ui(lang, "addToOrder")}
-            </button>
-          ) : (
-            <div className="flex items-center gap-5">
-              <button onClick={() => onChangeQty(quantity - 1)} aria-label="Decrease quantity" className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand">
-                −
-              </button>
-              <span className="w-6 text-center text-lg tabular-nums">{quantity}</span>
-              <button onClick={() => onChangeQty(quantity + 1)} aria-label="Increase quantity" className="touch-manipulation h-10 w-10 rounded-full border border-border text-lg transition-colors hover:border-brand hover:text-brand">
-                +
-              </button>
-            </div>
-          )}
-          {canCheckout && (
-            <button onClick={onGoToCheckout} className="text-sm text-muted underline">
-              {ui(lang, "reviewOrder")}
-            </button>
-          )}
+// Benchmarked against a grid-menu app: tapping "+" on a grid card opens this
+// compact centered popup (not a full-screen takeover) with the item's
+// description/ingredients/allergy/cook time and the same add-to-order
+// stepper as every other layout's detail view.
+function ItemPopover({ item, quantity, onChangeQty, onClose, canCheckout, onGoToCheckout, lang }: { item: MenuItem; quantity: number; onChangeQty: (quantity: number) => void; onClose: () => void; canCheckout: boolean; onGoToCheckout: () => void; lang: MenuLanguage }) {
+  const name = tr(item.translations, lang, "name", item.name);
+
+  return (
+    <div role="dialog" aria-modal="true" aria-label={name} className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-card shadow-2xl">
+        <div className="relative h-40 shrink-0 bg-background">
+          {item.photo_url ? <Image src={item.photo_url} alt="" fill className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm text-muted">Menuko</span>}
+          <button onClick={onClose} aria-label="Close" className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-base text-white transition-colors hover:bg-black/60">
+            ×
+          </button>
+        </div>
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-5">
+          <ItemDetailContent item={item} quantity={quantity} onChangeQty={onChangeQty} canCheckout={canCheckout} onGoToCheckout={onGoToCheckout} lang={lang} />
         </div>
       </div>
     </div>

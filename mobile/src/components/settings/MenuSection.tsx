@@ -492,6 +492,59 @@ function MiniMenuPreview({
     );
   }
 
+  if (menuLayout === "grid-popup") {
+    const categoryIdsWithItems = new Set(available.map((i) => i.category_id));
+    const majors = categories.filter((c) => {
+      if (c.parent_id) return false;
+      const children = categories.filter((child) => child.parent_id === c.id);
+      return children.length > 0 ? children.some((child) => categoryIdsWithItems.has(child.id)) : categoryIdsWithItems.has(c.id);
+    });
+    const firstMajor = majors[0];
+    const subs = firstMajor ? categories.filter((c) => c.parent_id === firstMajor.id && categoryIdsWithItems.has(c.id)) : [];
+    const leafId = subs[0]?.id ?? firstMajor?.id ?? null;
+    const leafCards = (leafId ? available.filter((i) => i.category_id === leafId).slice(0, 4) : []).length > 0
+      ? available.filter((i) => i.category_id === leafId).slice(0, 4)
+      : cards;
+    return (
+      <View style={[styles.miniPreview, { backgroundColor: p.pageBackground }]}>
+        {firstMajor && (
+          <View style={styles.gridMiniMajorRow}>
+            <Text style={[styles.gridMiniMajorChip, { borderColor: p.cardBorderColor, color: p.foreground }]}>{firstMajor.name}</Text>
+          </View>
+        )}
+        {subs.length > 0 && (
+          <View style={styles.jamezzMiniSubRow}>
+            {subs.map((s, idx) => (
+              <Text
+                key={s.id}
+                style={[
+                  styles.jamezzMiniSubChip,
+                  idx === 0 ? { backgroundColor: p.brand, color: "#ffffff" } : { borderWidth: 1, borderColor: p.cardBorderColor, color: "#8a8a8a" },
+                ]}
+              >
+                {s.name}
+              </Text>
+            ))}
+          </View>
+        )}
+        <View style={styles.gridMiniWrap}>
+          {leafCards.map((item) => (
+            <View key={item.id} style={[styles.gridMiniCard, { backgroundColor: p.cardBackground, borderColor: p.cardBorderColor }]}>
+              <View style={styles.gridMiniPhoto}>
+                {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.miniCardImage} /> : null}
+                <Text style={[styles.gridMiniPriceBadge, { backgroundColor: p.brand }]}>{formatPeso(item.price)}</Text>
+              </View>
+              <Text style={[styles.gridMiniAddChip, { backgroundColor: p.brand }]}>+</Text>
+              <Text style={[styles.miniCardName, { color: p.foreground, paddingHorizontal: 4, paddingVertical: 3 }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   if (menuLayout === "minimal-list") {
     return (
       <View style={[styles.miniPreview, { backgroundColor: p.pageBackground }]}>
@@ -906,6 +959,26 @@ const styles = StyleSheet.create({
   jamezzMiniMajorLabel: { fontSize: 10.5, fontWeight: "700" },
   jamezzMiniSubRow: { flexDirection: "row", gap: 5 },
   jamezzMiniSubChip: { fontSize: 8.5, fontWeight: "600", borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, overflow: "hidden" },
+  gridMiniMajorRow: { flexDirection: "row", justifyContent: "flex-end" },
+  gridMiniMajorChip: { fontSize: 9, fontWeight: "700", borderWidth: 1, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, overflow: "hidden" },
+  gridMiniWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  gridMiniCard: { width: "47%", borderWidth: 1, borderRadius: 10, overflow: "visible" },
+  gridMiniPhoto: { width: "100%", height: 60, borderTopLeftRadius: 10, borderTopRightRadius: 10, overflow: "hidden", backgroundColor: "#f2ede6" },
+  gridMiniPriceBadge: { position: "absolute", top: 4, left: 4, borderRadius: 999, paddingHorizontal: 5, paddingVertical: 1.5, fontSize: 7, fontWeight: "700", color: "#ffffff", overflow: "hidden" },
+  gridMiniAddChip: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#ffffff",
+    textAlign: "center",
+    lineHeight: 16,
+    overflow: "hidden",
+  },
   miniPreviewRow: { flexDirection: "row", gap: 10 },
   miniCard: { width: 108, borderRadius: 12, overflow: "hidden" },
   miniCardPhoto: { width: "100%", height: 78, alignItems: "center", justifyContent: "center", overflow: "hidden", backgroundColor: "#f2ede6" },

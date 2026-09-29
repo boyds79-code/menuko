@@ -42,7 +42,7 @@ export function isMenuColorId(value: string): value is MenuColorId {
   return MENU_COLORS.some((c) => c.id === value);
 }
 
-export type MenuLayoutId = "classic" | "minimal-list" | "jamezz-dark";
+export type MenuLayoutId = "classic" | "minimal-list" | "jamezz-dark" | "grid-popup";
 
 export const MENU_LAYOUTS: {
   id: MenuLayoutId;
@@ -63,6 +63,11 @@ export const MENU_LAYOUTS: {
     id: "jamezz-dark",
     label: "Jamezz Dark",
     description: "Dark theme with major-category tabs and subcategory filters — best with categories organized into subcategories (e.g. Food > Pizza, Pasta).",
+  },
+  {
+    id: "grid-popup",
+    label: "Grid Popup",
+    description: "Photo-forward 2-column grid with a major/subcategory filter — tapping + opens a compact popup with the full description, best with subcategories.",
   },
 ];
 

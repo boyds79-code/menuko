@@ -17,12 +17,13 @@ export const MOBILE_MENU_COLORS: { id: MobileMenuColorId; label: string }[] = [
   { id: "botanical", label: "Botanical Linen" },
 ];
 
-export type MobileMenuLayoutId = "classic" | "minimal-list" | "jamezz-dark";
+export type MobileMenuLayoutId = "classic" | "minimal-list" | "jamezz-dark" | "grid-popup";
 
 export const MOBILE_MENU_LAYOUTS: { id: MobileMenuLayoutId; label: string }[] = [
   { id: "classic", label: "Classic" },
   { id: "minimal-list", label: "Minimal List" },
   { id: "jamezz-dark", label: "Jamezz Dark" },
+  { id: "grid-popup", label: "Grid Popup" },
 ];
 
 export type MobileColorPalette = {

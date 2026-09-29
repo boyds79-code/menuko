@@ -106,6 +106,8 @@ export function MenuPreviewModal({
           <MinimalListMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         ) : menuLayout === "jamezz-dark" ? (
           <JamezzDarkMenu categories={categories} available={available} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
+        ) : menuLayout === "grid-popup" ? (
+          <GridPopupMenu categories={categories} available={available} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         ) : (
           <ClassicMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
         )}
@@ -121,20 +123,34 @@ export function MenuPreviewModal({
         )}
       </SafeAreaView>
 
-      {detailItem && (
-        <DetailOverlay
-          item={detailItem}
-          quantity={cart[detailItem.id] ?? 0}
-          onChangeQty={(qty) => setQty(detailItem.id, qty)}
-          onClose={() => setDetailItem(null)}
-          canCheckout={cartCount > 0}
-          onGoToCheckout={() => {
-            setDetailItem(null);
-            setCartOpen(true);
-          }}
-          p={p}
-        />
-      )}
+      {detailItem &&
+        (menuLayout === "grid-popup" ? (
+          <ItemPopoverCompact
+            item={detailItem}
+            quantity={cart[detailItem.id] ?? 0}
+            onChangeQty={(qty) => setQty(detailItem.id, qty)}
+            onClose={() => setDetailItem(null)}
+            canCheckout={cartCount > 0}
+            onGoToCheckout={() => {
+              setDetailItem(null);
+              setCartOpen(true);
+            }}
+            p={p}
+          />
+        ) : (
+          <DetailOverlay
+            item={detailItem}
+            quantity={cart[detailItem.id] ?? 0}
+            onChangeQty={(qty) => setQty(detailItem.id, qty)}
+            onClose={() => setDetailItem(null)}
+            canCheckout={cartCount > 0}
+            onGoToCheckout={() => {
+              setDetailItem(null);
+              setCartOpen(true);
+            }}
+            p={p}
+          />
+        ))}
 
       {cartOpen && (
         <CartSheet
@@ -400,6 +416,150 @@ function JamezzDarkMenu({ categories, available, p, cartCount, onOpenItem }: Omi
   );
 }
 
+// Benchmarked against a grid-menu app: a major-category selector row aligned
+// to the right (the user's own "오른쪽 필터" spec) with a subcategory pill
+// row beneath it, then a 2-column photo-forward grid — cards show only
+// photo, price sticker, and title (no description). Tapping "+" opens the
+// compact ItemPopoverCompact instead of a full-screen takeover.
+function GridPopupMenu({ categories, available, p, cartCount, onOpenItem }: Omit<MenuBodyProps, "featured">) {
+  const categoryIdsWithItems = new Set(available.map((i) => i.category_id));
+  const majors = categories.filter((c) => {
+    if (c.parent_id) return false;
+    const children = categories.filter((child) => child.parent_id === c.id);
+    return children.length > 0 ? children.some((child) => categoryIdsWithItems.has(child.id)) : categoryIdsWithItems.has(c.id);
+  });
+  const [activeMajorId, setActiveMajorId] = useState<string | null>(majors[0]?.id ?? null);
+  const resolvedActiveMajorId = majors.some((m) => m.id === activeMajorId) ? activeMajorId : (majors[0]?.id ?? null);
+  const activeMajor = majors.find((m) => m.id === resolvedActiveMajorId) ?? null;
+
+  const subs = activeMajor ? categories.filter((c) => c.parent_id === activeMajor.id && categoryIdsWithItems.has(c.id)) : [];
+  const leafOptions = subs.length > 0 ? subs : activeMajor ? [activeMajor] : [];
+  const [activeLeafId, setActiveLeafId] = useState<string | null>(null);
+  const resolvedActiveLeafId = leafOptions.some((l) => l.id === activeLeafId) ? activeLeafId : (leafOptions[0]?.id ?? null);
+
+  const leafItems = resolvedActiveLeafId ? available.filter((i) => i.category_id === resolvedActiveLeafId) : [];
+
+  return (
+    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: cartCount > 0 ? 90 : 20 }]}>
+      {majors.length > 0 && (
+        <View style={styles.gridMajorRow}>
+          {majors.map((m) => {
+            const active = m.id === resolvedActiveMajorId;
+            return (
+              <TouchableOpacity
+                key={m.id}
+                onPress={() => {
+                  setActiveMajorId(m.id);
+                  setActiveLeafId(null);
+                }}
+              >
+                <Text style={[styles.gridMajorChip, active ? { backgroundColor: p.cardBackground, borderColor: p.cardBorderColor, color: p.foreground } : { color: "#8a8a8a" }]}>{m.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+      {subs.length > 0 && (
+        <View style={styles.jamezzSubRow}>
+          {subs.map((s) => {
+            const active = s.id === resolvedActiveLeafId;
+            return (
+              <TouchableOpacity key={s.id} onPress={() => setActiveLeafId(s.id)}>
+                <Text style={[styles.jamezzSubChip, active ? { backgroundColor: p.brand, color: "#ffffff" } : { borderWidth: 1, borderColor: p.cardBorderColor, color: "#8a8a8a" }]}>
+                  {s.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+      <View style={styles.gridWrap}>
+        {leafItems.map((item) => (
+          <TouchableOpacity key={item.id} style={[styles.gridCard, { backgroundColor: p.cardBackground, borderColor: p.cardBorderColor }]} activeOpacity={0.85} onPress={() => onOpenItem(item)}>
+            <View style={styles.gridCardPhoto}>
+              {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.rowCardImage} /> : <Text style={styles.photoPlaceholder}>Menuko</Text>}
+              <View style={[styles.gridCardPriceBadge, { backgroundColor: p.brand }]}>
+                <Text style={styles.gridCardPriceText}>{formatPeso(item.price)}</Text>
+              </View>
+            </View>
+            <View style={[styles.gridCardAddChip, { backgroundColor: p.brand }]}>
+              <Text style={styles.gridCardAddChipText}>+</Text>
+            </View>
+            <Text style={[styles.gridCardName, { color: p.foreground }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {available.length === 0 && <Text style={styles.empty}>No available menu items yet.</Text>}
+    </ScrollView>
+  );
+}
+
+// Shared by the full-screen DetailOverlay (Classic/Minimal List/Jamezz
+// Dark) and the compact ItemPopoverCompact (Grid Popup) — same name/price/
+// description/ingredients/allergy/cook-time/qty-stepper content, just
+// wrapped in a different shell per layout.
+function ItemDetailContent({
+  item,
+  quantity,
+  onChangeQty,
+  canCheckout,
+  onGoToCheckout,
+  p,
+}: {
+  item: Item;
+  quantity: number;
+  onChangeQty: (quantity: number) => void;
+  canCheckout: boolean;
+  onGoToCheckout: () => void;
+  p: MobileColorPalette;
+}) {
+  return (
+    <>
+      <Text style={styles.overlayName}>{item.name}</Text>
+      <Text style={[styles.overlayPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
+      {item.description && <Text style={styles.overlayText}>{item.description}</Text>}
+      {item.ingredients && (
+        <Text style={styles.overlayText}>
+          <Text style={styles.overlayLabel}>Ingredients: </Text>
+          {item.ingredients}
+        </Text>
+      )}
+      {item.allergy_info && (
+        <Text style={styles.overlayText}>
+          <Text style={styles.overlayLabel}>Allergy: </Text>
+          {item.allergy_info}
+        </Text>
+      )}
+      {item.cook_time_minutes && <Text style={styles.overlayMeta}>🕐 {item.cook_time_minutes} min</Text>}
+
+      <View style={styles.overlayActions}>
+        {quantity === 0 ? (
+          <TouchableOpacity style={[styles.overlayAddButton, { backgroundColor: p.brand }]} onPress={() => onChangeQty(1)}>
+            <Text style={styles.overlayAddButtonText}>Add to Order</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.overlayStepper}>
+            <TouchableOpacity onPress={() => onChangeQty(quantity - 1)} style={styles.overlayStepperButton}>
+              <Text style={styles.overlayStepperButtonText}>−</Text>
+            </TouchableOpacity>
+            <Text style={styles.overlayStepperCount}>{quantity}</Text>
+            <TouchableOpacity onPress={() => onChangeQty(quantity + 1)} style={styles.overlayStepperButton}>
+              <Text style={styles.overlayStepperButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {canCheckout && (
+          <TouchableOpacity onPress={onGoToCheckout} style={styles.overlayCheckoutLink}>
+            <Text style={styles.overlayCheckoutLinkText}>Review Order</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </>
+  );
+}
+
 function DetailOverlay({
   item,
   quantity,
@@ -432,51 +592,52 @@ function DetailOverlay({
         </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.overlayContent}>
-        <Text style={styles.overlayName}>{item.name}</Text>
-        <Text style={[styles.overlayPrice, { color: p.brand }]}>{formatPeso(item.price)}</Text>
-        {item.description && <Text style={styles.overlayText}>{item.description}</Text>}
-        {item.ingredients && (
-          <Text style={styles.overlayText}>
-            <Text style={styles.overlayLabel}>Ingredients: </Text>
-            {item.ingredients}
-          </Text>
-        )}
-        {item.allergy_info && (
-          <Text style={styles.overlayText}>
-            <Text style={styles.overlayLabel}>Allergy: </Text>
-            {item.allergy_info}
-          </Text>
-        )}
-        {item.cook_time_minutes && (
-          <Text style={styles.overlayMeta}>🕐 {item.cook_time_minutes} min</Text>
-        )}
+        <ItemDetailContent item={item} quantity={quantity} onChangeQty={onChangeQty} canCheckout={canCheckout} onGoToCheckout={onGoToCheckout} p={p} />
+      </ScrollView>
+    </View>
+  );
+}
 
-        <View style={styles.overlayActions}>
-          {quantity === 0 ? (
-            <TouchableOpacity
-              style={[styles.overlayAddButton, { backgroundColor: p.brand }]}
-              onPress={() => onChangeQty(1)}
-            >
-              <Text style={styles.overlayAddButtonText}>Add to Order</Text>
-            </TouchableOpacity>
+// Benchmarked against a grid-menu app: tapping "+" on a grid card opens
+// this compact centered popup (not a full-screen takeover) with the same
+// content every other layout's detail view shows.
+function ItemPopoverCompact({
+  item,
+  quantity,
+  onChangeQty,
+  onClose,
+  canCheckout,
+  onGoToCheckout,
+  p,
+}: {
+  item: Item;
+  quantity: number;
+  onChangeQty: (quantity: number) => void;
+  onClose: () => void;
+  canCheckout: boolean;
+  onGoToCheckout: () => void;
+  p: MobileColorPalette;
+}) {
+  return (
+    <View style={styles.popoverBackdrop}>
+      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+      <View style={[styles.popoverCard, { backgroundColor: p.cardBackground }]}>
+        <View style={styles.popoverPhoto}>
+          {item.photo_url ? (
+            <Image source={{ uri: item.photo_url }} style={styles.overlayImage} />
           ) : (
-            <View style={styles.overlayStepper}>
-              <TouchableOpacity onPress={() => onChangeQty(quantity - 1)} style={styles.overlayStepperButton}>
-                <Text style={styles.overlayStepperButtonText}>−</Text>
-              </TouchableOpacity>
-              <Text style={styles.overlayStepperCount}>{quantity}</Text>
-              <TouchableOpacity onPress={() => onChangeQty(quantity + 1)} style={styles.overlayStepperButton}>
-                <Text style={styles.overlayStepperButtonText}>+</Text>
-              </TouchableOpacity>
+            <View style={[styles.overlayImage, styles.featuredPlaceholder]}>
+              <Text style={styles.photoPlaceholder}>Menuko</Text>
             </View>
           )}
-          {canCheckout && (
-            <TouchableOpacity onPress={onGoToCheckout} style={styles.overlayCheckoutLink}>
-              <Text style={styles.overlayCheckoutLinkText}>Review Order</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={styles.popoverClose} onPress={onClose}>
+            <Text style={styles.overlayBackIcon}>✕</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+        <ScrollView contentContainerStyle={styles.overlayContent}>
+          <ItemDetailContent item={item} quantity={quantity} onChangeQty={onChangeQty} canCheckout={canCheckout} onGoToCheckout={onGoToCheckout} p={p} />
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -602,6 +763,17 @@ const styles = StyleSheet.create({
   jamezzSubChip: { fontSize: 11, fontWeight: "600", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden" },
   jamezzHero: { height: 150, borderRadius: 16, overflow: "hidden", marginBottom: 14 },
 
+  gridMajorRow: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginBottom: 10 },
+  gridMajorChip: { fontSize: 12, fontWeight: "700", borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, overflow: "hidden" },
+  gridWrap: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  gridCard: { width: "47%", borderWidth: 1, borderRadius: 14, overflow: "visible" },
+  gridCardPhoto: { width: "100%", height: 100, borderTopLeftRadius: 14, borderTopRightRadius: 14, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: "#f2ede6" },
+  gridCardPriceBadge: { position: "absolute", top: 8, left: 8, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  gridCardPriceText: { color: "#ffffff", fontSize: 10.5, fontWeight: "700" },
+  gridCardAddChip: { position: "absolute", top: -10, right: -10, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", zIndex: 1, elevation: 3 },
+  gridCardAddChipText: { color: "#ffffff", fontSize: 15, fontWeight: "700" },
+  gridCardName: { fontSize: 12, fontWeight: "500", paddingHorizontal: 8, paddingVertical: 8 },
+
   categorySection: { gap: 10 },
   categoryPillLabel: {
     alignSelf: "flex-start",
@@ -673,6 +845,27 @@ const styles = StyleSheet.create({
   checkoutBarText: { color: "#ffffff", fontSize: 14, fontWeight: "700" },
 
   empty: { fontSize: 13, color: "#8a7c68", textAlign: "center", marginTop: 40 },
+
+  popoverBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  popoverCard: { width: "100%", maxWidth: 380, maxHeight: "80%", borderRadius: 20, overflow: "hidden" },
+  popoverPhoto: { width: "100%", height: 160, backgroundColor: "#eee" },
+  popoverClose: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   overlay: { ...StyleSheet.absoluteFill },
   overlayPhoto: { width: "100%", height: 260, backgroundColor: "#eee" },
