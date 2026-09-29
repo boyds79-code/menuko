@@ -64,15 +64,13 @@ export function MenuManager({
   const uncategorized = initialItems.filter(
     (item) => item.category_id === null,
   );
-  // "Our Best" is capped restaurant-wide — every layout shows one shared
-  // Our Best row at the top of the menu, not one per category.
-  const featuredCount = initialItems.filter((item) => item.is_featured).length;
-
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-xs text-muted">
-        ⭐ marks up to {MAX_FEATURED_ITEMS} items (across the whole menu) shown as &ldquo;Our Best!&rdquo; at the top of the customer menu.
-      </p>
+      <OurBestPicker
+        categories={initialCategories}
+        items={initialItems}
+        onMutate={afterMutate}
+      />
 
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium">Add your menu</p>
@@ -137,7 +135,6 @@ export function MenuManager({
               onMutate={afterMutate}
               isFirst={index === 0}
               isLast={index === topLevelCategories.length - 1}
-              featuredCount={featuredCount}
               hasSubcategories={subcategories.length > 0}
             />
             {subcategories.length > 0 && (
@@ -151,7 +148,6 @@ export function MenuManager({
                     onMutate={afterMutate}
                     isFirst={subIndex === 0}
                     isLast={subIndex === subcategories.length - 1}
-                    featuredCount={featuredCount}
                   />
                 ))}
               </div>
@@ -166,10 +162,128 @@ export function MenuManager({
           category={null}
           items={uncategorized}
           onMutate={afterMutate}
-          featuredCount={featuredCount}
         />
       )}
     </div>
+  );
+}
+
+// "Our Best" is picked here, once, from the whole menu (not per category) —
+// every customer layout shows these picks together at the very top of the
+// menu, so the owner chooses them in one place at the top of the editor too.
+function OurBestPicker({
+  categories,
+  items,
+  onMutate,
+}: {
+  categories: Category[];
+  items: Item[];
+  onMutate: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const featured = items.filter((item) => item.is_featured);
+  const full = featured.length >= MAX_FEATURED_ITEMS;
+
+  // Candidates grouped in the same order as the editor below: each major
+  // category followed by its subcategories, then Uncategorized.
+  const groups: { label: string; items: Item[] }[] = [];
+  for (const major of categories.filter((c) => !c.parent_id)) {
+    const chain = [major, ...categories.filter((c) => c.parent_id === major.id)];
+    for (const c of chain) {
+      groups.push({
+        label: c.parent_id ? `${major.name} › ${c.name}` : c.name,
+        items: items.filter((item) => item.category_id === c.id && !item.is_featured),
+      });
+    }
+  }
+  groups.push({ label: "Uncategorized", items: items.filter((item) => item.category_id === null && !item.is_featured) });
+  const candidateGroups = groups.filter((g) => g.items.length > 0);
+
+  async function setFeatured(itemId: string, isFeatured: boolean) {
+    setSaving(true);
+    try {
+      await updateItem(itemId, { isFeatured });
+      onMutate();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-brand/30 bg-brand/5 p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-base font-semibold">⭐ Our Best</h3>
+        <span className="text-xs font-semibold text-brand">
+          {featured.length}/{MAX_FEATURED_ITEMS}
+        </span>
+      </div>
+      <p className="text-xs text-muted">
+        Pick up to {MAX_FEATURED_ITEMS} dishes from your whole menu. They&apos;re shown together at the very top of your customer menu, in every layout.
+      </p>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {Array.from({ length: MAX_FEATURED_ITEMS }, (_, i) => {
+          const item = featured[i];
+          if (!item) {
+            return (
+              <div key={`empty-${i}`} className="flex h-28 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted">
+                Empty
+              </div>
+            );
+          }
+          return (
+            <div key={item.id} className="relative flex h-28 flex-col overflow-hidden rounded-lg border border-border bg-card">
+              <div className="relative h-16 w-full bg-background">
+                {item.photo_url ? (
+                  <Image src={item.photo_url} alt="" fill sizes="160px" className="object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-xs text-muted">Photo</span>
+                )}
+              </div>
+              <div className="min-w-0 px-2 py-1">
+                <p className="truncate text-xs font-medium">{item.name}</p>
+                <p className="text-[11px] text-muted">{formatPeso(item.price)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFeatured(item.id, false)}
+                disabled={saving}
+                aria-label={`Remove ${item.name} from Our Best`}
+                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-sm leading-none text-white transition hover:bg-black/80 disabled:opacity-60"
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <select
+        value=""
+        disabled={full || saving || candidateGroups.length === 0}
+        onChange={(e) => {
+          if (e.target.value) setFeatured(e.target.value, true);
+        }}
+        className="self-start rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand disabled:opacity-60"
+      >
+        <option value="">
+          {full
+            ? `Our Best is full — remove one to add another`
+            : candidateGroups.length === 0
+              ? "Add menu items below first"
+              : "+ Add a dish to Our Best…"}
+        </option>
+        {candidateGroups.map((g) => (
+          <optgroup key={g.label} label={g.label}>
+            {g.items.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} — {formatPeso(item.price)}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </section>
   );
 }
 
@@ -180,7 +294,6 @@ function CategorySection({
   onMutate,
   isFirst,
   isLast,
-  featuredCount,
   hasSubcategories,
 }: {
   restaurantId: string;
@@ -189,7 +302,6 @@ function CategorySection({
   onMutate: () => void;
   isFirst?: boolean;
   isLast?: boolean;
-  featuredCount: number;
   hasSubcategories?: boolean;
 }) {
   const [name, setName] = useState(category?.name ?? "Uncategorized");
@@ -262,7 +374,6 @@ function CategorySection({
             restaurantId={restaurantId}
             item={item}
             onMutate={onMutate}
-            featuredCount={featuredCount}
           />
         ))}
       </div>
@@ -280,12 +391,10 @@ function ItemRow({
   restaurantId,
   item,
   onMutate,
-  featuredCount,
 }: {
   restaurantId: string;
   item: Item;
   onMutate: () => void;
-  featuredCount: number;
 }) {
   const [name, setName] = useState(item.name);
   const [price, setPrice] = useState(String(item.price));
@@ -318,15 +427,6 @@ function ItemRow({
       allergyInfo: allergyInfo.trim() || null,
       cookTimeMinutes: Number.isNaN(parsedCookTime) ? null : parsedCookTime,
     });
-    onMutate();
-  }
-
-  async function toggleFeatured() {
-    if (!item.is_featured && featuredCount >= MAX_FEATURED_ITEMS) {
-      alert(`Only ${MAX_FEATURED_ITEMS} items can be featured at once — turn one off first.`);
-      return;
-    }
-    await updateItem(item.id, { isFeatured: !item.is_featured });
     onMutate();
   }
 
@@ -403,16 +503,6 @@ function ItemRow({
           />
           Available
         </label>
-
-        <button
-          type="button"
-          onClick={toggleFeatured}
-          aria-pressed={item.is_featured}
-          aria-label={item.is_featured ? "Remove from Our Best" : "Add to Our Best"}
-          className="text-base leading-none"
-        >
-          {item.is_featured ? "⭐" : "☆"}
-        </button>
 
         <button
           onClick={() => setDetailsOpen((open) => !open)}

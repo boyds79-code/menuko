@@ -176,21 +176,6 @@ export function MenuSection() {
     load();
   }
 
-  // "Our Best" is capped restaurant-wide — every layout shows one shared
-  // Our Best row at the top of the menu, not one per category.
-  const featuredCount = items.filter((i) => i.is_featured).length;
-
-  function toggleFeatured(item: Item) {
-    if (!item.is_featured && featuredCount >= MAX_FEATURED_ITEMS) {
-      Alert.alert(
-        "Our Best is full",
-        `Only ${MAX_FEATURED_ITEMS} items can be featured across the whole menu — turn one off first.`,
-      );
-      return;
-    }
-    updateItem(item.id, { is_featured: !item.is_featured });
-  }
-
   const uncategorized = items.filter((i) => i.category_id === null);
   const topLevelCategories = categories.filter((c) => !c.parent_id);
   const subcategoriesByParent = new Map<string, Category[]>();
@@ -203,9 +188,11 @@ export function MenuSection() {
 
   return (
     <View style={styles.content}>
-      <Text style={styles.featuredHint}>
-        ⭐ marks up to {MAX_FEATURED_ITEMS} items (across the whole menu) shown as &ldquo;Our Best!&rdquo; at the top of the customer menu.
-      </Text>
+      <OurBestPicker
+        categories={categories}
+        items={items}
+        onSetFeatured={(itemId, isFeatured) => updateItem(itemId, { is_featured: isFeatured })}
+      />
 
       <Text style={styles.addMenuLabel}>Add your menu</Text>
       <View style={styles.addMenuRow}>
@@ -266,7 +253,6 @@ export function MenuSection() {
               onAddItem={(name, price, photoUrl) => addItem(category.id, name, price, photoUrl)}
               onUpdateItem={updateItem}
               onDeleteItem={deleteItem}
-              onToggleFeatured={toggleFeatured}
               restaurantId={restaurantId ?? ""}
               hasSubcategories={subcategories.length > 0}
             />
@@ -285,7 +271,6 @@ export function MenuSection() {
                     onAddItem={(name, price, photoUrl) => addItem(sub.id, name, price, photoUrl)}
                     onUpdateItem={updateItem}
                     onDeleteItem={deleteItem}
-                    onToggleFeatured={toggleFeatured}
                     restaurantId={restaurantId ?? ""}
                   />
                 ))}
@@ -302,7 +287,6 @@ export function MenuSection() {
           onAddItem={(name, price, photoUrl) => addItem(null, name, price, photoUrl)}
           onUpdateItem={updateItem}
           onDeleteItem={deleteItem}
-          onToggleFeatured={toggleFeatured}
           restaurantId={restaurantId ?? ""}
         />
       )}
@@ -368,6 +352,111 @@ export function MenuSection() {
             : undefined
         }
       />
+    </View>
+  );
+}
+
+// "Our Best" is picked here, once, from the whole menu (not per category) —
+// every customer layout shows these picks together at the very top of the
+// menu, so the owner chooses them in one place at the top of the editor too.
+// Same model as the web admin's OurBestPicker (src/app/admin/menu-manager.tsx).
+function OurBestPicker({
+  categories,
+  items,
+  onSetFeatured,
+}: {
+  categories: Category[];
+  items: Item[];
+  onSetFeatured: (itemId: string, isFeatured: boolean) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const featured = items.filter((i) => i.is_featured);
+  const full = featured.length >= MAX_FEATURED_ITEMS;
+
+  // Candidates grouped in the same order as the editor below: each major
+  // category followed by its subcategories, then Uncategorized.
+  const groups: { label: string; items: Item[] }[] = [];
+  for (const major of categories.filter((c) => !c.parent_id)) {
+    for (const c of [major, ...categories.filter((sub) => sub.parent_id === major.id)]) {
+      groups.push({
+        label: c.parent_id ? `${major.name} › ${c.name}` : c.name,
+        items: items.filter((i) => i.category_id === c.id && !i.is_featured),
+      });
+    }
+  }
+  groups.push({ label: "Uncategorized", items: items.filter((i) => i.category_id === null && !i.is_featured) });
+  const candidateGroups = groups.filter((g) => g.items.length > 0);
+
+  return (
+    <View style={styles.bestCard}>
+      <View style={styles.bestHeader}>
+        <Text style={styles.bestTitle}>⭐ Our Best</Text>
+        <Text style={styles.bestCount}>
+          {featured.length}/{MAX_FEATURED_ITEMS}
+        </Text>
+      </View>
+      <Text style={styles.featuredHint}>
+        Pick up to {MAX_FEATURED_ITEMS} dishes from your whole menu. They&apos;re shown together at the very top of your customer menu, in every layout.
+      </Text>
+
+      <View style={styles.bestSlots}>
+        {Array.from({ length: MAX_FEATURED_ITEMS }, (_, i) => {
+          const item = featured[i];
+          if (!item) {
+            return (
+              <View key={`empty-${i}`} style={[styles.bestSlot, styles.bestSlotEmpty]}>
+                <Text style={styles.bestSlotEmptyText}>Empty</Text>
+              </View>
+            );
+          }
+          return (
+            <View key={item.id} style={styles.bestSlot}>
+              <View style={styles.bestSlotPhoto}>
+                {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.photoBoxImage} /> : <Text style={styles.photoBoxText}>Photo</Text>}
+              </View>
+              <Text style={styles.bestSlotName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <TouchableOpacity
+                style={styles.bestSlotRemove}
+                onPress={() => onSetFeatured(item.id, false)}
+                accessibilityLabel={`Remove ${item.name} from Our Best`}
+              >
+                <Text style={styles.bestSlotRemoveText}>×</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+
+      {full ? (
+        <Text style={styles.featuredHint}>Our Best is full — remove one to add another.</Text>
+      ) : candidateGroups.length === 0 ? (
+        <Text style={styles.featuredHint}>Add menu items below first.</Text>
+      ) : (
+        <TouchableOpacity style={styles.manualEntryButton} onPress={() => setAdding((open) => !open)}>
+          <Text style={styles.manualEntryButtonText}>{adding ? "Done" : "+ Add a dish to Our Best"}</Text>
+        </TouchableOpacity>
+      )}
+
+      {adding && !full && (
+        <View style={styles.bestPicker}>
+          {candidateGroups.map((g) => (
+            <View key={g.label} style={styles.bestPickerGroup}>
+              <Text style={styles.bestPickerGroupLabel}>{g.label}</Text>
+              {g.items.map((item) => (
+                <TouchableOpacity key={item.id} style={styles.bestPickerRow} onPress={() => onSetFeatured(item.id, true)}>
+                  <Text style={styles.bestPickerName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.bestPickerPrice}>{formatPeso(item.price)}</Text>
+                  <Text style={styles.bestPickerAdd}>＋</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -609,7 +698,6 @@ function CategorySection({
   onAddItem,
   onUpdateItem,
   onDeleteItem,
-  onToggleFeatured,
   restaurantId,
   hasSubcategories,
 }: {
@@ -623,7 +711,6 @@ function CategorySection({
   onAddItem: (name: string, price: number, photoUrl: string | null) => void;
   onUpdateItem: (id: string, patch: Partial<Item>) => void;
   onDeleteItem: (id: string) => void;
-  onToggleFeatured: (item: Item) => void;
   restaurantId: string;
   hasSubcategories?: boolean;
 }) {
@@ -684,7 +771,6 @@ function CategorySection({
           restaurantId={restaurantId}
           onUpdate={(patch) => onUpdateItem(item.id, patch)}
           onDelete={() => onDeleteItem(item.id)}
-          onToggleFeatured={() => onToggleFeatured(item)}
         />
       ))}
 
@@ -740,13 +826,11 @@ function ItemRow({
   restaurantId,
   onUpdate,
   onDelete,
-  onToggleFeatured,
 }: {
   item: Item;
   restaurantId: string;
   onUpdate: (patch: Partial<Item>) => void;
   onDelete: () => void;
-  onToggleFeatured: () => void;
 }) {
   const [name, setName] = useState(item.name);
   const [price, setPrice] = useState(String(item.price));
@@ -803,9 +887,6 @@ function ItemRow({
         />
         <TouchableOpacity onPress={() => onUpdate({ is_available: !item.is_available })}>
           <Text style={styles.availabilityToggle}>{item.is_available ? "✅" : "🚫"}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onToggleFeatured} accessibilityLabel="Toggle Our Best">
-          <Text style={styles.availabilityToggle}>{item.is_featured ? "⭐" : "☆"}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onDelete}>
           <Text style={styles.link}>Delete</Text>
@@ -877,6 +958,25 @@ function ItemRow({
 const styles = StyleSheet.create({
   content: { gap: 16 },
   featuredHint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
+  bestCard: { gap: 10, borderWidth: 1, borderColor: "#f3c9a3", backgroundColor: "#fff7ef", borderRadius: 14, padding: 14 },
+  bestHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
+  bestTitle: { fontSize: 15, fontWeight: "700", color: "#3c3327" },
+  bestCount: { fontSize: 12, fontWeight: "700", color: "#ea7c1f" },
+  bestSlots: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  bestSlot: { width: "31%", height: 92, borderWidth: 1, borderColor: "#ece2d3", borderRadius: 10, overflow: "hidden", backgroundColor: "#ffffff" },
+  bestSlotEmpty: { borderStyle: "dashed", alignItems: "center", justifyContent: "center", backgroundColor: "transparent" },
+  bestSlotEmptyText: { fontSize: 11, color: "#8a7c68" },
+  bestSlotPhoto: { height: 60, alignItems: "center", justifyContent: "center", backgroundColor: "#f2ede6" },
+  bestSlotName: { fontSize: 11, fontWeight: "600", color: "#3c3327", paddingHorizontal: 6, paddingTop: 6 },
+  bestSlotRemove: { position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.6)" },
+  bestSlotRemoveText: { color: "#ffffff", fontSize: 14, fontWeight: "700", lineHeight: 16 },
+  bestPicker: { gap: 12, borderTopWidth: 1, borderTopColor: "#ece2d3", paddingTop: 10 },
+  bestPickerGroup: { gap: 4 },
+  bestPickerGroupLabel: { fontSize: 11, fontWeight: "700", color: "#8a7c68", textTransform: "uppercase" },
+  bestPickerRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#f2ede6" },
+  bestPickerName: { flex: 1, fontSize: 13, color: "#3c3327" },
+  bestPickerPrice: { fontSize: 12, color: "#8a7c68" },
+  bestPickerAdd: { fontSize: 16, fontWeight: "700", color: "#ea7c1f" },
   addMenuLabel: { fontSize: 13, fontWeight: "700" },
   addMenuRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   manualEntryButton: {
