@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { ModalHeader } from "@/components/ModalHeader";
 import { formatPeso } from "@/lib/money";
 import { resolveMobilePalette, type MobileMenuColorId, type MobileMenuLayoutId, type MobileColorPalette } from "@/lib/menu-templates";
 
@@ -84,23 +85,20 @@ export function MenuPreviewModal({
       onRequestClose={close}
       onDismiss={close}
     >
+      <SafeAreaProvider>
       <SafeAreaView style={[styles.safe, { backgroundColor: p.pageBackground }]} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={close} hitSlop={10}>
-            <Text style={styles.closeIcon}>✕</Text>
-          </TouchableOpacity>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>{onApply ? "Sample preview" : "Menu preview"}</Text>
-            <Text style={styles.headerSubtitle}>
-              {subtitle ?? "Roughly what customers see — not final styling"}
-            </Text>
-          </View>
-          {onApply && (
+        <ModalHeader
+          title={onApply ? "Sample preview" : "Menu preview"}
+          subtitle={subtitle ?? "Roughly what customers see — not final styling"}
+          onBack={close}
+          right={
+            onApply && (
             <TouchableOpacity style={[styles.applyButton, { backgroundColor: p.brand }]} onPress={onApply}>
               <Text style={styles.applyButtonText}>Apply</Text>
             </TouchableOpacity>
-          )}
-        </View>
+            )
+          }
+        />
 
         {menuLayout === "minimal-list" ? (
           <MinimalListMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
@@ -122,6 +120,7 @@ export function MenuPreviewModal({
           </TouchableOpacity>
         )}
       </SafeAreaView>
+      </SafeAreaProvider>
 
       {detailItem &&
         (menuLayout === "grid-popup" ? (

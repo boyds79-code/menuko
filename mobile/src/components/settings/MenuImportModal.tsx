@@ -6,6 +6,7 @@ import { colors } from "@/theme";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase } from "@/lib/supabase";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 type DraftItem = { name: string; price: string; description: string | null };
 type DraftCategory = { name: string; items: DraftItem[] };
@@ -191,7 +192,9 @@ export function MenuImportModal({
       </TouchableOpacity>
 
       <Modal visible={open} animationType="slide" onRequestClose={closeAll}>
-        <View style={styles.modal}>
+        {/* Modals aren't covered by the app's root SafeAreaProvider. */}
+        <SafeAreaProvider>
+        <SafeAreaView style={styles.modal} edges={["top", "bottom"]}>
           <View style={styles.header}>
             <Text style={styles.title}>{draft ? "Review imported menu" : "Import menu from photo/PDF"}</Text>
             <TouchableOpacity onPress={closeAll}>
@@ -267,7 +270,8 @@ export function MenuImportModal({
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     </>
   );
@@ -283,7 +287,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    paddingTop: 56,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
     borderBottomColor: "#E0E6DC",

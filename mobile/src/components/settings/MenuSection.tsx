@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Image, LayoutAnimation, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, LayoutAnimation, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
@@ -411,35 +411,7 @@ function OurBestPicker({
         Pick up to {MAX_FEATURED_ITEMS} dishes from your whole menu. They&apos;re shown together at the very top of your customer menu, in every layout.
       </Text>
 
-      <View style={styles.bestSlots}>
-        {Array.from({ length: MAX_FEATURED_ITEMS }, (_, i) => {
-          const item = featured[i];
-          if (!item) {
-            return (
-              <View key={`empty-${i}`} style={[styles.bestSlot, styles.bestSlotEmpty]}>
-                <Text style={styles.bestSlotEmptyText}>Empty</Text>
-              </View>
-            );
-          }
-          return (
-            <View key={item.id} style={styles.bestSlot}>
-              <View style={styles.bestSlotPhoto}>
-                {item.photo_url ? <Image source={{ uri: item.photo_url }} style={styles.photoBoxImage} /> : <Text style={styles.photoBoxText}>Photo</Text>}
-              </View>
-              <Text style={styles.bestSlotName} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <TouchableOpacity
-                style={styles.bestSlotRemove}
-                onPress={() => onSetFeatured(item.id, false)}
-                accessibilityLabel={`Remove ${item.name} from Our Best`}
-              >
-                <Ionicons name="close" size={14} color="#ffffff" />
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </View>
+      <BestCarousel items={featured} onRemove={(id) => onSetFeatured(id, false)} />
 
       {full ? (
         <Text style={styles.featuredHint}>Our Best is full — remove one to add another.</Text>
@@ -470,6 +442,76 @@ function OurBestPicker({
           ))}
         </View>
       )}
+    </View>
+  );
+}
+
+// Our Best picks as a horizontal slider (same idea as the customer menu's
+// Our Best row). One pick is centered; with two or more, cards start at the
+// left and are sized so the next card peeks in from the right edge — that
+// partial card is the cue that there's more to swipe to.
+function BestCarousel({ items, onRemove }: { items: Item[]; onRemove: (id: string) => void }) {
+  // The slider bleeds to the card's edges (negative margin = the card's
+  // padding) so the peeking card runs off the edge instead of being clipped
+  // inside the padding.
+  const BLEED = 18;
+  // Measured width, falling back to the screen width minus the Menu tab's
+  // 16px side padding until the first layout pass reports (an empty,
+  // zero-height view doesn't always get an onLayout on every platform).
+  const { width: windowWidth } = useWindowDimensions();
+  const [measured, setWidth] = useState(0);
+  const width = measured || windowWidth - 32;
+  const inner = width - BLEED * 2;
+  const single = items.length === 1;
+  const cardWidth = Math.round(single ? Math.min(inner * 0.72, 260) : inner * 0.7);
+  const gap = 12;
+
+  if (items.length === 0) {
+    return (
+      <View style={styles.bestEmpty}>
+        <Ionicons name="star-outline" size={22} color={colors.faint} />
+        <Text style={styles.bestEmptyText}>No dishes picked yet</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ marginHorizontal: -BLEED }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={single ? undefined : cardWidth + gap}
+          snapToAlignment="start"
+          contentContainerStyle={[{ gap, paddingHorizontal: BLEED }, single && { flexGrow: 1, justifyContent: "center" }]}
+        >
+          {items.map((item) => (
+            <View key={item.id} style={[styles.bestCardItem, { width: cardWidth }]}>
+              <View style={styles.bestCardPhoto}>
+                {item.photo_url ? (
+                  <Image source={{ uri: item.photo_url }} style={styles.photoBoxImage} />
+                ) : (
+                  <Ionicons name="image-outline" size={28} color={colors.faint} />
+                )}
+              </View>
+              <View style={styles.bestCardBody}>
+                <Text style={styles.bestCardName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={styles.bestCardPrice}>{formatPeso(item.price)}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.bestSlotRemove}
+                onPress={() => onRemove(item.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${item.name} from Our Best`}
+                hitSlop={8}
+              >
+                <Ionicons name="close" size={14} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
     </View>
   );
 }
@@ -1038,13 +1080,7 @@ const styles = StyleSheet.create({
   bestHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   bestTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.ink },
   bestCount: { fontSize: 12, fontWeight: "700", color: colors.accentText, backgroundColor: colors.accentSoft, borderRadius: 999, overflow: "hidden", paddingHorizontal: 10, paddingVertical: 4 },
-  bestSlots: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  bestSlot: { width: "31%", height: 104, borderRadius: 16, overflow: "hidden", backgroundColor: colors.surfaceAlt },
-  bestSlotEmpty: { borderWidth: 1.5, borderColor: colors.line, borderStyle: "dashed", alignItems: "center", justifyContent: "center", backgroundColor: "transparent" },
-  bestSlotEmptyText: { fontSize: 12, color: colors.faint },
-  bestSlotPhoto: { height: 70, alignItems: "center", justifyContent: "center", backgroundColor: colors.track },
-  bestSlotName: { fontSize: 12, fontWeight: "600", color: colors.ink, paddingHorizontal: 8, paddingTop: 7 },
-  bestSlotRemove: { position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(21,38,30,0.7)" },
+  bestSlotRemove: { position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(21,38,30,0.7)" },
   bestPicker: { gap: 14, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 12 },
   bestPickerGroup: { gap: 4 },
   bestPickerGroupLabel: { fontSize: 11, fontWeight: "700", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.6 },
@@ -1162,6 +1198,13 @@ const styles = StyleSheet.create({
   photoBoxText: { fontSize: 10, color: colors.muted },
   addCard: { gap: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 22, padding: 18 },
   sectionTitle: { fontSize: 20, fontFamily: fonts.display, color: colors.ink },
+  bestEmpty: { height: 120, borderRadius: 18, borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.line, alignItems: "center", justifyContent: "center", gap: 6 },
+  bestEmptyText: { fontSize: 13, color: colors.faint },
+  bestCardItem: { borderRadius: 18, overflow: "hidden", backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.line },
+  bestCardPhoto: { height: 132, alignItems: "center", justifyContent: "center", backgroundColor: colors.track },
+  bestCardBody: { paddingHorizontal: 12, paddingVertical: 10, gap: 2 },
+  bestCardName: { fontSize: 14, fontWeight: "700", color: colors.ink },
+  bestCardPrice: { fontSize: 13, fontWeight: "600", color: colors.accentText },
   bestTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   moveGroup: { flexDirection: "row", gap: 4 },
   moveButton: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: colors.surfaceAlt },

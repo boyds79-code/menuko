@@ -1,5 +1,6 @@
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Modal, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { ModalHeader } from "@/components/ModalHeader";
 import { WebView } from "react-native-webview";
 
 const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_ORIGIN;
@@ -21,16 +22,9 @@ export function CustomerPreviewModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <SafeAreaProvider>
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose} hitSlop={10}>
-            <Text style={styles.closeIcon}>✕</Text>
-          </TouchableOpacity>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>Customer view</Text>
-            <Text style={styles.headerSubtitle}>The real order page for this table — live, not a mockup</Text>
-          </View>
-        </View>
+        <ModalHeader title="Customer view" subtitle="The real order page — live, not a mockup" onBack={onClose} />
         {orderUrl ? (
           <WebView source={{ uri: orderUrl }} style={styles.webview} />
         ) : (
@@ -46,6 +40,7 @@ export function CustomerPreviewModal({
           </View>
         )}
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
