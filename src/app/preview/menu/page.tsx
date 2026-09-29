@@ -1,7 +1,7 @@
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isMenuColorId, isMenuLayoutId } from "@/lib/menu-templates";
-import { OrderClient } from "@/app/order/[qrToken]/order-client";
+import { PreviewMenuClient } from "./preview-menu-client";
 
 // Owner-only preview of the real customer order page, rendered with a
 // candidate layout/color straight from Settings > Menu design. Unlike the
@@ -48,13 +48,12 @@ export default async function MenuPreviewPage({
         : "terracotta";
 
   return (
-    <OrderClient
-      preview
+    <PreviewMenuClient
       qrToken="preview"
       table={{ id: "preview", label: "Table 1" }}
       restaurant={{ ...restaurant, name: "Menuko Restaurant", about: "Home-style Filipino favorites, cooked fresh every day.", translations: null }}
-      menuLayout={menuLayout}
-      menuColor={menuColor}
+      initialLayout={menuLayout}
+      initialColor={menuColor}
       categories={DEMO_CATEGORIES}
       items={DEMO_ITEMS}
       ad={null}

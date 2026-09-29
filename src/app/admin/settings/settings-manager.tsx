@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { uploadPhoto } from "@/lib/upload-photo";
@@ -11,6 +11,7 @@ import { AccountsManager } from "../accounts/accounts-manager";
 import type { BusinessType } from "@/lib/database.types";
 import { MENU_LAYOUTS, MENU_COLORS, type MenuLayoutId, type MenuColorId } from "@/lib/menu-templates";
 import { MENU_LANGUAGES, type MenuLanguage } from "@/lib/menu-i18n";
+import { PREVIEW_DESIGN_MESSAGE } from "../../preview/menu/preview-menu-client";
 
 // Kept in sync with each [data-menu-theme] block in globals.css — just the
 // 4 swatches shown while browsing a color that isn't applied yet.
@@ -320,9 +321,9 @@ export function SettingsManager({
             {/* The real customer order page (owner-only /preview/menu route),
                 not a hand-drawn thumbnail — a scaled-down sketch made all
                 four layouts look the same. Scrollable, full phone size. */}
-            <iframe
-              key={`${candidateLayout}-${candidateColor}`}
-              src={menuPreviewSrc(candidateLayout, candidateColor)}
+            <MenuPreviewFrame
+              layoutId={candidateLayout}
+              colorId={candidateColor}
               className="h-[760px] w-[390px] max-w-full rounded-[28px] border-4 border-foreground/80 bg-background shadow-lg"
               title="Customer menu preview"
             />
@@ -571,8 +572,23 @@ function PaletteCard({ colorId }: { colorId: MenuColorId }) {
   );
 }
 
-function menuPreviewSrc(layoutId: MenuLayoutId, colorId: MenuColorId) {
-  return `/preview/menu?layout=${layoutId}&color=${colorId}`;
+// The real customer page for the demo menu, loaded once. Later layout/color
+// changes are posted into the already-loaded page (see
+// preview/menu/preview-menu-client.tsx) instead of changing the iframe's
+// src, so switching designs re-renders instantly with no server round-trip,
+// auth check, or photo reload.
+function MenuPreviewFrame({ layoutId, colorId, className, title }: { layoutId: MenuLayoutId; colorId: MenuColorId; className: string; title: string }) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [src] = useState(() => `/preview/menu?layout=${layoutId}&color=${colorId}`);
+  const sendDesign = useCallback(() => {
+    frameRef.current?.contentWindow?.postMessage({ type: PREVIEW_DESIGN_MESSAGE, layout: layoutId, color: colorId }, window.location.origin);
+  }, [layoutId, colorId]);
+  // Also re-sent from onLoad, in case a chip was tapped while the page was
+  // still loading (before it started listening).
+  useEffect(() => {
+    sendDesign();
+  }, [sendDesign]);
+  return <iframe ref={frameRef} src={src} onLoad={sendDesign} className={className} title={title} />;
 }
 
 // Takes over the whole viewport so each layout renders at real phone size.
@@ -687,9 +703,9 @@ function FullScreenMenuPreview({
               >
                 {layoutId === l.id ? `✓ ${l.label}` : `Choose ${l.label}`}
               </button>
-              <iframe
-                key={`${l.id}-${colorId}`}
-                src={menuPreviewSrc(l.id, colorId)}
+              <MenuPreviewFrame
+                layoutId={l.id}
+                colorId={colorId}
                 className={`min-h-0 w-full flex-1 rounded-2xl border-2 bg-background ${layoutId === l.id ? "border-brand" : "border-border"}`}
                 title={`${l.label} preview`}
               />
@@ -698,9 +714,9 @@ function FullScreenMenuPreview({
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 justify-center p-4">
-          <iframe
-            key={`${layoutId}-${colorId}`}
-            src={menuPreviewSrc(layoutId, colorId)}
+          <MenuPreviewFrame
+            layoutId={layoutId}
+            colorId={colorId}
             className="h-full w-[430px] max-w-full rounded-[28px] border-4 border-foreground/80 bg-background shadow-xl"
             title="Menu preview"
           />
