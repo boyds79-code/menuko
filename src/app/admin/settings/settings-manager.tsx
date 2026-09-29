@@ -341,18 +341,18 @@ export function SettingsManager({
       <AccordionSection title="Table Setting">
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted">
-            Each table gets its own QR code automatically — open a table below to view or print it.
+            Each table gets its own QR code automatically. Print them plain or on a ready-made design to place on each table.
           </p>
           <a
             href={`/print/${restaurantId}/qr`}
             target="_blank"
             rel="noreferrer"
-            className="shrink-0 rounded-full border border-border px-4 py-2 text-xs text-muted transition hover:border-brand hover:text-brand"
+            className="shrink-0 rounded-full bg-brand px-4 py-2 text-xs font-medium text-brand-foreground transition hover:opacity-90"
           >
-            Print all QR codes
+            Print QR codes — choose a design
           </a>
         </div>
-        <TablesManager initialTables={tables} />
+        <TablesManager restaurantId={restaurantId} initialTables={tables} />
       </AccordionSection>
 
       <AccordionSection title="Payment Info">

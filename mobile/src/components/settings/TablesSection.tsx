@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
@@ -60,24 +60,36 @@ export function TablesSection() {
   return (
     <View style={styles.content}>
       <Text style={styles.hint}>
-        To print a QR code for a table, open its order link on the web admin (/admin/tables) —
-        this is for quick previews and managing tables on the go.
+        Each table gets its own QR code. Print them plain or on a ready-made design to place on each table.
       </Text>
+      {WEB_ORIGIN && restaurantId && (
+        <TouchableOpacity style={styles.printButton} onPress={() => Linking.openURL(`${WEB_ORIGIN}/print/${restaurantId}/qr`)}>
+          <Text style={styles.primaryButtonText}>Print QR codes — choose a design</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.addRow}>
-        <TextInput
-          value={newLabel}
-          onChangeText={setNewLabel}
-          placeholder="Table name (e.g. Table 5)"
-          placeholderTextColor="#8a7c68"
-          style={[styles.input, { flex: 1 }]}
-        />
-        <TextInput
-          value={newCapacity}
-          onChangeText={setNewCapacity}
-          keyboardType="number-pad"
-          style={[styles.input, { width: 56 }]}
-        />
-        <TouchableOpacity style={styles.primaryButton} onPress={addTable}>
+        <View style={[styles.field, { flex: 1 }]}>
+          <Text style={styles.fieldLabel}>Table number / name</Text>
+          <TextInput
+            value={newLabel}
+            onChangeText={setNewLabel}
+            placeholder="e.g. Table 5"
+            placeholderTextColor="#8a7c68"
+            style={styles.input}
+          />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>Seats (people)</Text>
+          <TextInput
+            value={newCapacity}
+            onChangeText={setNewCapacity}
+            keyboardType="number-pad"
+            placeholder="4"
+            placeholderTextColor="#8a7c68"
+            style={[styles.input, { width: 96, textAlign: "center" }]}
+          />
+        </View>
+        <TouchableOpacity style={[styles.primaryButton, styles.addButton]} onPress={addTable}>
           <Text style={styles.primaryButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
@@ -85,6 +97,7 @@ export function TablesSection() {
       {tables.map((table) => (
         <TableCard
           key={table.id}
+          restaurantId={restaurantId ?? null}
           table={table}
           expanded={shownQr === table.id}
           onToggleQr={() => setShownQr(shownQr === table.id ? null : table.id)}
@@ -98,12 +111,14 @@ export function TablesSection() {
 }
 
 function TableCard({
+  restaurantId,
   table,
   expanded,
   onToggleQr,
   onUpdate,
   onDelete,
 }: {
+  restaurantId: string | null;
   table: Table;
   expanded: boolean;
   onToggleQr: () => void;
@@ -117,28 +132,38 @@ function TableCard({
   return (
     <View style={styles.card}>
       <View style={styles.cardRow}>
-        <TextInput
-          value={label}
-          onChangeText={setLabel}
-          onBlur={() => label !== table.label && onUpdate({ label })}
-          style={[styles.input, { flex: 1, fontWeight: "700" }]}
-        />
-        <TextInput
-          value={capacity}
-          onChangeText={setCapacity}
-          onBlur={() => {
-            const parsed = Number(capacity);
-            if (parsed > 0 && parsed !== table.capacity) onUpdate({ capacity: parsed });
-          }}
-          keyboardType="number-pad"
-          style={[styles.input, { width: 56 }]}
-        />
-        <Text style={styles.seatsLabel}>seats</Text>
+        <View style={[styles.field, { flex: 1 }]}>
+          <Text style={styles.fieldLabel}>Table number / name</Text>
+          <TextInput
+            value={label}
+            onChangeText={setLabel}
+            onBlur={() => label !== table.label && onUpdate({ label })}
+            style={[styles.input, { fontWeight: "700" }]}
+          />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>Seats (people)</Text>
+          <TextInput
+            value={capacity}
+            onChangeText={setCapacity}
+            onBlur={() => {
+              const parsed = Number(capacity);
+              if (parsed > 0 && parsed !== table.capacity) onUpdate({ capacity: parsed });
+            }}
+            keyboardType="number-pad"
+            style={[styles.input, { width: 96, textAlign: "center" }]}
+          />
+        </View>
       </View>
       <View style={styles.cardActions}>
         <TouchableOpacity onPress={onToggleQr}>
           <Text style={styles.link}>{expanded ? "Hide QR" : "Show QR"}</Text>
         </TouchableOpacity>
+        {WEB_ORIGIN && restaurantId && (
+          <TouchableOpacity onPress={() => Linking.openURL(`${WEB_ORIGIN}/print/${restaurantId}/qr?table=${table.id}`)}>
+            <Text style={styles.link}>Print with design</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity onPress={onDelete}>
           <Text style={styles.link}>Delete</Text>
         </TouchableOpacity>
@@ -164,7 +189,11 @@ function TableCard({
 const styles = StyleSheet.create({
   content: { gap: 12 },
   hint: { fontSize: 12, color: "#8a7c68", lineHeight: 17 },
-  addRow: { flexDirection: "row", gap: 8 },
+  addRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  field: { gap: 4 },
+  fieldLabel: { fontSize: 11, fontWeight: "600", color: "#8a7c68" },
+  addButton: { paddingVertical: 10 },
+  printButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 11, alignItems: "center" },
   input: {
     borderWidth: 1,
     borderColor: "#ece2d3",
@@ -177,8 +206,7 @@ const styles = StyleSheet.create({
   primaryButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 16, justifyContent: "center" },
   primaryButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
   card: { backgroundColor: "#ffffff", borderRadius: 14, borderWidth: 1, borderColor: "#ece2d3", padding: 14, gap: 8 },
-  cardRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  seatsLabel: { fontSize: 12, color: "#8a7c68" },
+  cardRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
   cardActions: { flexDirection: "row", gap: 16 },
   link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
   qrBox: { alignItems: "center", gap: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#ece2d3" },
