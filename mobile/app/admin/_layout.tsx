@@ -1,21 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { registerForPushNotifications } from "@/lib/push";
 import { getCurrentCoords } from "@/lib/location";
+import { TabBar } from "@/components/TabBar";
+import { NewOrderSheet } from "@/components/NewOrderSheet";
 
 const PRESENCE_PING_MS = 5 * 60 * 1000;
 
-// Owner-only tab group. 4 tabs: Preview (a live preview of the real
-// customer page, not an editor), Floor (live table/order status, same
-// screen as the cashier app), Settings (editing — business info, staff
-// accounts, payment, menu design, plus the Menu/Tables editors as its own
-// nested stack), and My Page (analytics + this account's own settings).
-// Ads and standalone Accounts screens were folded in (ads creation moved
-// to a manual "send us the file" process; accounts management lives under
-// Settings > My Business).
+// Owner-only tab group (2026-09 redesign). Floor · Menu · [+] · Insights ·
+// Store, drawn by the custom floating TabBar:
+// - Floor (index): live table/order status, same screen as the cashier app;
+//   its revenue card opens Revenue (hidden route, Premium history).
+// - Menu: the menu editor + "Customer view" (the old Preview tab).
+// - "+": not a route — opens NewOrderSheet (manual delivery/takeout).
+// - Insights: analytics (old My Page > Analytics).
+// - Store: business info, staff, payment, tables, account (old Settings >
+//   My Business + My Page > Account).
 //
 // Push token registration + the owner presence ping (see
 // 0019_owner_geofence.sql) live here rather than only inside the embedded
@@ -47,43 +49,56 @@ export default function AdminLayout() {
     };
   }, [session?.user.id]);
 
+  const [newOrderOpen, setNewOrderOpen] = useState(false);
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: "#ea7c1f",
-        tabBarInactiveTintColor: "#8a7c68",
-        tabBarStyle: { borderTopColor: "#ece2d3" },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Preview",
-          tabBarIcon: ({ color, size }) => <Ionicons name="eye-outline" size={size} color={color} />,
+    <>
+      <Tabs
+        tabBar={(props) => <TabBar {...props} onNewOrder={() => setNewOrderOpen(true)} />}
+        screenOptions={{
+          headerShown: false,
+          // Soft rise-and-fade between tabs (RN Animated under the hood, so
+          // it ships over EAS Update).
+          animation: "fade",
+          transitionSpec: { animation: "timing", config: { duration: 220 } },
+          sceneStyleInterpolator: ({ current }) => ({
+            sceneStyle: {
+              opacity: current.progress.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] }),
+              transform: [
+                {
+                  translateY: current.progress.interpolate({ inputRange: [-1, 0, 1], outputRange: [12, 0, 12] }),
+                },
+              ],
+            },
+          }),
         }}
-      />
-      <Tabs.Screen
-        name="tables"
-        options={{
-          title: "Floor",
-          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="my-page"
-        options={{
-          title: "My Page",
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen name="index" options={{ title: "Floor" }} />
+        <Tabs.Screen name="menu" options={{ title: "Menu" }} />
+        <Tabs.Screen name="insights" options={{ title: "Insights" }} />
+        <Tabs.Screen name="store" options={{ title: "Store" }} />
+        {/* Not a tab: opened from Floor's revenue card. The tab bar hides
+            itself on it, and it slides in from the right instead of fading. */}
+        <Tabs.Screen
+          name="revenue"
+          options={{
+            href: null,
+            title: "Revenue",
+            sceneStyleInterpolator: ({ current }) => ({
+              sceneStyle: {
+                opacity: current.progress.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] }),
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({ inputRange: [-1, 0, 1], outputRange: [-40, 0, 40] }),
+                  },
+                ],
+              },
+            }),
+            transitionSpec: { animation: "timing", config: { duration: 260 } },
+          }}
+        />
+      </Tabs>
+      <NewOrderSheet visible={newOrderOpen} onClose={() => setNewOrderOpen(false)} />
+    </>
   );
 }

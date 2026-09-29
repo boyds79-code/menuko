@@ -10,6 +10,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import NetInfo from "@react-native-community/netinfo";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
@@ -25,6 +27,8 @@ import { ChangeRequestsPanel } from "@/components/ChangeRequestsPanel";
 import { ServerCallsPanel } from "@/components/ServerCallsPanel";
 import { CloseDayCard } from "@/components/CloseDayCard";
 import { getCurrentCoords } from "@/lib/location";
+import { colors, fonts, TAB_BAR_SPACE } from "@/theme";
+import { AdminHeader } from "@/components/AdminHeader";
 
 const PRESENCE_PING_MS = 5 * 60 * 1000;
 
@@ -80,7 +84,11 @@ const STALL_MINUTES = 10;
 // that) so an owner can't accidentally sign themselves out of their own
 // session via the cashier-account "Sign out" control.
 export default function Cashier({ embedded = false }: { embedded?: boolean } = {}) {
-  const { session, account, signOut } = useSession();
+  const { session, account } = useSession();
+  const router = useRouter();
+  // Only the owner's Floor tab links the revenue card to history — the
+  // sales_by_day RPC behind it is owner-only (and Premium-gated).
+  const canOpenRevenue = embedded && account?.role === "owner";
   const restaurantId = account?.restaurantId;
   const cacheKey = restaurantId ? `menuko:cashier:${restaurantId}` : null;
 
@@ -325,43 +333,57 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
 
   const revenueToday = todayOrders.filter((o) => o.status === "paid").reduce((s, o) => s + orderTotal(o), 0);
   const tablesServedToday = new Set(todayOrders.map((o) => o.table_id)).size;
+  const unpaidTotal = groups.reduce((s, g) => s + g.total, 0);
+
+  const heroInner = (
+    <>
+      <View style={styles.heroTop}>
+        <Text style={styles.heroLabel}>Revenue today</Text>
+        {canOpenRevenue && (
+          <View style={styles.heroLinkRow}>
+            <Text style={styles.heroLink}>History</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.onAccent} />
+          </View>
+        )}
+      </View>
+      <Text style={styles.heroValue}>{formatPeso(revenueToday)}</Text>
+      <View style={styles.heroChips}>
+        <Text style={styles.heroChip}>
+          {tablesServedToday} {tablesServedToday === 1 ? "table" : "tables"} today
+        </Text>
+        {unpaidTotal > 0 && <Text style={styles.heroChip}>{formatPeso(unpaidTotal)} unpaid</Text>}
+      </View>
+    </>
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={embedded ? [] : ["top"]}>
       <OfflineBanner />
-      {!embedded && (
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Menuko</Text>
-            <Text style={styles.headerSubtitle}>{account?.restaurantName} · Cashier</Text>
-          </View>
-          <TouchableOpacity onPress={() => signOut()}>
-            <Text style={styles.signOut}>Sign out</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <View style={styles.todayStatsRow}>
-        <View style={styles.todayStat}>
-          <Text style={styles.todayStatValue}>{tablesServedToday}</Text>
-          <Text style={styles.todayStatLabel}>Tables today</Text>
-        </View>
-        <View style={styles.todayStat}>
-          <Text style={styles.todayStatValue}>{formatPeso(revenueToday)}</Text>
-          <Text style={styles.todayStatLabel}>Revenue today</Text>
-        </View>
-      </View>
+      {!embedded && <AdminHeader title="Cashier" showSignOut />}
 
       <ServerCallsPanel restaurantId={restaurantId ?? ""} />
       <ChangeRequestsPanel restaurantId={restaurantId ?? ""} menuItems={menuItems} role={account?.role} />
 
-      <NewOrderForm categories={categories} items={menuItems} />
-      <CloseDayCard />
+      {/* The owner app's tab bar "+" replaces this inline form. */}
+      {!embedded && <NewOrderForm categories={categories} items={menuItems} />}
 
       <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={[styles.content, embedded && { paddingBottom: TAB_BAR_SPACE }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
+        {canOpenRevenue ? (
+          <TouchableOpacity
+            style={styles.hero}
+            activeOpacity={0.85}
+            onPress={() => router.push("/admin/revenue")}
+            accessibilityRole="button"
+            accessibilityLabel={`Revenue today ${formatPeso(revenueToday)}. Open sales history`}
+          >
+            {heroInner}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.hero}>{heroInner}</View>
+        )}
         <Text style={styles.tablesTitle}>Tables</Text>
         {tables.length === 0 && <Text style={styles.empty}>No tables yet.</Text>}
         {tables.map((table) => {
@@ -479,13 +501,18 @@ export default function Cashier({ embedded = false }: { embedded?: boolean } = {
             </View>
           );
         })}
+        {/* End-of-day action, so it sits after the tables rather than above
+            the revenue card. The card carries its own 16px side margin. */}
+        <View style={styles.closeDayWrap}>
+          <CloseDayCard />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fffaf3" },
+  safe: { flex: 1, backgroundColor: "#F2F4EE" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -494,62 +521,69 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
+    borderBottomColor: "#E0E6DC",
   },
-  headerTitle: { fontWeight: "700", color: "#ea7c1f" },
-  headerSubtitle: { fontSize: 12, color: "#8a7c68" },
-  signOut: { fontSize: 13, color: "#8a7c68" },
-  todayStatsRow: {
-    flexDirection: "row",
-    gap: 10,
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  headerTitle: { fontWeight: "700", color: "#1F5C45" },
+  headerSubtitle: { fontSize: 12, color: "#55645B" },
+  signOut: { fontSize: 13, color: "#55645B" },
+  hero: { backgroundColor: colors.accent, borderRadius: 26, padding: 20, gap: 4, marginBottom: 8 },
+  heroTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  heroLabel: { fontSize: 13, fontWeight: "500", color: colors.heroMuted },
+  heroLinkRow: { flexDirection: "row", alignItems: "center", gap: 2 },
+  heroLink: { fontSize: 12, fontWeight: "700", color: colors.onAccent },
+  heroValue: { fontSize: 40, fontFamily: fonts.display, color: colors.onAccent, letterSpacing: -0.8 },
+  heroChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+  heroChip: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.onAccent,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderRadius: 999,
+    overflow: "hidden",
+    paddingHorizontal: 11,
+    paddingVertical: 6,
   },
-  todayStat: { flex: 1, backgroundColor: "#fffaf3", borderRadius: 10, padding: 10, gap: 2 },
-  todayStatValue: { fontSize: 16, fontWeight: "700", color: "#ea7c1f" },
-  todayStatLabel: { fontSize: 10, color: "#8a7c68" },
-  tablesTitle: { fontSize: 12, fontWeight: "600", color: "#8a7c68", marginBottom: 2 },
-  content: { padding: 16, gap: 10 },
-  empty: { fontSize: 13, color: "#8a7c68" },
-  hint: { fontSize: 12, color: "#8a7c68" },
+  closeDayWrap: { marginHorizontal: -16, marginTop: -4 },
+  tablesTitle: { fontSize: 13, fontWeight: "700", color: colors.muted, marginTop: 4, marginBottom: 2 },
+  content: { padding: 16, gap: 12 },
+  empty: { fontSize: 13, color: "#55645B" },
+  hint: { fontSize: 12, color: "#55645B" },
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 14,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#ece2d3",
-    padding: 14,
-    gap: 8,
+    borderColor: "#E0E6DC",
+    padding: 16,
+    gap: 10,
   },
   cardFree: { opacity: 0.85 },
   cardStalled: { borderColor: "#fca5a5", backgroundColor: "#fff8f8" },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cardTable: { fontWeight: "700" },
-  cardSeats: { fontWeight: "400", color: "#8a7c68" },
-  cardTotal: { fontWeight: "700", color: "#ea7c1f" },
-  freeLabel: { fontSize: 12, color: "#8a7c68", fontWeight: "600" },
+  cardTable: { fontSize: 18, fontFamily: fonts.display, color: colors.ink },
+  cardSeats: { fontSize: 13, fontWeight: "500", color: "#55645B" },
+  cardTotal: { fontSize: 18, fontFamily: fonts.display, color: colors.ink },
+  freeLabel: { fontSize: 12, color: "#55645B", fontWeight: "600" },
   seatButton: {
-    backgroundColor: "#ea7c1f",
+    backgroundColor: "#1F5C45",
     borderRadius: 999,
-    paddingVertical: 6,
+    minHeight: 44,
+    justifyContent: "center",
     alignItems: "center",
     alignSelf: "flex-start",
-    paddingHorizontal: 14,
+    paddingHorizontal: 18,
   },
-  seatButtonText: { fontSize: 12, fontWeight: "700", color: "#ffffff" },
+  seatButtonText: { fontSize: 13, fontWeight: "700", color: "#ffffff" },
   occupiedRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  occupiedStatus: { fontSize: 12, color: "#5b5142", fontWeight: "600" },
-  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
+  occupiedStatus: { fontSize: 12, color: "#3E4D44", fontWeight: "600" },
+  link: { fontSize: 13, color: "#184B38", fontWeight: "700", paddingVertical: 6 },
   orderStatusRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 },
-  orderStatus: { fontSize: 11, color: "#8a7c68", flex: 1 },
+  orderStatus: { fontSize: 11, color: "#55645B", flex: 1 },
   itemRow: { flexDirection: "row", justifyContent: "space-between" },
   item: { fontSize: 14 },
-  paymentBox: { alignItems: "center", gap: 6, backgroundColor: "#ffffff", borderRadius: 10, padding: 10 },
+  paymentBox: { alignItems: "center", gap: 6, backgroundColor: "#F7F9F4", borderRadius: 14, padding: 10 },
   qrImage: { width: 140, height: 140, borderRadius: 6 },
   proofRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   proofThumb: { width: 24, height: 24, borderRadius: 4 },
-  settleButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 10, alignItems: "center" },
-  settleButtonText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
+  settleButton: { backgroundColor: "#1F5C45", borderRadius: 999, minHeight: 44, justifyContent: "center", alignItems: "center" },
+  settleButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 15 },
 });
