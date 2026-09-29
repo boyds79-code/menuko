@@ -326,9 +326,7 @@ export function SettingsManager({
               className="h-[760px] w-[390px] max-w-full rounded-[28px] border-4 border-foreground/80 bg-background shadow-lg"
               title="Customer menu preview"
             />
-            {items.length === 0 && (
-              <p className="text-xs text-muted">Showing sample items until you add your own in Category &amp; item setting below.</p>
-            )}
+            <p className="text-xs text-muted">Preview uses a sample menu (Menuko Restaurant) so every layout is compared on the same dishes.</p>
           </div>
 
         </div>

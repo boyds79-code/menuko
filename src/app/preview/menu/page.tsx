@@ -9,6 +9,10 @@ import { OrderClient } from "@/app/order/[qrToken]/order-client";
 // restaurant can preview before creating one), never marks a table as
 // scanned, and OrderClient's `preview` flag keeps it from placing orders or
 // subscribing to live table data.
+//
+// Always renders the fixed "Menuko Restaurant" Filipino demo menu (photos in
+// public/menu-preview) rather than the owner's own menu, so every layout is
+// compared on the same full, photo-rich menu with a real category hierarchy.
 export default async function MenuPreviewPage({
   searchParams,
 }: {
@@ -18,28 +22,13 @@ export default async function MenuPreviewPage({
   const search = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: restaurant }, { data: categories }, { data: items }] = await Promise.all([
-    supabase
-      .from("restaurants")
-      .select(
-        "id, name, about, payment_qr_url, payment_link, business_type, menu_layout, menu_color, plan, translations, enabled_languages",
-      )
-      .eq("id", ctx.restaurantId)
-      .single(),
-    supabase
-      .from("menu_categories")
-      .select("id, name, sort_order, parent_id, translations")
-      .eq("restaurant_id", ctx.restaurantId)
-      .order("sort_order"),
-    supabase
-      .from("menu_items")
-      .select(
-        "id, category_id, name, price, photo_url, is_available, sort_order, description, ingredients, allergy_info, cook_time_minutes, is_featured, translations",
-      )
-      .eq("restaurant_id", ctx.restaurantId)
-      .eq("is_available", true)
-      .order("sort_order"),
-  ]);
+  const { data: restaurant } = await supabase
+    .from("restaurants")
+    .select(
+      "id, name, about, payment_qr_url, payment_link, business_type, menu_layout, menu_color, plan, translations, enabled_languages",
+    )
+    .eq("id", ctx.restaurantId)
+    .single();
 
   if (!restaurant) return null;
 
@@ -58,51 +47,46 @@ export default async function MenuPreviewPage({
         ? restaurant.menu_color
         : "terracotta";
 
-  // An empty menu would make every layout look identical (just a header),
-  // so until the owner adds real items show a small sample menu that
-  // exercises the category hierarchy, photos and the featured row.
-  const hasItems = (items ?? []).length > 0;
-  const previewCategories = hasItems ? (categories ?? []) : SAMPLE_CATEGORIES;
-  const previewItems = hasItems ? (items ?? []) : SAMPLE_ITEMS;
-
   return (
     <OrderClient
       preview
       qrToken="preview"
       table={{ id: "preview", label: "Table 1" }}
-      restaurant={restaurant}
+      restaurant={{ ...restaurant, name: "Menuko Restaurant", about: "Home-style Filipino favorites, cooked fresh every day.", translations: null }}
       menuLayout={menuLayout}
       menuColor={menuColor}
-      categories={previewCategories}
-      items={previewItems}
+      categories={DEMO_CATEGORIES}
+      items={DEMO_ITEMS}
       ad={null}
     />
   );
 }
 
-const SAMPLE_CATEGORIES = [
-  { id: "s-food", name: "Food", sort_order: 0, parent_id: null, translations: null },
-  { id: "s-starters", name: "Starters", sort_order: 1, parent_id: "s-food", translations: null },
-  { id: "s-mains", name: "Mains", sort_order: 2, parent_id: "s-food", translations: null },
-  { id: "s-drinks", name: "Drinks", sort_order: 3, parent_id: null, translations: null },
-  { id: "s-coffee", name: "Coffee", sort_order: 4, parent_id: "s-drinks", translations: null },
+const DEMO_CATEGORIES = [
+  { id: "d-food", name: "Food", sort_order: 0, parent_id: null, translations: null },
+  { id: "d-starters", name: "Starters", sort_order: 1, parent_id: "d-food", translations: null },
+  { id: "d-mains", name: "Mains", sort_order: 2, parent_id: "d-food", translations: null },
+  { id: "d-soups", name: "Soups", sort_order: 3, parent_id: "d-food", translations: null },
+  { id: "d-noodles", name: "Noodles & Rice", sort_order: 4, parent_id: "d-food", translations: null },
+  { id: "d-sweets", name: "Desserts & Drinks", sort_order: 5, parent_id: null, translations: null },
+  { id: "d-desserts", name: "Desserts", sort_order: 6, parent_id: "d-sweets", translations: null },
+  { id: "d-drinks", name: "Drinks", sort_order: 7, parent_id: "d-sweets", translations: null },
 ];
 
-function sampleItem(
-  id: string,
+function demoItem(
   categoryId: string,
+  photo: string,
   name: string,
   price: number,
-  photo: string,
   description: string,
   isFeatured = false,
 ) {
   return {
-    id,
+    id: `d-${photo}`,
     category_id: categoryId,
     name,
     price,
-    photo_url: `/marketing/${photo}`,
+    photo_url: `/menu-preview/${photo}.webp`,
     is_available: true,
     sort_order: 0,
     description,
@@ -114,11 +98,20 @@ function sampleItem(
   };
 }
 
-const SAMPLE_ITEMS = [
-  sampleItem("s-1", "s-starters", "Kimchi Pancake", 180, "book-korean.webp", "Crispy pan-fried pancake with aged kimchi.", true),
-  sampleItem("s-2", "s-starters", "Salmon Sashimi", 320, "book-japanese.webp", "Fresh-cut salmon with wasabi and soy."),
-  sampleItem("s-3", "s-mains", "Beef Pasta", 260, "book-italian.webp", "Slow-cooked beef ragù over fresh pasta.", true),
-  sampleItem("s-4", "s-mains", "Sweet & Sour Pork", 280, "book-chinese.webp", "Crispy pork in a tangy pineapple glaze."),
-  sampleItem("s-5", "s-mains", "Chicken Adobo", 220, "book-filipino.webp", "Braised in vinegar, soy and garlic.", true),
-  sampleItem("s-6", "s-coffee", "Café Latte", 140, "book-cafe.webp", "Double shot espresso with steamed milk."),
+const DEMO_ITEMS = [
+  demoItem("d-starters", "lumpia", "Lumpia Shanghai", 180, "Crispy pork spring rolls with sweet chili dip."),
+  demoItem("d-starters", "ensaladang-talong", "Ensaladang Talong", 150, "Grilled eggplant salad with tomato, onion and salted egg."),
+  demoItem("d-starters", "inasal-skewers", "Chicken Inasal Skewers", 220, "Bacolod-style grilled chicken basted in annatto oil."),
+  demoItem("d-mains", "adobo", "Chicken Adobo", 240, "Braised in vinegar, soy, garlic and bay leaf.", true),
+  demoItem("d-mains", "lechon", "Lechon Kawali", 320, "Crispy deep-fried pork belly with liver sauce.", true),
+  demoItem("d-mains", "liempo", "Grilled Liempo", 290, "Charcoal-grilled pork belly with spiced vinegar."),
+  demoItem("d-mains", "tilapia", "Fried Tilapia", 260, "Whole crispy tilapia with tomato-onion salsa."),
+  demoItem("d-soups", "sinigang", "Sinigang na Baboy", 340, "Sour tamarind pork soup with vegetables."),
+  demoItem("d-soups", "bulalo", "Bulalo", 420, "Slow-simmered beef shank and bone marrow soup."),
+  demoItem("d-noodles", "pancit-canton", "Pancit Canton", 220, "Stir-fried egg noodles with pork, shrimp and vegetables."),
+  demoItem("d-noodles", "sotanghon", "Sotanghon Guisado", 200, "Sautéed glass noodles with chicken and vegetables."),
+  demoItem("d-noodles", "garlic-rice", "Garlic Rice", 60, "Sinangag — fried rice with toasted garlic."),
+  demoItem("d-desserts", "halo-halo", "Halo-Halo", 160, "Shaved ice, leche flan, ube and sweet beans.", true),
+  demoItem("d-desserts", "buko-pandan", "Buko Pandan", 120, "Young coconut and pandan jelly in sweet cream."),
+  demoItem("d-drinks", "calamansi-juice", "Calamansi Juice", 90, "Freshly squeezed Philippine lime, lightly sweetened."),
 ];
