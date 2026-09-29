@@ -179,9 +179,9 @@ export function OrderClient({ qrToken, table, restaurant, menuLayout, menuColor,
   const [reviewOpen, setReviewOpen] = useState(false);
 
   const itemsById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
-  // Owner-curated highlights (Settings > Menu) — capped at 3 regardless of
-  // how many are marked, same as the mobile admin's own cap.
-  const featuredItems = useMemo(() => items.filter((i) => i.is_featured).slice(0, 3), [items]);
+  // Owner-curated highlights (Settings > Menu) — capped at 5 restaurant-wide,
+  // same cap the web and mobile admins enforce when starring an item.
+  const featuredItems = useMemo(() => items.filter((i) => i.is_featured).slice(0, 5), [items]);
 
   const cartLines: CartLine[] = Object.entries(cart)
     .filter(([, qty]) => qty > 0)

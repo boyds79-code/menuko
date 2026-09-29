@@ -24,7 +24,7 @@ type Item = {
   ingredient_cost: number | null;
 };
 
-const MAX_FEATURED_ITEMS = 3;
+const MAX_FEATURED_ITEMS = 5;
 
 export function MenuSection() {
   const { account } = useSession();
@@ -176,20 +176,15 @@ export function MenuSection() {
     load();
   }
 
-  // "Our Best" is capped per category (not restaurant-wide) — a subcategory
-  // like "Pizza" gets its own up-to-3 highlights independent of "Drinks".
-  const featuredCountByCategory = new Map<string | null, number>();
-  for (const item of items) {
-    if (!item.is_featured) continue;
-    featuredCountByCategory.set(item.category_id, (featuredCountByCategory.get(item.category_id) ?? 0) + 1);
-  }
+  // "Our Best" is capped restaurant-wide — every layout shows one shared
+  // Our Best row at the top of the menu, not one per category.
+  const featuredCount = items.filter((i) => i.is_featured).length;
 
   function toggleFeatured(item: Item) {
-    const featuredCount = featuredCountByCategory.get(item.category_id) ?? 0;
     if (!item.is_featured && featuredCount >= MAX_FEATURED_ITEMS) {
       Alert.alert(
         "Our Best is full",
-        `Only ${MAX_FEATURED_ITEMS} items can be featured at once in this category — turn one off first.`,
+        `Only ${MAX_FEATURED_ITEMS} items can be featured across the whole menu — turn one off first.`,
       );
       return;
     }
@@ -209,7 +204,7 @@ export function MenuSection() {
   return (
     <View style={styles.content}>
       <Text style={styles.featuredHint}>
-        ⭐ marks up to {MAX_FEATURED_ITEMS} items per category shown as &ldquo;Our Best!&rdquo; on the customer menu.
+        ⭐ marks up to {MAX_FEATURED_ITEMS} items (across the whole menu) shown as &ldquo;Our Best!&rdquo; at the top of the customer menu.
       </Text>
 
       <Text style={styles.addMenuLabel}>Add your menu</Text>

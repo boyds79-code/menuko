@@ -32,7 +32,7 @@ type Item = {
   is_featured: boolean;
 };
 
-const MAX_FEATURED_ITEMS = 3;
+const MAX_FEATURED_ITEMS = 5;
 
 export function MenuManager({
   restaurantId,
@@ -64,18 +64,14 @@ export function MenuManager({
   const uncategorized = initialItems.filter(
     (item) => item.category_id === null,
   );
-  // "Our Best" is capped per category (not restaurant-wide) — a subcategory
-  // like "Pizza" gets its own up-to-3 highlights independent of "Drinks".
-  const featuredCountByCategory = new Map<string | null, number>();
-  for (const item of initialItems) {
-    if (!item.is_featured) continue;
-    featuredCountByCategory.set(item.category_id, (featuredCountByCategory.get(item.category_id) ?? 0) + 1);
-  }
+  // "Our Best" is capped restaurant-wide — every layout shows one shared
+  // Our Best row at the top of the menu, not one per category.
+  const featuredCount = initialItems.filter((item) => item.is_featured).length;
 
   return (
     <div className="flex flex-col gap-8">
       <p className="text-xs text-muted">
-        ⭐ marks up to {MAX_FEATURED_ITEMS} items per category shown as &ldquo;Our Best!&rdquo; on the customer menu.
+        ⭐ marks up to {MAX_FEATURED_ITEMS} items (across the whole menu) shown as &ldquo;Our Best!&rdquo; at the top of the customer menu.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -141,7 +137,7 @@ export function MenuManager({
               onMutate={afterMutate}
               isFirst={index === 0}
               isLast={index === topLevelCategories.length - 1}
-              featuredCount={featuredCountByCategory.get(category.id) ?? 0}
+              featuredCount={featuredCount}
               hasSubcategories={subcategories.length > 0}
             />
             {subcategories.length > 0 && (
@@ -155,7 +151,7 @@ export function MenuManager({
                     onMutate={afterMutate}
                     isFirst={subIndex === 0}
                     isLast={subIndex === subcategories.length - 1}
-                    featuredCount={featuredCountByCategory.get(sub.id) ?? 0}
+                    featuredCount={featuredCount}
                   />
                 ))}
               </div>
@@ -170,7 +166,7 @@ export function MenuManager({
           category={null}
           items={uncategorized}
           onMutate={afterMutate}
-          featuredCount={featuredCountByCategory.get(null) ?? 0}
+          featuredCount={featuredCount}
         />
       )}
     </div>

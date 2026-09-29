@@ -102,13 +102,13 @@ function demoItem(
 }
 
 const DEMO_ITEMS = [
-  demoItem("d-starters", "lumpia", "Lumpiang Shanghai", 150, "Crispy pork spring rolls with sweet chili dip."),
+  demoItem("d-starters", "lumpia", "Lumpiang Shanghai", 150, "Crispy pork spring rolls with sweet chili dip.", true),
   demoItem("d-starters", "inasal-skewers", "Chicken Inasal Skewers", 180, "Bacolod-style grilled chicken basted in annatto oil."),
   demoItem("d-starters", "ensaladang-talong", "Ensaladang Talong", 120, "Grilled eggplant salad with tomato, onion and salted egg."),
   demoItem("d-noodles", "pancit-canton", "Pancit Canton", 180, "Stir-fried egg noodles with pork, shrimp and vegetables."),
   demoItem("d-noodles", "sotanghon", "Sotanghon Guisado", 170, "Sautéed glass noodles with chicken and vegetables."),
   demoItem("d-noodles", "garlic-rice", "Garlic Fried Rice", 60, "Sinangag — fried rice with toasted garlic."),
-  demoItem("d-soups", "sinigang", "Sinigang na Baboy", 220, "Sour tamarind pork soup with vegetables."),
+  demoItem("d-soups", "sinigang", "Sinigang na Baboy", 220, "Sour tamarind pork soup with vegetables.", true),
   demoItem("d-soups", "bulalo", "Bulalo", 280, "Slow-simmered beef shank and bone marrow soup."),
   demoItem("d-grilled", "lechon", "Cebu Lechon", 320, "Crispy-skinned roast pork, Cebu style.", true),
   demoItem("d-grilled", "adobo", "Chicken Adobo", 200, "Braised in vinegar, soy, garlic and bay leaf.", true),

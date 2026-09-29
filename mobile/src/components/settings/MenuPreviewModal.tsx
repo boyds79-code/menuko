@@ -55,7 +55,7 @@ export function MenuPreviewModal({
   const [detailItem, setDetailItem] = useState<Item | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const available = items.filter((i) => i.is_available);
-  const featured = available.filter((i) => i.is_featured).slice(0, 3);
+  const featured = available.filter((i) => i.is_featured).slice(0, 5);
   const p = resolveMobilePalette(menuLayout, menuColor);
 
   const cartLines = Object.entries(cart)
