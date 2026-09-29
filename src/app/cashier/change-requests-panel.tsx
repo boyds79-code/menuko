@@ -126,7 +126,7 @@ export function ChangeRequestsPanel({
       {requests.map((req) => {
         const table = Array.isArray(req.orders?.tables) ? req.orders?.tables[0] : req.orders?.tables;
         return (
-          <div key={req.id} className="rounded-xl border border-brand bg-brand/5 p-4">
+          <div key={req.id} className="rounded-3xl border border-brand/40 bg-brand-soft p-5">
             <div className="mb-2 flex items-center justify-between">
               <span className="font-semibold">
                 {req.kind === "cancel" ? "Cancellation requested" : "Change requested"} — {table?.label ?? "Table"}
@@ -201,7 +201,7 @@ export function ChangeRequestsPanel({
                     setDenyingId(null);
                     setDenyReason("");
                   }}
-                  className="text-sm text-muted underline"
+                  className="text-sm text-brand underline font-semibold underline-offset-4"
                 >
                   Back
                 </button>
@@ -211,7 +211,7 @@ export function ChangeRequestsPanel({
                 <button
                   onClick={() => approve(req.id)}
                   disabled={busyId === req.id}
-                  className="rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-brand-foreground disabled:opacity-60"
+                  className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-brand-foreground disabled:opacity-60 shadow-sm"
                 >
                   Approve
                 </button>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocShell } from "@/components/doc-shell";
 
 // Required by Google Play's Data safety section: a public URL (no login
 // needed to read it) naming the app/developer, showing the deletion steps,
@@ -10,15 +11,9 @@ export const metadata = {
 
 export default function DeleteAccountPage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6 text-sm leading-relaxed">
+    <DocShell>
       <div>
-        <Link href="/" className="text-sm font-bold text-brand">
-          Menuko
-        </Link>
-      </div>
-
-      <div>
-        <h1 className="text-xl font-semibold">Delete Your Account</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] sm:text-4xl">Delete Your Account</h1>
         <p className="mt-1 text-xs text-muted">Last updated: September 28, 2026</p>
       </div>
 
@@ -53,23 +48,23 @@ export default function DeleteAccountPage() {
         <p>
           We don&apos;t keep your data after deletion is processed, except where a limited amount must be
           retained for a reasonable period to comply with applicable law (for example, financial or tax
-          records) — see our <Link href="/privacy" className="text-brand underline">Privacy Policy</Link> for
+          records) — see our <Link href="/privacy" className="font-semibold text-brand underline underline-offset-4">Privacy Policy</Link> for
           more detail.
         </p>
       </Section>
 
       <p className="mt-4 text-xs text-muted">
-        See also our <Link href="/terms" className="text-brand underline">Terms of Service</Link> and{" "}
-        <Link href="/privacy" className="text-brand underline">Privacy Policy</Link>.
+        See also our <Link href="/terms" className="font-semibold text-brand underline underline-offset-4">Terms of Service</Link> and{" "}
+        <Link href="/privacy" className="font-semibold text-brand underline underline-offset-4">Privacy Policy</Link>.
       </p>
-    </main>
+    </DocShell>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold">{title}</h2>
+      <h2 className="font-display text-lg font-bold">{title}</h2>
       {children}
     </section>
   );

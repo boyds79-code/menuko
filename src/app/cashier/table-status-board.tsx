@@ -72,8 +72,8 @@ export function TableStatusBoard({
   }
 
   return (
-    <section className="flex flex-col gap-2 border-b border-border bg-card p-4">
-      <h2 className="text-sm font-semibold text-muted">Tables</h2>
+    <section className="mx-4 mt-2 flex flex-col gap-3 rounded-3xl border border-border bg-card p-5">
+      <h2 className="text-xs font-bold tracking-[0.14em] text-muted uppercase">Tables</h2>
       <div className="flex flex-wrap gap-2">
         {tables.map((table) => {
           const waitingMinutes = table.occupied_since
@@ -87,7 +87,7 @@ export function TableStatusBoard({
           return (
             <div
               key={table.id}
-              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs${
                 isFree
                   ? "border-border bg-background text-muted"
                   : isStalled
@@ -105,7 +105,7 @@ export function TableStatusBoard({
                   <button
                     onClick={() => seat(table.id)}
                     disabled={busy}
-                    className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+                    className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
                   >
                     Seat customer
                   </button>

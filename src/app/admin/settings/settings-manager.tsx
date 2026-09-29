@@ -12,6 +12,9 @@ import type { BusinessType } from "@/lib/database.types";
 import { MENU_LAYOUTS, MENU_COLORS, type MenuLayoutId, type MenuColorId } from "@/lib/menu-templates";
 import { MENU_LANGUAGES, type MenuLanguage } from "@/lib/menu-i18n";
 import { PREVIEW_DESIGN_MESSAGE } from "../../preview/menu/preview-menu-client";
+import { UiIcon, type UI_ICONS } from "@/components/ui-icon";
+
+type UiIconName = keyof typeof UI_ICONS;
 
 // Kept in sync with each [data-menu-theme] block in globals.css — just the
 // 4 swatches shown while browsing a color that isn't applied yet.
@@ -157,7 +160,7 @@ export function SettingsManager({
             <button
               type="button"
               onClick={() => logoFileRef.current?.click()}
-              className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-background"
+              className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-background"
             >
               {logoUrl ? (
                 <Image src={logoUrl} alt="Restaurant logo" fill className="object-cover" />
@@ -193,7 +196,7 @@ export function SettingsManager({
             onChange={(e) => setName(e.target.value)}
             onBlur={() => updateRestaurant({ name })}
             required
-            className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+            className="rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -203,7 +206,7 @@ export function SettingsManager({
             onChange={(e) => setAddress(e.target.value)}
             onBlur={() => updateRestaurant({ address })}
             required
-            className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+            className="rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           />
           <span className="text-xs text-muted">
             Required — used to confirm you&apos;re on-site before approving a customer&apos;s cancel/change
@@ -220,7 +223,7 @@ export function SettingsManager({
             maxLength={280}
             required
             placeholder="A short line customers see on your menu page — e.g. what makes your food special, or your story."
-            className="resize-none rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+            className="resize-none rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           />
           <span className="text-xs text-muted">
             Shown under your restaurant name on the customer menu page.
@@ -235,7 +238,7 @@ export function SettingsManager({
               setBusinessType(next);
               updateRestaurant({ businessType: next });
             }}
-            className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+            className="rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           >
             <option value="restaurant">Restaurant</option>
             <option value="cafe">Cafe</option>
@@ -263,7 +266,7 @@ export function SettingsManager({
                   type="button"
                   onClick={() => setCandidateLayout(l.id)}
                   title={l.description}
-                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  className={`rounded-full border px-3 py-1.5 text-sm transition${
                     candidateLayout === l.id
                       ? "border-brand bg-brand/10 text-brand"
                       : "border-border text-muted hover:border-brand hover:text-brand"
@@ -284,7 +287,7 @@ export function SettingsManager({
                   type="button"
                   onClick={() => setCandidateColor(c.id)}
                   title={c.description}
-                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  className={`rounded-full border px-3 py-1.5 text-sm transition${
                     candidateColor === c.id
                       ? "border-brand bg-brand/10 text-brand"
                       : "border-border text-muted hover:border-brand hover:text-brand"
@@ -305,7 +308,7 @@ export function SettingsManager({
                 type="button"
                 onClick={() => applyDesign(candidateLayout, candidateColor)}
                 disabled={savingDesign}
-                className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+                className="self-start rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
               >
                 {savingDesign ? "Applying…" : "Apply this design"}
               </button>
@@ -316,7 +319,7 @@ export function SettingsManager({
             <button
               type="button"
               onClick={() => setPreviewOpen(true)}
-              className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+              className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 shadow-sm"
             >
               Open full-screen preview · compare all layouts →
             </button>
@@ -349,7 +352,7 @@ export function SettingsManager({
             href={`/print/${restaurantId}/qr`}
             target="_blank"
             rel="noreferrer"
-            className="shrink-0 rounded-full bg-brand px-4 py-2 text-xs font-medium text-brand-foreground transition hover:opacity-90"
+            className="shrink-0 rounded-full bg-brand px-5 py-2.5 text-xs font-semibold text-brand-foreground transition hover:opacity-90 shadow-sm"
           >
             Print QR codes — choose a design
           </a>
@@ -358,7 +361,7 @@ export function SettingsManager({
       </AccordionSection>
 
       <AccordionSection title="Payment Info">
-        <div className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+        <div className="flex flex-col gap-1 p-4 text-xs rounded-2xl bg-saffron-soft text-[#6b4a0e]">
           <p className="font-semibold">⚠️ Not connected to any payment system</p>
           <p>
             The QR image and link you add here are only <strong>shown</strong> to customers (order
@@ -377,7 +380,7 @@ export function SettingsManager({
         <div className="flex items-center gap-3">
           <button
             onClick={() => fileRef.current?.click()}
-            className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-background"
+            className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-background"
           >
             {qrUrl ? (
               <Image src={qrUrl} alt="Payment QR" fill className="object-cover" />
@@ -410,7 +413,7 @@ export function SettingsManager({
               onChange={(e) => setPaymentLink(e.target.value)}
               onBlur={() => updateRestaurant({ paymentLink })}
               placeholder="https://..."
-              className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
         </div>
@@ -423,7 +426,7 @@ export function SettingsManager({
             customer menu&apos;s language switcher.
           </p>
         ) : (
-          <div className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <div className="flex flex-col gap-1 p-4 text-xs rounded-2xl bg-saffron-soft text-[#6b4a0e]">
             <p className="font-semibold">⚠️ Not used on the Free plan</p>
             <p>
               You&apos;re on the Free (basic) plan, so <strong>nothing in this section has any effect</strong>:
@@ -450,7 +453,7 @@ export function SettingsManager({
                 }}
                 placeholder="e.g. 26"
                 inputMode="decimal"
-                className="w-28 rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+                className="w-28 rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
@@ -466,7 +469,7 @@ export function SettingsManager({
                 }}
                 placeholder="e.g. 26"
                 inputMode="decimal"
-                className="w-28 rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+                className="w-28 rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
               />
             </label>
           </div>
@@ -488,7 +491,7 @@ export function SettingsManager({
                   onClick={() => toggleLanguage(l.code)}
                   disabled={l.code === "en"}
                   title={l.native}
-                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  className={`rounded-full border px-3 py-1.5 text-sm transition${
                     on
                       ? "border-brand bg-brand/10 text-brand"
                       : "border-border text-muted hover:border-brand hover:text-brand"
@@ -514,7 +517,7 @@ export function SettingsManager({
             type="button"
             onClick={() => setSetupConfirmed(true)}
             disabled={!requiredComplete}
-            className="self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="self-start rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
           >
             Save
           </button>
@@ -547,6 +550,15 @@ export function SettingsManager({
 
 // Collapsed by default so the page doesn't dump everything on screen at
 // once — tap a header to reveal that section.
+const SECTION_META: Record<string, { icon: UiIconName; description: string }> = {
+  "Basic Information": { icon: "store", description: "Name, logo, address and business type" },
+  "Menu Setting": { icon: "book", description: "Categories, items, Our Best and menu design" },
+  "Table Setting": { icon: "grid", description: "Tables and their QR codes" },
+  "Payment Info": { icon: "qr", description: "GCash / Maya QR and payment link" },
+  "Premium Settings": { icon: "star", description: "Delivery commissions and menu languages" },
+  "Invite Kitchen / Cashier Accounts": { icon: "users", description: "Logins for your kitchen and cashier" },
+};
+
 function AccordionSection({
   title,
   badge,
@@ -556,16 +568,32 @@ function AccordionSection({
   badge?: string;
   children: React.ReactNode;
 }) {
+  const meta = SECTION_META[title];
   return (
-    <details name="settings-accordion" className="group rounded-xl border border-border bg-card">
-      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
-        <span className="text-sm font-semibold">
-          {title}
-          {badge && <span className="ml-2 text-xs font-normal text-muted">({badge})</span>}
+    <details
+      name="settings-accordion"
+      className="group overflow-hidden rounded-3xl border border-border bg-card transition open:shadow-[0_16px_40px_rgba(21,38,30,0.06)]"
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+        {meta && (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand-ink">
+            <UiIcon name={meta.icon} />
+          </span>
+        )}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="flex flex-wrap items-center gap-2 font-semibold">
+            {title}
+            {badge && (
+              <span className="rounded-full bg-background px-2.5 py-0.5 text-xs font-semibold text-muted">{badge}</span>
+            )}
+          </span>
+          {meta && <span className="truncate text-sm text-muted">{meta.description}</span>}
         </span>
-        <span className="text-muted transition group-open:rotate-180">⌄</span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-muted transition group-open:rotate-180 group-open:bg-brand group-open:text-brand-foreground">
+          <UiIcon name="chevron" className="h-4 w-4" />
+        </span>
       </summary>
-      <div className="flex flex-col gap-3 border-t border-border p-4">{children}</div>
+      <div className="flex flex-col gap-3 border-t border-border p-5">{children}</div>
     </details>
   );
 }
@@ -659,7 +687,7 @@ function FullScreenMenuPreview({
               key={String(isCompare)}
               type="button"
               onClick={() => setCompare(isCompare)}
-              className={`rounded-full px-3 py-1 transition ${compare === isCompare ? "bg-brand text-brand-foreground" : "text-muted hover:text-foreground"}`}
+              className={`rounded-full px-3 py-1 transition${compare === isCompare ? "bg-brand text-brand-foreground" : "text-muted hover:text-foreground"}`}
             >
               {isCompare ? "Compare all 4" : "Single"}
             </button>
@@ -673,7 +701,7 @@ function FullScreenMenuPreview({
                 key={l.id}
                 type="button"
                 onClick={() => onLayoutChange(l.id)}
-                className={`rounded-full border px-3 py-1 text-sm transition ${
+                className={`rounded-full border px-3 py-1 text-sm transition${
                   layoutId === l.id ? "border-brand bg-brand/10 text-brand" : "border-border text-muted hover:border-brand hover:text-brand"
                 }`}
               >
@@ -689,7 +717,7 @@ function FullScreenMenuPreview({
               key={c.id}
               type="button"
               onClick={() => onColorChange(c.id)}
-              className={`rounded-full border px-3 py-1 text-sm transition ${
+              className={`rounded-full border px-3 py-1 text-sm transition${
                 colorId === c.id ? "border-brand bg-brand/10 text-brand" : "border-border text-muted hover:border-brand hover:text-brand"
               }`}
             >
@@ -706,7 +734,7 @@ function FullScreenMenuPreview({
               type="button"
               onClick={onApply}
               disabled={saving}
-              className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+              className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
             >
               {saving ? "Applying…" : `Apply ${MENU_LAYOUTS.find((l) => l.id === layoutId)?.label} · ${MENU_COLORS.find((c) => c.id === colorId)?.label}`}
             </button>
@@ -721,7 +749,7 @@ function FullScreenMenuPreview({
               <button
                 type="button"
                 onClick={() => onLayoutChange(l.id)}
-                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition${
                   layoutId === l.id ? "border-brand bg-brand text-brand-foreground" : "border-border text-muted hover:border-brand hover:text-brand"
                 }`}
               >
@@ -730,7 +758,7 @@ function FullScreenMenuPreview({
               <MenuPreviewFrame
                 layoutId={l.id}
                 colorId={colorId}
-                className={`min-h-0 w-full flex-1 rounded-2xl border-2 bg-background ${layoutId === l.id ? "border-brand" : "border-border"}`}
+                className={`min-h-0 w-full flex-1 rounded-2xl border-2 bg-background${layoutId === l.id ? "border-brand" : "border-border"}`}
                 title={`${l.label} preview`}
               />
             </div>

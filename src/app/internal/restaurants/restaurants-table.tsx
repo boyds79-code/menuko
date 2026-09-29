@@ -44,7 +44,7 @@ export function RestaurantsTable({ restaurants }: { restaurants: Restaurant[] })
             </div>
             <div className="flex items-center gap-2">
               <span
-                className={`rounded-full px-2 py-1 text-xs font-medium ${
+                className={`rounded-full px-2 py-1 text-xs font-medium${
                   plan === "premium" ? "bg-brand/10 text-brand" : "bg-background text-muted"
                 }`}
               >
@@ -53,7 +53,7 @@ export function RestaurantsTable({ restaurants }: { restaurants: Restaurant[] })
               <button
                 onClick={() => toggle(restaurant)}
                 disabled={busyId === restaurant.id}
-                className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition hover:border-brand hover:text-brand disabled:opacity-60"
+                className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground transition hover:border-brand hover:text-brand disabled:opacity-60 font-semibold bg-card"
               >
                 {plan === "premium" ? "Downgrade to free" : "Upgrade to premium"}
               </button>

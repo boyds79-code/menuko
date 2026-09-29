@@ -7,7 +7,7 @@ export function TermsContent() {
   return (
     <>
       <div>
-        <h1 className="text-xl font-semibold">Terms of Service</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] sm:text-4xl">Terms of Service</h1>
         <p className="mt-1 text-xs text-muted">Last updated: September 28, 2026</p>
       </div>
 
@@ -159,7 +159,7 @@ export function TermsContent() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold">{title}</h2>
+      <h2 className="font-display text-lg font-bold">{title}</h2>
       {children}
     </section>
   );

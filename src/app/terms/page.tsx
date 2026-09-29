@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocShell } from "@/components/doc-shell";
 import { TermsContent } from "./terms-content";
 
 // Draft legal content — not reviewed by a lawyer. See the launch checklist
@@ -11,18 +12,12 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6 text-sm leading-relaxed">
-      <div>
-        <Link href="/" className="text-sm font-bold text-brand">
-          Menuko
-        </Link>
-      </div>
-
+    <DocShell>
       <TermsContent />
 
       <p className="mt-4 text-xs text-muted">
-        See also our <Link href="/privacy" className="text-brand underline">Privacy Policy</Link>.
+        See also our <Link href="/privacy" className="font-semibold text-brand underline underline-offset-4">Privacy Policy</Link>.
       </p>
-    </main>
+    </DocShell>
   );
 }

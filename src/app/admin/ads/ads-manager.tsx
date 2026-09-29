@@ -41,7 +41,7 @@ export function AdsManager({
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">Your ads</h2>
           {initialAds.map((ad) => (
-            <div key={ad.id} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center">
+            <div key={ad.id} className="flex flex-col gap-2 rounded-3xl border border-border bg-card p-3 sm:flex-row sm:items-center">
               <div data-menu-theme={toMenuColorId(ad.template_id)} className="flex-1">
                 <AdBanner
                   ad={{
@@ -126,7 +126,7 @@ function AdComposer({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5">
       <h2 className="text-sm font-semibold">Create a new ad</h2>
 
       <div className="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ function AdComposer({
             type="button"
             onClick={() => setTemplateId(tpl.id)}
             title={tpl.description}
-            className={`rounded-full border px-3 py-1 text-xs transition ${
+            className={`rounded-full border px-3 py-1 text-xs transition${
               templateId === tpl.id
                 ? "border-brand bg-brand/10 text-brand"
                 : "border-border text-muted hover:border-brand hover:text-brand"
@@ -155,7 +155,7 @@ function AdComposer({
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
               required
-              className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -163,7 +163,7 @@ function AdComposer({
             <input
               value={subcopy}
               onChange={(e) => setSubcopy(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -172,7 +172,7 @@ function AdComposer({
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://..."
-              className="rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-brand"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -210,7 +210,7 @@ function AdComposer({
       <button
         type="submit"
         disabled={submitting || !headline.trim()}
-        className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+        className="self-start rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
       >
         {submitting ? "Creating..." : "Create ad"}
       </button>

@@ -1,6 +1,7 @@
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StaffHeader } from "@/components/staff-header";
+import { PageHeader } from "@/components/page-header";
 import { toOrderView, type RawOrderRow } from "@/lib/orders";
 import { CashierBoard } from "./cashier-board";
 import { TableStatusBoard } from "./table-status-board";
@@ -53,6 +54,10 @@ export default async function CashierPage() {
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <StaffHeader restaurantName={ctx.restaurantName} roleLabel="Cashier" />
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col pt-6">
+      <div className="px-4 pb-2">
+        <PageHeader title="Cashier" description="Seat tables, take manual orders and settle payments." />
+      </div>
       <TableStatusBoard restaurantId={ctx.restaurantId} initialTables={tables ?? []} />
       <ChangeRequestsPanel restaurantId={ctx.restaurantId} menuItems={items ?? []} />
       <div className="p-4 pb-0">
@@ -64,6 +69,7 @@ export default async function CashierPage() {
         paymentQrUrl={restaurant?.payment_qr_url ?? null}
         paymentLink={restaurant?.payment_link ?? null}
       />
+      </div>
     </div>
   );
 }

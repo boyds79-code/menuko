@@ -30,7 +30,7 @@ export function TablesManager({ restaurantId, initialTables }: { restaurantId: s
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             placeholder="e.g. Table 5"
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-brand"
+            className="rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
@@ -40,12 +40,12 @@ export function TablesManager({ restaurantId, initialTables }: { restaurantId: s
             onChange={(e) => setNewCapacity(e.target.value)}
             inputMode="numeric"
             placeholder="4"
-            className="w-24 rounded-lg border border-border bg-card px-2 py-2 text-center text-sm text-foreground outline-none focus:border-brand"
+            className="w-24 rounded-xl border border-border bg-card px-3 py-2.5 text-center text-sm text-foreground outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           />
         </label>
         <button
           type="submit"
-          className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+          className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 shadow-sm"
         >
           Add table
         </button>
@@ -89,7 +89,7 @@ function TableCard({ restaurantId, table, onMutate }: { restaurantId: string; ta
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 shadow-sm">
+    <div className="flex flex-col items-center gap-2 rounded-3xl border border-border bg-card p-5 shadow-sm">
       <label className="flex w-full flex-col gap-0.5 text-center text-[11px] text-muted">
         Table number / name
         <input
@@ -98,7 +98,7 @@ function TableCard({ restaurantId, table, onMutate }: { restaurantId: string; ta
           onBlur={() => {
             if (label.trim() && label !== table.label) renameTable(table.id, label).then(onMutate);
           }}
-          className="w-full rounded-lg border border-transparent bg-transparent px-1 text-center text-base font-semibold text-foreground outline-none focus:border-brand"
+          className="w-full rounded-xl border border-transparent bg-transparent px-1 text-center text-base font-semibold text-foreground outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
         />
       </label>
       <label className="flex items-center gap-1 text-xs text-muted">
@@ -113,7 +113,7 @@ function TableCard({ restaurantId, table, onMutate }: { restaurantId: string; ta
             }
           }}
           inputMode="numeric"
-          className="w-12 rounded-lg border border-border bg-background px-1 py-0.5 text-center outline-none focus:border-brand"
+          className="w-12 rounded-xl border border-border bg-background px-1 py-1.5 text-center outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
         />
       </label>
       {/* eslint-disable-next-line @next/next/no-img-element -- data: URL, not a remote image */}
@@ -124,13 +124,13 @@ function TableCard({ restaurantId, table, onMutate }: { restaurantId: string; ta
           href={`/print/${restaurantId}/qr?table=${table.id}`}
           target="_blank"
           rel="noreferrer"
-          className="rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition hover:opacity-90"
+          className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-brand-foreground transition hover:opacity-90 shadow-sm"
         >
           Print with design
         </a>
         <button
           onClick={download}
-          className="rounded-full border border-border px-3 py-1.5 text-xs text-muted transition hover:border-brand hover:text-brand"
+          className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground transition hover:border-brand hover:text-brand font-semibold bg-card"
         >
           Download PNG
         </button>
