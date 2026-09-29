@@ -62,15 +62,18 @@ export default async function MenuPreviewPage({
   );
 }
 
+// Mirrors the Filipino demo menu the owner set up (Starters → Noodles & Rice →
+// Soups → Grilled & Roasted → Desserts & Drinks). The first four sit under a
+// "Food" major so the tiered layouts (Jamezz Dark, Grid Popup) show their
+// major/sub tabs; Classic and Minimal List only list categories that hold
+// items directly, so they render the five flat sections.
 const DEMO_CATEGORIES = [
   { id: "d-food", name: "Food", sort_order: 0, parent_id: null, translations: null },
   { id: "d-starters", name: "Starters", sort_order: 1, parent_id: "d-food", translations: null },
-  { id: "d-mains", name: "Mains", sort_order: 2, parent_id: "d-food", translations: null },
+  { id: "d-noodles", name: "Noodles & Rice", sort_order: 2, parent_id: "d-food", translations: null },
   { id: "d-soups", name: "Soups", sort_order: 3, parent_id: "d-food", translations: null },
-  { id: "d-noodles", name: "Noodles & Rice", sort_order: 4, parent_id: "d-food", translations: null },
+  { id: "d-grilled", name: "Grilled & Roasted", sort_order: 4, parent_id: "d-food", translations: null },
   { id: "d-sweets", name: "Desserts & Drinks", sort_order: 5, parent_id: null, translations: null },
-  { id: "d-desserts", name: "Desserts", sort_order: 6, parent_id: "d-sweets", translations: null },
-  { id: "d-drinks", name: "Drinks", sort_order: 7, parent_id: "d-sweets", translations: null },
 ];
 
 function demoItem(
@@ -99,19 +102,19 @@ function demoItem(
 }
 
 const DEMO_ITEMS = [
-  demoItem("d-starters", "lumpia", "Lumpia Shanghai", 180, "Crispy pork spring rolls with sweet chili dip."),
-  demoItem("d-starters", "ensaladang-talong", "Ensaladang Talong", 150, "Grilled eggplant salad with tomato, onion and salted egg."),
-  demoItem("d-starters", "inasal-skewers", "Chicken Inasal Skewers", 220, "Bacolod-style grilled chicken basted in annatto oil."),
-  demoItem("d-mains", "adobo", "Chicken Adobo", 240, "Braised in vinegar, soy, garlic and bay leaf.", true),
-  demoItem("d-mains", "lechon", "Lechon Kawali", 320, "Crispy deep-fried pork belly with liver sauce.", true),
-  demoItem("d-mains", "liempo", "Grilled Liempo", 290, "Charcoal-grilled pork belly with spiced vinegar."),
-  demoItem("d-mains", "tilapia", "Fried Tilapia", 260, "Whole crispy tilapia with tomato-onion salsa."),
-  demoItem("d-soups", "sinigang", "Sinigang na Baboy", 340, "Sour tamarind pork soup with vegetables."),
-  demoItem("d-soups", "bulalo", "Bulalo", 420, "Slow-simmered beef shank and bone marrow soup."),
-  demoItem("d-noodles", "pancit-canton", "Pancit Canton", 220, "Stir-fried egg noodles with pork, shrimp and vegetables."),
-  demoItem("d-noodles", "sotanghon", "Sotanghon Guisado", 200, "Sautéed glass noodles with chicken and vegetables."),
-  demoItem("d-noodles", "garlic-rice", "Garlic Rice", 60, "Sinangag — fried rice with toasted garlic."),
-  demoItem("d-desserts", "halo-halo", "Halo-Halo", 160, "Shaved ice, leche flan, ube and sweet beans.", true),
-  demoItem("d-desserts", "buko-pandan", "Buko Pandan", 120, "Young coconut and pandan jelly in sweet cream."),
-  demoItem("d-drinks", "calamansi-juice", "Calamansi Juice", 90, "Freshly squeezed Philippine lime, lightly sweetened."),
+  demoItem("d-starters", "lumpia", "Lumpiang Shanghai", 150, "Crispy pork spring rolls with sweet chili dip."),
+  demoItem("d-starters", "inasal-skewers", "Chicken Inasal Skewers", 180, "Bacolod-style grilled chicken basted in annatto oil."),
+  demoItem("d-starters", "ensaladang-talong", "Ensaladang Talong", 120, "Grilled eggplant salad with tomato, onion and salted egg."),
+  demoItem("d-noodles", "pancit-canton", "Pancit Canton", 180, "Stir-fried egg noodles with pork, shrimp and vegetables."),
+  demoItem("d-noodles", "sotanghon", "Sotanghon Guisado", 170, "Sautéed glass noodles with chicken and vegetables."),
+  demoItem("d-noodles", "garlic-rice", "Garlic Fried Rice", 60, "Sinangag — fried rice with toasted garlic."),
+  demoItem("d-soups", "sinigang", "Sinigang na Baboy", 220, "Sour tamarind pork soup with vegetables."),
+  demoItem("d-soups", "bulalo", "Bulalo", 280, "Slow-simmered beef shank and bone marrow soup."),
+  demoItem("d-grilled", "lechon", "Cebu Lechon", 320, "Crispy-skinned roast pork, Cebu style.", true),
+  demoItem("d-grilled", "adobo", "Chicken Adobo", 200, "Braised in vinegar, soy, garlic and bay leaf.", true),
+  demoItem("d-grilled", "liempo", "Grilled Liempo", 250, "Charcoal-grilled pork belly with spiced vinegar."),
+  demoItem("d-grilled", "tilapia", "Inihaw na Tilapia", 240, "Whole grilled tilapia with tomato-onion salsa."),
+  demoItem("d-sweets", "halo-halo", "Halo-Halo", 160, "Shaved ice, leche flan, ube and sweet beans.", true),
+  demoItem("d-sweets", "buko-pandan", "Buko Pandan", 120, "Young coconut and pandan jelly in sweet cream."),
+  demoItem("d-sweets", "calamansi-juice", "Calamansi Juice", 90, "Freshly squeezed Philippine lime, lightly sweetened."),
 ];
