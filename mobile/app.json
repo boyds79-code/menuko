@@ -17,7 +17,7 @@
     "android": {
       "package": "ph.menuko.staff",
       "adaptiveIcon": {
-        "backgroundColor": "#fffaf3",
+        "backgroundColor": "#F2F4EE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -38,7 +38,7 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#ea7c1f"
+          "color": "#1F5C45"
         }
       ],
       [
@@ -53,7 +53,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#fffaf3"
+          "backgroundColor": "#F2F4EE"
         }
       ],
       "expo-sharing",
