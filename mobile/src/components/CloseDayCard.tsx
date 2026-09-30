@@ -87,8 +87,8 @@ export function CloseDayCard() {
           </View>
         ) : (
           <Text style={styles.hint}>
-            Today&apos;s delivery revenue was recorded. Upgrade to Premium to see a same-day sales report
-            here.
+            Today&apos;s delivery revenue was recorded. A same-day sales report is included with the
+            Premium plan.
           </Text>
         )}
         <TouchableOpacity style={styles.doneButton} onPress={reset}>

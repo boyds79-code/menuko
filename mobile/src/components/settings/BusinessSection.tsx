@@ -392,7 +392,7 @@ export function BusinessSection() {
             <Text style={styles.warnTitle}>Not used on the Free plan</Text>
             <Text style={styles.warnText}>
               These rates only feed the Premium Sales Report, so on the Free (basic) plan they have no
-              effect. You can fill them in now — they&apos;re saved and start working after you upgrade.
+              effect. You can fill them in now — they&apos;re saved and are used only if your restaurant is on the Premium plan.
             </Text>
           </View>
         )}

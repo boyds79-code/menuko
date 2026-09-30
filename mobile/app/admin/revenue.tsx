@@ -298,7 +298,7 @@ function LockedHistory() {
           and compare them.
         </Text>
         <View style={styles.lockPill}>
-          <Text style={styles.lockPillText}>Premium · ₱500/month · coming soon</Text>
+          <Text style={styles.lockPillText}>Included with the Premium plan</Text>
         </View>
       </View>
     </View>

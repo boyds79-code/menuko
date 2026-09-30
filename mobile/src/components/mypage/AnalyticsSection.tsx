@@ -143,7 +143,7 @@ export function AnalyticsSection() {
           <Text style={styles.cardTitle}>Deeper analytics</Text>
           <Text style={styles.hint}>
             Best-selling items, order combos, and your best-selling day/hour over the last week
-            or month — available on the premium plan (₱500/month, coming soon).
+            or month — included with the Premium plan.
           </Text>
         </View>
       )}

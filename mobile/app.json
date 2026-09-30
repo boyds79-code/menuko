@@ -3,7 +3,7 @@
     "name": "Menuko Staff",
     "slug": "menuko-staff",
     "scheme": "menuko-staff",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -57,7 +57,15 @@
         }
       ],
       "expo-sharing",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Menuko uses your photo library so you can choose images for your restaurant — for example, a photo of a dish for your menu, your restaurant logo, or your GCash/Maya payment QR code to show customers.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "router": {},
