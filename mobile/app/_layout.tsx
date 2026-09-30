@@ -2,8 +2,11 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
+import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from "@expo-google-fonts/bricolage-grotesque";
 import { SessionProvider, useSession } from "@/ctx";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { colors } from "@/theme";
 
 export default function RootLayout() {
   return (
@@ -19,11 +22,18 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { session, account, isLoading } = useSession();
+  // Fonts ship as assets, so they arrive with an EAS Update (no store build
+  // needed). A failed load falls back to the system font rather than
+  // blocking the app.
+  const [fontsLoaded, fontError] = useFonts({
+    BricolageGrotesque_700Bold,
+    BricolageGrotesque_800ExtraBold,
+  });
 
-  if (isLoading) {
+  if (isLoading || (!fontsLoaded && !fontError)) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#ea7c1f" />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -59,5 +69,5 @@ function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fffaf3" },
+  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F2F4EE" },
 });

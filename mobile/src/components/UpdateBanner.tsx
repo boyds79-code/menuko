@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#3c3327",
+    backgroundColor: "#2A3A31",
     borderRadius: 999,
     paddingVertical: 8,
     paddingLeft: 16,
@@ -88,6 +88,6 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   text: { color: "#ffffff", fontSize: 13, fontWeight: "600" },
-  button: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
+  button: { backgroundColor: "#1F5C45", borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10, minHeight: 44, justifyContent: "center", alignItems: "center" },
   buttonText: { color: "#ffffff", fontSize: 13, fontWeight: "700" },
 });

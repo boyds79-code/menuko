@@ -15,6 +15,7 @@ import {
   deleteItem,
 } from "./menu-actions";
 import { MenuImport } from "./menu-import";
+import { UiIcon } from "@/components/ui-icon";
 
 type Category = { id: string; name: string; sort_order: number; parent_id: string | null };
 type Item = {
@@ -79,7 +80,7 @@ export function MenuManager({
           <button
             type="button"
             onClick={() => categoryInputRef.current?.focus()}
-            className="self-start rounded-full border border-border px-4 py-2 text-sm text-muted transition hover:border-brand hover:text-brand"
+            className="self-start rounded-full border border-border px-4 py-2.5 text-sm text-foreground transition hover:border-brand hover:text-brand font-semibold bg-card"
           >
             Enter manually
           </button>
@@ -100,13 +101,13 @@ export function MenuManager({
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
           placeholder="New category name (e.g. Drinks, Mains)"
-          className="min-w-40 flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+          className="min-w-40 flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
         />
         <select
           value={newCategoryParentId}
           onChange={(e) => setNewCategoryParentId(e.target.value)}
           title="Parent category — leave as None to add a top-level category"
-          className="rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+          className="rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
         >
           <option value="">No parent (top-level category)</option>
           {topLevelCategories.map((c) => (
@@ -118,7 +119,7 @@ export function MenuManager({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90"
+          className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 shadow-sm"
         >
           Add category
         </button>
@@ -212,7 +213,7 @@ function OurBestPicker({
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-brand/30 bg-brand/5 p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-base font-semibold">⭐ Our Best</h3>
+        <h3 className="flex items-center gap-2 font-display text-lg font-bold"><UiIcon name="star" className="h-5 w-5 text-saffron" />Our Best</h3>
         <span className="text-xs font-semibold text-brand">
           {featured.length}/{MAX_FEATURED_ITEMS}
         </span>
@@ -264,7 +265,7 @@ function OurBestPicker({
         onChange={(e) => {
           if (e.target.value) setFeatured(e.target.value, true);
         }}
-        className="self-start rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand disabled:opacity-60"
+        className="self-start rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-brand disabled:opacity-60 transition focus:ring-4 focus:ring-brand/15"
       >
         <option value="">
           {full
@@ -307,7 +308,7 @@ function CategorySection({
   const [name, setName] = useState(category?.name ?? "Uncategorized");
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+    <section className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 items-center gap-1">
           {category && (
@@ -339,7 +340,7 @@ function CategorySection({
                   renameCategory(category.id, name).then(onMutate);
                 }
               }}
-              className="flex-1 rounded-lg border border-transparent bg-transparent px-1 text-base font-semibold outline-none focus:border-brand"
+              className="flex-1 rounded-xl border border-transparent bg-transparent px-1 text-base font-semibold outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           ) : (
             <span className="text-base font-semibold text-muted">
@@ -360,7 +361,7 @@ function CategorySection({
                 deleteCategory(category.id).then(onMutate);
               }
             }}
-            className="text-xs text-muted underline"
+            className="text-xs text-brand underline font-semibold underline-offset-4"
           >
             Delete category
           </button>
@@ -435,7 +436,7 @@ function ItemRow({
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={() => fileRef.current?.click()}
-          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-background"
+          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-background"
           title="Change photo"
         >
           {item.photo_url ? (
@@ -475,7 +476,7 @@ function ItemRow({
             if (name.trim() && name !== item.name)
               updateItem(item.id, { name }).then(onMutate);
           }}
-          className="min-w-32 flex-1 rounded-lg border border-transparent bg-transparent px-1 text-sm outline-none focus:border-brand"
+          className="min-w-32 flex-1 rounded-xl border border-transparent bg-transparent px-1 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
         />
 
         <input
@@ -488,7 +489,7 @@ function ItemRow({
             }
           }}
           inputMode="decimal"
-          className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-brand"
+          className="w-24 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
         />
 
         <label className="flex items-center gap-1 text-xs text-muted">
@@ -506,7 +507,7 @@ function ItemRow({
 
         <button
           onClick={() => setDetailsOpen((open) => !open)}
-          className="text-xs text-muted underline"
+          className="text-xs text-brand underline font-semibold underline-offset-4"
         >
           {detailsOpen
             ? "Hide details"
@@ -519,7 +520,7 @@ function ItemRow({
               deleteItem(item.id).then(onMutate);
             }
           }}
-          className="text-xs text-muted underline"
+          className="text-xs text-brand underline font-semibold underline-offset-4"
         >
           Delete
         </button>
@@ -535,7 +536,7 @@ function ItemRow({
               onBlur={saveDetails}
               rows={2}
               placeholder="A short description customers see when they tap this item"
-              className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted">
@@ -545,7 +546,7 @@ function ItemRow({
               onChange={(e) => setIngredients(e.target.value)}
               onBlur={saveDetails}
               placeholder="e.g. Pork belly, kimchi, tofu, scallion"
-              className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted">
@@ -555,7 +556,7 @@ function ItemRow({
               onChange={(e) => setAllergyInfo(e.target.value)}
               onBlur={saveDetails}
               placeholder="e.g. Contains shellfish, soy"
-              className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted">
@@ -566,7 +567,7 @@ function ItemRow({
               onBlur={saveDetails}
               inputMode="numeric"
               placeholder="e.g. 15"
-              className="w-24 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+              className="w-24 rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
             />
           </label>
         </div>
@@ -624,19 +625,19 @@ function AddItemForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Item name"
-        className="min-w-32 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-brand"
+        className="min-w-32 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
       />
       <input
         value={price}
         onChange={(e) => setPrice(e.target.value)}
         placeholder="Price (₱)"
         inputMode="decimal"
-        className="w-24 rounded-lg border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-brand"
+        className="w-24 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
       />
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+        className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
       >
         {submitting
           ? "Adding..."

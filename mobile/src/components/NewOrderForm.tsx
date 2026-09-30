@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { formatPeso } from "@/lib/money";
 import type { OrderChannel } from "@/lib/database.types";
@@ -12,8 +12,21 @@ type MenuItem = { id: string; category_id: string | null; name: string; price: n
 // Creates the order against a per-channel virtual table via
 // create_manual_order, so it flows through the normal kitchen/cashier
 // boards untouched.
-export function NewOrderForm({ categories, items }: { categories: Category[]; items: MenuItem[] }) {
-  const [open, setOpen] = useState(false);
+// `onDone` switches the form to its bottom-sheet mode (owner app's "+"
+// button, see NewOrderSheet): it starts open, drops its own card chrome,
+// and closing/submitting hands control back to the sheet instead of
+// collapsing to the inline "+ New order" button.
+export function NewOrderForm({
+  categories,
+  items,
+  onDone,
+}: {
+  categories: Category[];
+  items: MenuItem[];
+  onDone?: () => void;
+}) {
+  const inSheet = !!onDone;
+  const [open, setOpen] = useState(inSheet);
   const [channel, setChannel] = useState<OrderChannel>("manual_delivery_entry");
   const [platform, setPlatform] = useState<"grabfood" | "foodpanda" | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -36,7 +49,8 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
     setCart({});
     setNote("");
     setPlatform(null);
-    setOpen(false);
+    if (onDone) onDone();
+    else setOpen(false);
   }
 
   async function submit() {
@@ -66,13 +80,15 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
   }
 
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>New order</Text>
-        <TouchableOpacity onPress={reset}>
-          <Text style={styles.link}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={inSheet ? styles.sheetBody : styles.card}>
+      {!inSheet && (
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>New order</Text>
+          <TouchableOpacity onPress={reset}>
+            <Text style={styles.link}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.channelRow}>
         <TouchableOpacity
@@ -106,7 +122,7 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
         </View>
       )}
 
-      <View style={styles.itemList}>
+      <ScrollView style={styles.itemList} nestedScrollEnabled>
         {categories.map((category) => {
           const categoryItems = items.filter((i) => i.category_id === category.id);
           if (categoryItems.length === 0) return null;
@@ -130,13 +146,13 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
             </View>
           );
         })}
-      </View>
+      </ScrollView>
 
       <TextInput
         value={note}
         onChangeText={setNote}
         placeholder="Note (e.g. customer name, Grab order #)"
-        placeholderTextColor="#8a7c68"
+        placeholderTextColor="#55645B"
         style={styles.input}
       />
 
@@ -156,54 +172,55 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
     backgroundColor: "#ffffff",
   },
-  openButtonText: { fontSize: 13, fontWeight: "600", color: "#8a7c68" },
+  openButtonText: { fontSize: 13, fontWeight: "600", color: "#55645B" },
   card: {
     marginHorizontal: 16,
     marginTop: 12,
     backgroundColor: "#ffffff",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
     padding: 14,
     gap: 10,
   },
+  sheetBody: { gap: 12 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   title: { fontSize: 14, fontWeight: "700" },
-  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
+  link: { fontSize: 12, color: "#55645B", textDecorationLine: "underline" },
   channelRow: { flexDirection: "row", gap: 8 },
   channelChip: {
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
-  channelChipActive: { borderColor: "#ea7c1f", backgroundColor: "#fff0e0" },
-  channelChipText: { fontSize: 12 },
-  itemList: { maxHeight: 220 },
-  categoryLabel: { fontSize: 11, fontWeight: "700", color: "#8a7c68", marginBottom: 4 },
+  channelChipActive: { borderColor: "#1F5C45", backgroundColor: "#DCEBE2" },
+  channelChipText: { fontSize: 13, fontWeight: "600" },
+  itemList: { maxHeight: 260 },
+  categoryLabel: { fontSize: 11, fontWeight: "700", color: "#55645B", marginBottom: 4 },
   itemRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 3 },
   itemName: { flex: 1, fontSize: 13 },
-  itemPrice: { color: "#8a7c68" },
+  itemPrice: { color: "#55645B" },
   stepper: {
-    width: 24,
-    height: 24,
+    width: 32,
+    height: 32,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
     alignItems: "center",
     justifyContent: "center",
   },
   qty: { width: 18, textAlign: "center", fontSize: 13 },
   input: {
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -211,12 +228,12 @@ const styles = StyleSheet.create({
   },
   error: { color: "#dc2626", fontSize: 12 },
   submitButton: {
-    backgroundColor: "#ea7c1f",
+    backgroundColor: "#1F5C45",
     borderRadius: 999,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  submitButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
+  submitButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 15 },
 });

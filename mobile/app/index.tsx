@@ -10,7 +10,7 @@ export default function Index() {
   if (isLoading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#ea7c1f" />
+        <ActivityIndicator color="#1F5C45" />
       </View>
     );
   }
@@ -23,5 +23,5 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fffaf3" },
+  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F2F4EE" },
 });

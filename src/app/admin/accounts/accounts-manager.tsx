@@ -32,7 +32,7 @@ export function AccountsManager({ initialAccounts }: { initialAccounts: Account[
                     removeAccount(account.id).then(() => router.refresh());
                   }
                 }}
-                className="text-xs text-muted underline"
+                className="text-xs text-brand underline font-semibold underline-offset-4"
               >
                 Delete
               </button>
@@ -41,12 +41,12 @@ export function AccountsManager({ initialAccounts }: { initialAccounts: Account[
         ))}
       </div>
 
-      <form action={formAction} className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+      <form action={formAction} className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold">Add a staff account</h2>
         <div className="flex flex-wrap gap-2">
           <select
             name="role"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            className="rounded-2xl border border-border bg-background px-3 py-2 text-sm"
           >
             <option value="kitchen">Kitchen</option>
             <option value="cashier">Cashier</option>
@@ -56,7 +56,7 @@ export function AccountsManager({ initialAccounts }: { initialAccounts: Account[
             type="email"
             required
             placeholder="Email"
-            className="min-w-40 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+            className="min-w-40 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           />
           <input
             name="password"
@@ -64,7 +64,7 @@ export function AccountsManager({ initialAccounts }: { initialAccounts: Account[
             required
             minLength={6}
             placeholder="Temporary password (6+ characters)"
-            className="min-w-40 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+            className="min-w-40 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
           />
         </div>
         {state.error && (
@@ -76,7 +76,7 @@ export function AccountsManager({ initialAccounts }: { initialAccounts: Account[
         <button
           type="submit"
           disabled={pending}
-          className="self-start rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+          className="self-start rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
         >
           {pending ? "Creating..." : "Create account"}
         </button>

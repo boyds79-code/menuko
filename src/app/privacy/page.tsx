@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocShell } from "@/components/doc-shell";
 import { PrivacyContent } from "./privacy-content";
 
 // Draft legal content — not reviewed by a lawyer. See the launch checklist
@@ -11,18 +12,12 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6 text-sm leading-relaxed">
-      <div>
-        <Link href="/" className="text-sm font-bold text-brand">
-          Menuko
-        </Link>
-      </div>
-
+    <DocShell>
       <PrivacyContent />
 
       <p className="mt-4 text-xs text-muted">
-        See also our <Link href="/terms" className="text-brand underline">Terms of Service</Link>.
+        See also our <Link href="/terms" className="font-semibold text-brand underline underline-offset-4">Terms of Service</Link>.
       </p>
-    </main>
+    </DocShell>
   );
 }

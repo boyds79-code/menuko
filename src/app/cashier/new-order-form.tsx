@@ -70,10 +70,10 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">New order</h2>
-        <button onClick={reset} className="text-xs text-muted underline">
+        <button onClick={reset} className="text-xs text-brand underline font-semibold underline-offset-4">
           Cancel
         </button>
       </div>
@@ -81,7 +81,7 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
       <div className="flex gap-2">
         <button
           onClick={() => setChannel("manual_delivery_entry")}
-          className={`rounded-full border px-3 py-1 text-xs ${
+          className={`rounded-full border px-3 py-1 text-xs${
             channel === "manual_delivery_entry"
               ? "border-brand bg-brand/10 text-brand"
               : "border-border text-muted"
@@ -91,7 +91,7 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
         </button>
         <button
           onClick={() => setChannel("manual_pickup_entry")}
-          className={`rounded-full border px-3 py-1 text-xs ${
+          className={`rounded-full border px-3 py-1 text-xs${
             channel === "manual_pickup_entry"
               ? "border-brand bg-brand/10 text-brand"
               : "border-border text-muted"
@@ -139,7 +139,7 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Note (e.g. customer name, Grab order #)"
-        className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
       />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -147,7 +147,7 @@ export function NewOrderForm({ categories, items }: { categories: Category[]; it
       <button
         onClick={submit}
         disabled={submitting || lines.length === 0}
-        className="flex items-center justify-between rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+        className="flex items-center justify-between rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
       >
         <span>{submitting ? "Creating..." : "Create order"}</span>
         <span>{formatPeso(total)}</span>

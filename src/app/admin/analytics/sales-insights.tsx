@@ -66,7 +66,7 @@ function BarChart({
                 </div>
               )}
               <div
-                className={`w-full rounded-t ${isPeak ? "bg-brand" : "bg-brand/40"} transition-colors group-hover:bg-brand`}
+                className={`w-full rounded-t${isPeak ? "bg-brand" : "bg-brand/40"}transition-colors group-hover:bg-brand`}
                 style={{ height: `${heightPct}%` }}
               />
             </div>
@@ -136,7 +136,7 @@ export function SalesInsights() {
   }));
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+    <section className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Sales insights</h2>
         <div className="flex rounded-full border border-border p-0.5 text-xs">
@@ -147,7 +147,7 @@ export function SalesInsights() {
                 setLoading(true);
                 setPeriod(p);
               }}
-              className={`rounded-full px-3 py-1 ${
+              className={`rounded-full px-3 py-1${
                 period === p ? "bg-brand text-brand-foreground" : "text-muted"
               }`}
             >
@@ -200,7 +200,7 @@ export function SalesInsights() {
             {items.length > 0 ? (
               <ul className="flex flex-col gap-1.5">
                 {items.map((item, i) => (
-                  <li key={item.item_name} className="relative overflow-hidden rounded-lg bg-background px-3 py-2 text-sm">
+                  <li key={item.item_name} className="relative overflow-hidden rounded-2xl bg-background px-3 py-2 text-sm">
                     <div
                       className="absolute inset-y-0 left-0 bg-brand/10"
                       style={{ width: `${(item.total_quantity / maxItemQty) * 100}%` }}
@@ -229,7 +229,7 @@ export function SalesInsights() {
                 {combos.map((combo, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between rounded-lg bg-background px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-2xl bg-background px-3 py-2 text-sm"
                   >
                     <span>
                       {combo.item_a_name} + {combo.item_b_name}

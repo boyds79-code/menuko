@@ -1,5 +1,6 @@
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Modal, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { ModalHeader } from "@/components/ModalHeader";
 import { WebView } from "react-native-webview";
 
 const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_ORIGIN;
@@ -21,16 +22,9 @@ export function CustomerPreviewModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <SafeAreaProvider>
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose} hitSlop={10}>
-            <Text style={styles.closeIcon}>✕</Text>
-          </TouchableOpacity>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>Customer view</Text>
-            <Text style={styles.headerSubtitle}>The real order page for this table — live, not a mockup</Text>
-          </View>
-        </View>
+        <ModalHeader title="Customer view" subtitle="The real order page — live, not a mockup" onBack={onClose} />
         {orderUrl ? (
           <WebView source={{ uri: orderUrl }} style={styles.webview} />
         ) : (
@@ -41,17 +35,18 @@ export function CustomerPreviewModal({
             <Text style={styles.hint}>
               {qrToken
                 ? "This needs to know where the web app is deployed to load the real order page."
-                : "Add a table in Settings > Tables to preview its order page."}
+                : "Add a table in Store > Tables & QR codes to preview its order page."}
             </Text>
           </View>
         )}
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fffaf3" },
+  safe: { flex: 1, backgroundColor: "#F2F4EE" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -60,7 +55,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
+    borderBottomColor: "#E0E6DC",
   },
   closeButton: {
     width: 36,
@@ -70,12 +65,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  closeIcon: { fontSize: 16, color: "#231f1a", fontWeight: "700" },
+  closeIcon: { fontSize: 16, color: "#15261E", fontWeight: "700" },
   headerTextBlock: { flex: 1 },
   headerTitle: { fontSize: 15, fontWeight: "700" },
-  headerSubtitle: { fontSize: 11, color: "#8a7c68", marginTop: 1 },
+  headerSubtitle: { fontSize: 11, color: "#55645B", marginTop: 1 },
   webview: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 8 },
   hintTitle: { fontSize: 14, fontWeight: "700" },
-  hint: { fontSize: 12, color: "#8a7c68", textAlign: "center", lineHeight: 17 },
+  hint: { fontSize: 12, color: "#55645B", textAlign: "center", lineHeight: 17 },
 });

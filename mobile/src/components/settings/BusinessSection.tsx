@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, LayoutAnimation, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/ctx";
 import { supabase } from "@/lib/supabase";
 import { pickAndUploadPhoto } from "@/lib/upload-photo";
 import { getCurrentCoords } from "@/lib/location";
 import type { BusinessType, Database } from "@/lib/database.types";
 import { TablesSection } from "./TablesSection";
+import { form } from "@/components/form-styles";
+import { colors } from "@/theme";
 
 type RestaurantUpdate = Database["public"]["Tables"]["restaurants"]["Update"];
 type Account = { id: string; email: string; role: string };
@@ -14,13 +17,46 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", kitchen: "Kitchen",
 
 // Collapsed by default so the tab doesn't dump every setting on screen at
 // once — tap a header to reveal that section's fields.
-function AccordionCard({ title, children }: { title: string; children: React.ReactNode }) {
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
+function AccordionCard({
+  title,
+  subtitle,
+  icon,
+  badge,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  icon: IconName;
+  badge?: string;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <View style={styles.card}>
-      <TouchableOpacity style={styles.cardHeader} onPress={() => setOpen((o) => !o)}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.chevron}>{open ? "−" : "+"}</Text>
+      <TouchableOpacity
+        style={styles.cardHeader}
+        onPress={() => {
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setOpen((o) => !o);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+      >
+        <View style={styles.cardIcon}>
+          <Ionicons name={icon} size={20} color={colors.accentText} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>{title}</Text>
+            {badge && <Text style={styles.badge}>{badge}</Text>}
+          </View>
+          <Text style={styles.cardSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        </View>
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={20} color={colors.muted} />
       </TouchableOpacity>
       {open && <View style={styles.cardBody}>{children}</View>}
     </View>
@@ -162,7 +198,7 @@ export function BusinessSection() {
 
   return (
     <View style={styles.content}>
-      <AccordionCard title="My Business">
+      <AccordionCard title="My Business" subtitle="Name, logo, address, location" icon="storefront-outline">
         <Text style={styles.label}>Logo (optional)</Text>
         <TouchableOpacity
           style={styles.photoBox}
@@ -200,7 +236,7 @@ export function BusinessSection() {
           onChangeText={setAbout}
           onBlur={() => save({ about })}
           placeholder="A short line customers see on your menu page — e.g. what makes your food special, or your story."
-          placeholderTextColor="#b8ab93"
+          placeholderTextColor={colors.faint}
           multiline
           numberOfLines={3}
           maxLength={280}
@@ -218,7 +254,9 @@ export function BusinessSection() {
               }}
               style={[styles.chip, businessType === type && styles.chipActive]}
             >
-              <Text style={styles.chipText}>{type === "restaurant" ? "Restaurant" : "Cafe"}</Text>
+              <Text style={[styles.chipText, businessType === type && form.chipTextActive]}>
+                {type === "restaurant" ? "Restaurant" : "Cafe"}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -241,19 +279,25 @@ export function BusinessSection() {
         </TouchableOpacity>
       </AccordionCard>
 
-      <AccordionCard title="Staff accounts">
+      <AccordionCard title="Staff accounts" subtitle="Kitchen and cashier logins" icon="people-outline">
         <Text style={styles.hint}>
           The free plan supports 1 owner + 1 kitchen + 1 cashier account. Additional accounts
           require the premium plan.
         </Text>
         {accounts.map((a) => (
           <View key={a.id} style={styles.accountRow}>
-            <Text style={styles.accountText}>
-              <Text style={styles.accountRole}>{ROLE_LABEL[a.role] ?? a.role}</Text> {a.email}
+            <Text style={styles.accountRole}>{ROLE_LABEL[a.role] ?? a.role}</Text>
+            <Text style={styles.accountText} numberOfLines={1}>
+              {a.email}
             </Text>
             {a.role !== "owner" && (
-              <TouchableOpacity onPress={() => removeStaff(a)}>
-                <Text style={styles.link}>Delete</Text>
+              <TouchableOpacity
+                onPress={() => removeStaff(a)}
+                style={form.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${ROLE_LABEL[a.role] ?? a.role} account ${a.email}`}
+              >
+                <Ionicons name="trash-outline" size={18} color={colors.danger} />
               </TouchableOpacity>
             )}
           </View>
@@ -263,20 +307,20 @@ export function BusinessSection() {
             onPress={() => setRole("kitchen")}
             style={[styles.roleChip, role === "kitchen" && styles.roleChipActive]}
           >
-            <Text style={styles.roleChipText}>Kitchen</Text>
+            <Text style={[styles.roleChipText, role === "kitchen" && form.chipTextActive]}>Kitchen</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setRole("cashier")}
             style={[styles.roleChip, role === "cashier" && styles.roleChipActive]}
           >
-            <Text style={styles.roleChipText}>Cashier</Text>
+            <Text style={[styles.roleChipText, role === "cashier" && form.chipTextActive]}>Cashier</Text>
           </TouchableOpacity>
         </View>
         <TextInput
           value={staffEmail}
           onChangeText={setStaffEmail}
           placeholder="Email"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           autoCapitalize="none"
           keyboardType="email-address"
           style={styles.input}
@@ -285,7 +329,7 @@ export function BusinessSection() {
           value={staffPassword}
           onChangeText={setStaffPassword}
           placeholder="Temporary password (6+ characters)"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           style={styles.input}
         />
         {staffError && <Text style={styles.error}>{staffError}</Text>}
@@ -294,9 +338,9 @@ export function BusinessSection() {
         </TouchableOpacity>
       </AccordionCard>
 
-      <AccordionCard title="Payment info">
+      <AccordionCard title="Payment info" subtitle="GCash / Maya QR and payment link" icon="qr-code-outline">
         <View style={styles.warnBox}>
-          <Text style={styles.warnTitle}>⚠️ Not connected to any payment system</Text>
+          <Text style={styles.warnTitle}>Not connected to any payment system</Text>
           <Text style={styles.warnText}>
             The QR image and link you add here are only shown to customers and your cashier.
             Menuko does not receive, process, or verify payments, and orders are not marked paid
@@ -330,20 +374,25 @@ export function BusinessSection() {
           onChangeText={setPaymentLink}
           onBlur={() => save({ payment_link: paymentLink || null })}
           placeholder="https://..."
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           style={styles.input}
         />
       </AccordionCard>
 
-      <AccordionCard title={isPremium ? "Delivery channels (Premium)" : "Delivery channels (Premium only)"}>
+      <AccordionCard
+        title="Delivery channels"
+        subtitle="GrabFood and foodpanda commission"
+        icon="bicycle-outline"
+        badge="Premium"
+      >
         {isPremium ? (
-          <Text style={styles.hint}>✓ Your Premium plan is active — these rates are used in your Sales Report.</Text>
+          <Text style={styles.hint}>Your Premium plan is active — these rates are used in your Sales Report.</Text>
         ) : (
           <View style={styles.warnBox}>
-            <Text style={styles.warnTitle}>⚠️ Not used on the Free plan</Text>
+            <Text style={styles.warnTitle}>Not used on the Free plan</Text>
             <Text style={styles.warnText}>
               These rates only feed the Premium Sales Report, so on the Free (basic) plan they have no
-              effect. You can fill them in now — they&apos;re saved and start working after you upgrade.
+              effect. You can fill them in now — they&apos;re saved and are used only if your restaurant is on the Premium plan.
             </Text>
           </View>
         )}
@@ -360,7 +409,7 @@ export function BusinessSection() {
             save({ grabfood_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
           }}
           placeholder="e.g. 26"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           keyboardType="decimal-pad"
           style={[styles.input, { width: 100 }]}
         />
@@ -373,13 +422,13 @@ export function BusinessSection() {
             save({ foodpanda_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
           }}
           placeholder="e.g. 26"
-          placeholderTextColor="#8a7c68"
+          placeholderTextColor={colors.faint}
           keyboardType="decimal-pad"
           style={[styles.input, { width: 100 }]}
         />
       </AccordionCard>
 
-      <AccordionCard title="Tables">
+      <AccordionCard title="Tables & QR codes" subtitle="Add tables, print their QR codes" icon="grid-outline">
         <TablesSection />
       </AccordionCard>
     </View>
@@ -387,84 +436,97 @@ export function BusinessSection() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 20 },
+  content: { gap: 12 },
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: colors.line,
     overflow: "hidden",
-    shadowColor: "#3d2f1f",
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, minHeight: 72 },
+  cardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: colors.accentSoft,
     alignItems: "center",
-    padding: 14,
+    justifyContent: "center",
   },
-  cardBody: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
-  chevron: { fontSize: 16, fontWeight: "700", color: "#ea7c1f", width: 20, textAlign: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: "#ea7c1f" },
-  label: { fontSize: 12, color: "#8a7c68" },
-  hint: { fontSize: 11, color: "#8a7c68", lineHeight: 15 },
-  warnBox: { gap: 4, borderWidth: 1, borderColor: "#fcd34d", backgroundColor: "#fffbeb", borderRadius: 10, padding: 10 },
-  warnTitle: { fontSize: 12, fontWeight: "700", color: "#78350f" },
-  warnText: { fontSize: 11, color: "#78350f", lineHeight: 16 },
-  inputMultiline: { minHeight: 64, textAlignVertical: "top" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
+  cardTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: colors.ink },
+  cardSubtitle: { fontSize: 12.5, color: colors.muted, marginTop: 2 },
+  badge: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.ink,
+    backgroundColor: colors.saffron,
+    borderRadius: 999,
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
-  chipRow: { flexDirection: "row", gap: 8 },
-  chip: { borderWidth: 1, borderColor: "#ece2d3", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  chipActive: { borderColor: "#ea7c1f", backgroundColor: "#fff0e0" },
-  chipText: { fontSize: 12 },
+  cardBody: {
+    paddingHorizontal: 16,
+    paddingBottom: 18,
+    paddingTop: 14,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
+  label: { ...form.label, marginTop: 6 },
+  hint: form.hint,
+  warnBox: form.warnBox,
+  warnTitle: form.warnTitle,
+  warnText: form.warnText,
+  inputMultiline: form.inputMultiline,
+  input: form.input,
+  chipRow: form.chipRow,
+  chip: form.chip,
+  chipActive: form.chipActive,
+  chipText: form.chipText,
   photoBox: {
-    height: 90,
-    width: 90,
-    borderRadius: 10,
-    backgroundColor: "#fffaf3",
+    height: 96,
+    width: 96,
+    borderRadius: 18,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.line,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   photoBoxImage: { width: "100%", height: "100%" },
-  photoBoxText: { fontSize: 11, color: "#8a7c68" },
+  photoBoxText: { fontSize: 12, fontWeight: "600", color: colors.muted },
   accountRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 10,
+    minHeight: 52,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 14,
+    paddingLeft: 14,
+    paddingRight: 6,
   },
-  accountText: { fontSize: 13 },
-  accountRole: { fontWeight: "700" },
-  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
-  roleRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  roleChip: { borderWidth: 1, borderColor: "#ece2d3", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  roleChipActive: { borderColor: "#ea7c1f", backgroundColor: "#fff0e0" },
-  roleChipText: { fontSize: 12 },
-  error: { color: "#dc2626", fontSize: 12 },
-  primaryButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingVertical: 10, alignItems: "center" },
-  primaryButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  secondaryButton: {
-    alignSelf: "flex-start",
-    borderWidth: 1,
-    borderColor: "#ea7c1f",
+  accountText: { flex: 1, fontSize: 14, color: colors.ink },
+  accountRole: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.accentText,
+    backgroundColor: colors.accentSoft,
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  secondaryButtonText: { color: "#ea7c1f", fontWeight: "700", fontSize: 12 },
+  roleRow: { ...form.chipRow, marginTop: 6 },
+  roleChip: form.chip,
+  roleChipActive: form.chipActive,
+  roleChipText: form.chipText,
+  error: form.error,
+  primaryButton: { ...form.primaryButton, marginTop: 4 },
+  primaryButtonText: form.primaryButtonText,
+  secondaryButton: { ...form.secondaryButton, alignSelf: "flex-start" },
+  secondaryButtonText: form.secondaryButtonText,
 });

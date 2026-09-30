@@ -5,7 +5,7 @@ export function PrivacyContent() {
   return (
     <>
       <div>
-        <h1 className="text-xl font-semibold">Privacy Policy</h1>
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] sm:text-4xl">Privacy Policy</h1>
         <p className="mt-1 text-xs text-muted">Last updated: September 28, 2026</p>
       </div>
 
@@ -119,10 +119,10 @@ export function PrivacyContent() {
       <Section title="7. Your rights">
         <p>
           If you are a Restaurant owner, you can delete your entire restaurant account and all
-          associated data at any time directly in the Menuko Staff app (Settings → My Page → Delete
+          associated data at any time directly in the Menuko Staff app (Store → Account → Delete
           account) — this permanently removes your restaurant, its menu and order data, and every
           staff login tied to it. Kitchen and cashier staff accounts are managed by the Restaurant
-          owner and can be removed by the owner from the same screen; they do not currently have a
+          owner and can be removed by the owner under Store → My Business → Staff accounts; they do not currently have a
           separate self-service deletion option of their own.
         </p>
         <p className="mt-2">
@@ -158,7 +158,7 @@ export function PrivacyContent() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold">{title}</h2>
+      <h2 className="font-display text-lg font-bold">{title}</h2>
       {children}
     </section>
   );

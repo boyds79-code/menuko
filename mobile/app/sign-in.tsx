@@ -11,17 +11,18 @@ import {
 } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
 import { supabase } from "@/lib/supabase";
+import { fonts } from "@/theme";
 
 // The same bracket-and-square mark used on menuko.net — gives the login
 // screen actual brand recognition instead of a plain text label.
 function Mark({ size = 56 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      <Path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" strokeWidth={8} strokeLinecap="round" />
-      <Path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" strokeWidth={8} strokeLinecap="round" />
-      <Path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" strokeWidth={8} strokeLinecap="round" />
-      <Path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" strokeWidth={8} strokeLinecap="round" />
-      <Rect x={41} y={41} width={18} height={18} rx={5} fill="#ea7c1f" />
+      <Path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#1F5C45" strokeWidth={8} strokeLinecap="round" />
+      <Path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#1F5C45" strokeWidth={8} strokeLinecap="round" />
+      <Path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#1F5C45" strokeWidth={8} strokeLinecap="round" />
+      <Path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#1F5C45" strokeWidth={8} strokeLinecap="round" />
+      <Rect x={41} y={41} width={18} height={18} rx={5} fill="#EAA93B" />
     </Svg>
   );
 }
@@ -63,7 +64,7 @@ export default function SignIn() {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="#a89a86"
+          placeholderTextColor="#8A968E"
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -73,7 +74,7 @@ export default function SignIn() {
         <TextInput
           style={styles.input}
           placeholder="Password"
-          placeholderTextColor="#a89a86"
+          placeholderTextColor="#8A968E"
           secureTextEntry
           autoComplete="current-password"
           value={password}
@@ -101,31 +102,31 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fdf8ee",
+    backgroundColor: "#F2F4EE",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
   },
   brand: { alignItems: "center", gap: 10, marginBottom: 36 },
   title: {
-    fontSize: 34,
-    fontWeight: "800",
-    color: "#231f1a",
-    letterSpacing: -0.5,
+    fontSize: 38,
+    fontFamily: fonts.display,
+    color: "#15261E",
+    letterSpacing: -0.8,
   },
   subtitle: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#a3937d",
+    color: "#55645B",
     letterSpacing: 2,
   },
   card: {
     width: "100%",
     backgroundColor: "#ffffff",
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 28,
+    padding: 22,
     gap: 12,
-    shadowColor: "#3d2f1f",
+    shadowColor: "#184B38",
     shadowOpacity: 0.08,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
@@ -134,23 +135,23 @@ const styles = StyleSheet.create({
   input: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#fdfaf5",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    borderColor: "#E0E6DC",
+    backgroundColor: "#F7F9F4",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
-    color: "#231f1a",
+    color: "#15261E",
   },
-  error: { color: "#dc2626", fontSize: 13, alignSelf: "flex-start" },
+  error: { color: "#B42318", fontSize: 13, alignSelf: "flex-start" },
   button: {
     width: "100%",
-    backgroundColor: "#ea7c1f",
-    borderRadius: 12,
-    paddingVertical: 15,
+    backgroundColor: "#1F5C45",
+    borderRadius: 999,
+    paddingVertical: 16,
     alignItems: "center",
     marginTop: 4,
-    shadowColor: "#ea7c1f",
+    shadowColor: "#1F5C45",
     shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },

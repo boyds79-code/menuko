@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { ORDER_ORIGIN } from "@/lib/constants";
 import { QR_DESIGNS, getQrDesign } from "./qr-designs";
 
 type Table = { id: string; label: string; qr_token: string };
 
 // Printed QR cards live on tables for months, so they always point at the
-// production site — never at whatever host this page happens to be open on
-// (a Vercel preview URL or localhost would print dead QR codes).
-const ORDER_ORIGIN = "https://menuko.net";
+// production site (ORDER_ORIGIN, shared with the Settings table cards).
 
 // A4 at 300 dpi — standard resolution print shops ask for.
 const A4_WIDTH_PX_300DPI = 2480;

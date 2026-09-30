@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { ModalHeader } from "@/components/ModalHeader";
 import { formatPeso } from "@/lib/money";
 import { resolveMobilePalette, type MobileMenuColorId, type MobileMenuLayoutId, type MobileColorPalette } from "@/lib/menu-templates";
 
@@ -84,23 +85,20 @@ export function MenuPreviewModal({
       onRequestClose={close}
       onDismiss={close}
     >
+      <SafeAreaProvider>
       <SafeAreaView style={[styles.safe, { backgroundColor: p.pageBackground }]} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={close} hitSlop={10}>
-            <Text style={styles.closeIcon}>✕</Text>
-          </TouchableOpacity>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>{onApply ? "Sample preview" : "Menu preview"}</Text>
-            <Text style={styles.headerSubtitle}>
-              {subtitle ?? "Roughly what customers see — not final styling"}
-            </Text>
-          </View>
-          {onApply && (
+        <ModalHeader
+          title={onApply ? "Sample preview" : "Menu preview"}
+          subtitle={subtitle ?? "Roughly what customers see — not final styling"}
+          onBack={close}
+          right={
+            onApply && (
             <TouchableOpacity style={[styles.applyButton, { backgroundColor: p.brand }]} onPress={onApply}>
               <Text style={styles.applyButtonText}>Apply</Text>
             </TouchableOpacity>
-          )}
-        </View>
+            )
+          }
+        />
 
         {menuLayout === "minimal-list" ? (
           <MinimalListMenu categories={categories} available={available} featured={featured} p={p} cartCount={cartCount} onOpenItem={setDetailItem} />
@@ -122,6 +120,7 @@ export function MenuPreviewModal({
           </TouchableOpacity>
         )}
       </SafeAreaView>
+      </SafeAreaProvider>
 
       {detailItem &&
         (menuLayout === "grid-popup" ? (
@@ -722,7 +721,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
+    borderBottomColor: "#E0E6DC",
   },
   closeButton: {
     width: 36,
@@ -732,10 +731,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  closeIcon: { fontSize: 16, color: "#231f1a", fontWeight: "700" },
+  closeIcon: { fontSize: 16, color: "#15261E", fontWeight: "700" },
   headerTextBlock: { flex: 1 },
   headerTitle: { fontSize: 15, fontWeight: "700" },
-  headerSubtitle: { fontSize: 11, color: "#8a7c68", marginTop: 1 },
+  headerSubtitle: { fontSize: 11, color: "#55645B", marginTop: 1 },
   applyButton: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
   applyButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
   content: { padding: 16, gap: 18 },
@@ -852,7 +851,7 @@ const styles = StyleSheet.create({
   },
   rowCardPriceText: { color: "#ffffff", fontSize: 11, fontWeight: "700" },
   rowCardName: { fontSize: 12, fontWeight: "500", marginTop: 4 },
-  photoPlaceholder: { fontSize: 10, color: "#8a7c68" },
+  photoPlaceholder: { fontSize: 10, color: "#55645B" },
 
   listGroup: { borderWidth: 1, borderRadius: 12, overflow: "hidden" },
   listRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10 },
@@ -860,7 +859,7 @@ const styles = StyleSheet.create({
   listRowImage: { width: "100%", height: "100%" },
   listRowTextWrap: { flex: 1, gap: 1 },
   listRowName: { fontSize: 13, fontWeight: "600" },
-  listRowDescription: { fontSize: 11, color: "#8a7c68" },
+  listRowDescription: { fontSize: 11, color: "#55645B" },
   listRowPrice: { fontSize: 12, fontWeight: "700", marginTop: 1 },
   listRowAddChip: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   listRowAddChipText: { fontSize: 13, fontWeight: "700" },
@@ -882,7 +881,7 @@ const styles = StyleSheet.create({
   },
   checkoutBarText: { color: "#ffffff", fontSize: 14, fontWeight: "700" },
 
-  empty: { fontSize: 13, color: "#8a7c68", textAlign: "center", marginTop: 40 },
+  empty: { fontSize: 13, color: "#55645B", textAlign: "center", marginTop: 40 },
 
   popoverBackdrop: {
     ...StyleSheet.absoluteFill,
@@ -923,9 +922,9 @@ const styles = StyleSheet.create({
   overlayContent: { padding: 20, gap: 8 },
   overlayName: { fontSize: 19, fontWeight: "700" },
   overlayPrice: { fontSize: 16, fontWeight: "600" },
-  overlayText: { fontSize: 13, color: "#3c3327", lineHeight: 19 },
+  overlayText: { fontSize: 13, color: "#2A3A31", lineHeight: 19 },
   overlayLabel: { fontWeight: "700" },
-  overlayMeta: { fontSize: 12, color: "#8a7c68" },
+  overlayMeta: { fontSize: 12, color: "#55645B" },
   overlayActions: { marginTop: 24, alignItems: "center", gap: 10 },
   overlayAddButton: { width: "100%", paddingVertical: 14, borderRadius: 999, alignItems: "center" },
   overlayAddButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 15 },
@@ -935,14 +934,14 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 19,
     borderWidth: 1,
-    borderColor: "#ece2d3",
+    borderColor: "#E0E6DC",
     alignItems: "center",
     justifyContent: "center",
   },
   overlayStepperButtonText: { fontSize: 17 },
   overlayStepperCount: { fontSize: 16, fontVariant: ["tabular-nums"], width: 22, textAlign: "center" },
   overlayCheckoutLink: { paddingVertical: 6 },
-  overlayCheckoutLinkText: { fontSize: 13, color: "#8a7c68", textDecorationLine: "underline" },
+  overlayCheckoutLinkText: { fontSize: 13, color: "#55645B", textDecorationLine: "underline" },
 
   sheetBackdrop: {
     ...StyleSheet.absoluteFill,
@@ -966,7 +965,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#ece2d3",
+    borderTopColor: "#E0E6DC",
     marginTop: 8,
     paddingTop: 10,
   },
@@ -975,5 +974,5 @@ const styles = StyleSheet.create({
   sheetConfirm: { marginTop: 16, paddingVertical: 14, borderRadius: 999, alignItems: "center" },
   sheetConfirmText: { color: "#ffffff", fontWeight: "700", fontSize: 15 },
   sheetBack: { marginTop: 8, paddingVertical: 6, alignItems: "center" },
-  sheetBackText: { fontSize: 13, color: "#8a7c68", textDecorationLine: "underline" },
+  sheetBackText: { fontSize: 13, color: "#55645B", textDecorationLine: "underline" },
 });

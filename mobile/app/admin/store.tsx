@@ -4,18 +4,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { AdminHeader } from "@/components/AdminHeader";
 import { SegmentedControl } from "@/components/SegmentedControl";
-import { AnalyticsSection } from "@/components/mypage/AnalyticsSection";
+import { BusinessSection } from "@/components/settings/BusinessSection";
 import { AccountSection } from "@/components/mypage/AccountSection";
+import { colors, TAB_BAR_SPACE } from "@/theme";
 
-type Section = "analytics" | "account";
+// Store — everything about the business and this login: business info,
+// staff accounts, payment, delivery channels, tables & QR (BusinessSection)
+// and the owner's own email/password/delete (AccountSection). Merges the
+// old Settings > My Business and My Page > Account.
+type Section = "business" | "account";
 
-const SECTIONS: { key: Section; label: string; badge?: string }[] = [
+const SECTIONS: { key: Section; label: string }[] = [
+  { key: "business", label: "My Business" },
   { key: "account", label: "Account" },
-  { key: "analytics", label: "Analytics", badge: "Premium" },
 ];
 
-export default function MyPage() {
-  const [section, setSection] = useState<Section>("account");
+export default function AdminStore() {
+  const [section, setSection] = useState<Section>("business");
   const scrollRef = useRef<ScrollView>(null);
 
   useFocusEffect(
@@ -26,26 +31,19 @@ export default function MyPage() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <AdminHeader title="My Page" showSignOut />
+      <AdminHeader title="Store" showSignOut />
       <View style={styles.switcherBar}>
         <SegmentedControl options={SECTIONS} value={section} onChange={setSection} />
       </View>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
-        {section === "analytics" ? <AnalyticsSection /> : <AccountSection />}
+        {section === "business" ? <BusinessSection /> : <AccountSection />}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fffaf3" },
-  switcherBar: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ece2d3",
-  },
-  content: { padding: 16, gap: 16 },
+  safe: { flex: 1, backgroundColor: colors.bg },
+  switcherBar: { paddingHorizontal: 16, paddingBottom: 8 },
+  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: TAB_BAR_SPACE, gap: 16 },
 });

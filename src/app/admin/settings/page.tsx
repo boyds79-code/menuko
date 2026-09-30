@@ -2,6 +2,7 @@ import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isMenuColorId, isMenuLayoutId } from "@/lib/menu-templates";
 import { SettingsManager } from "./settings-manager";
+import { PageHeader } from "@/components/page-header";
 
 export default async function AdminSettingsPage() {
   const ctx = await requireStaff("owner");
@@ -42,8 +43,8 @@ export default async function AdminSettingsPage() {
     ]);
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold">Restaurant settings</h1>
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+      <PageHeader title="Settings" description="Your restaurant, menu, tables, payment and staff logins — tap a section to open it." />
       <SettingsManager
         restaurantId={ctx.restaurantId}
         initial={

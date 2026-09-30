@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toOrderView, orderTotal, CHANNEL_BADGE, type OrderView, type RawOrderRow } from "@/lib/orders";
 import { formatPeso } from "@/lib/money";
+import { PageHeader } from "@/components/page-header";
 
 const ORDER_SELECT =
   "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
@@ -60,9 +61,10 @@ export function KitchenBoard({
   const done = orders.filter((o) => o.status === "served");
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
+      <PageHeader title="Kitchen" description="New orders appear here the moment customers send them. Tap Mark done when a dish goes out." />
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-muted">
+        <h2 className="mb-3 text-xs font-bold tracking-[0.14em] text-muted uppercase">
           Active orders ({active.length})
         </h2>
         {active.length === 0 ? (
@@ -78,7 +80,7 @@ export function KitchenBoard({
 
       {done.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-muted">Done</h2>
+          <h2 className="mb-3 text-xs font-bold tracking-[0.14em] text-muted uppercase">Done</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {done.map((order) => (
               <OrderCard key={order.id} order={order} done />
@@ -101,7 +103,7 @@ function OrderCard({
 }) {
   return (
     <div
-      className={`flex flex-col gap-2 rounded-xl border border-border bg-card p-4 shadow-sm ${done ? "opacity-60" : ""}`}
+      className={`flex flex-col gap-2 rounded-3xl border border-border bg-card p-5 shadow-sm${done ? "opacity-60" : ""}`}
     >
       <div className="flex items-center justify-between">
         <span className="font-semibold">
@@ -132,7 +134,7 @@ function OrderCard({
         {!done && onDone && (
           <button
             onClick={onDone}
-            className="rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition hover:opacity-90"
+            className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 shadow-sm"
           >
             Mark done
           </button>

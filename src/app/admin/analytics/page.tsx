@@ -4,6 +4,7 @@ import { startOfTodayManila } from "@/lib/manila-time";
 import { toOrderView, type RawOrderRow } from "@/lib/orders";
 import { TodaySalesPanel } from "./today-sales-panel";
 import { SalesInsights } from "./sales-insights";
+import { PageHeader } from "@/components/page-header";
 
 const ORDER_SELECT =
   "id, status, channel, note, created_at, table_id, tables ( label ), order_items ( id, menu_item_id, quantity, unit_price_snapshot, menu_items ( name ) )";
@@ -27,12 +28,12 @@ export default async function AdminAnalyticsPage() {
   const isPremium = restaurant?.plan === "premium";
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold">Analytics</h1>
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+      <PageHeader title="Analytics" description="Today's sales update live. Past weeks and months come with Premium." />
 
       <TodaySalesPanel restaurantId={ctx.restaurantId} initialOrders={initialOrders} />
 
-      <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+      <section className="flex flex-col gap-2 rounded-3xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold">Combo suggestions</h2>
         <p className="text-xs text-muted">
           Items customers keep ordering together — might be worth bundling into a combo.
@@ -42,7 +43,7 @@ export default async function AdminAnalyticsPage() {
             {combos.map((combo, i) => (
               <li
                 key={i}
-                className="flex items-center justify-between rounded-lg bg-background px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-2xl bg-background px-3 py-2 text-sm"
               >
                 <span>
                   {combo.item_a_name} + {combo.item_b_name}
@@ -63,7 +64,7 @@ export default async function AdminAnalyticsPage() {
       {isPremium ? (
         <SalesInsights />
       ) : (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card p-8 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-border bg-card p-8 text-center">
           <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
             Premium
           </span>

@@ -139,7 +139,7 @@ export function MenuImport() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="self-start rounded-full border border-border px-4 py-2 text-sm text-muted transition hover:border-brand hover:text-brand"
+        className="self-start rounded-full border border-border px-4 py-2.5 text-sm text-foreground transition hover:border-brand hover:text-brand font-semibold bg-card"
       >
         Import menu from photo/PDF
       </button>
@@ -156,7 +156,7 @@ export function MenuImport() {
               <h2 className="text-sm font-semibold">
                 {draft ? "Review imported menu" : "Import menu from photo/PDF"}
               </h2>
-              <button onClick={closeAll} className="text-sm text-muted underline">
+              <button onClick={closeAll} className="text-sm text-brand underline font-semibold underline-offset-4">
                 Close
               </button>
             </div>
@@ -200,9 +200,9 @@ export function MenuImport() {
                         <input
                           value={category.name}
                           onChange={(e) => updateCategoryName(catIndex, e.target.value)}
-                          className="flex-1 rounded-lg border border-transparent bg-transparent px-1 text-sm font-semibold outline-none focus:border-brand"
+                          className="flex-1 rounded-xl border border-transparent bg-transparent px-1 text-sm font-semibold outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
                         />
-                        <button onClick={() => removeCategory(catIndex)} className="text-xs text-muted underline">
+                        <button onClick={() => removeCategory(catIndex)} className="text-xs text-brand underline font-semibold underline-offset-4">
                           Remove category
                         </button>
                       </div>
@@ -211,18 +211,18 @@ export function MenuImport() {
                           <input
                             value={item.name}
                             onChange={(e) => updateItem(catIndex, itemIndex, { name: e.target.value })}
-                            className="min-w-24 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-brand"
+                            className="min-w-24 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
                           />
                           <input
                             value={item.price}
                             onChange={(e) => updateItem(catIndex, itemIndex, { price: e.target.value })}
                             inputMode="decimal"
                             placeholder="Price"
-                            className="w-20 rounded-lg border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-brand"
+                            className="w-20 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-brand transition focus:ring-4 focus:ring-brand/15"
                           />
                           <button
                             onClick={() => removeItem(catIndex, itemIndex)}
-                            className="text-xs text-muted underline"
+                            className="text-xs text-brand underline font-semibold underline-offset-4"
                           >
                             Remove
                           </button>
@@ -239,7 +239,7 @@ export function MenuImport() {
                 <button
                   onClick={confirmImport}
                   disabled={saving}
-                  className="w-full rounded-full bg-brand py-3 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+                  className="w-full rounded-full bg-brand py-3 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
                 >
                   {saving
                     ? "Adding…"

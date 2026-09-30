@@ -1,24 +1,32 @@
 #!/usr/bin/env python3
-"""Generates the Menuko Staff app icon + splash assets: option 1 (scan
-frame mark) + option A (cream background + scan mark + wordmark)."""
+"""Generates the Menuko Staff app icon + splash assets: the scan-frame mark
+on a sage background with the wordmark. 2026-09 "Market Green" palette
+(green corners, saffron center — same as the web BrandMark), wordmark in
+Bricolage Grotesque (bundled via @expo-google-fonts, so this runs on any OS:
+`cd mobile && python3 design/generate_icon_assets.py`)."""
 
 from PIL import Image, ImageDraw, ImageFont
 
-ORANGE = (234, 124, 31, 255)      # #ea7c1f
-CREAM = (255, 250, 243, 255)      # #fffaf3
-INK = (35, 31, 26, 255)           # #231f1a
-MUTED = (138, 124, 104, 255)      # #8a7c68
+GREEN = (31, 92, 69, 255)         # #1F5C45
+SAFFRON = (234, 169, 59, 255)     # #EAA93B
+CREAM = (242, 244, 238, 255)      # #F2F4EE (sage background, name kept)
+INK = (21, 38, 30, 255)           # #15261E
+MUTED = (85, 100, 91, 255)        # #55645B
 WHITE = (255, 255, 255, 255)
 TRANSPARENT = (0, 0, 0, 0)
 
-FONT_PATH = "/System/Library/Fonts/Avenir Next.ttc"
+FONT_DIR = "node_modules/@expo-google-fonts/bricolage-grotesque"
+FONT_FILES = {
+    "heavy": f"{FONT_DIR}/800ExtraBold/BricolageGrotesque_800ExtraBold.ttf",
+    "bold": f"{FONT_DIR}/700Bold/BricolageGrotesque_700Bold.ttf",
+}
 
 
-def font(index, size):
-    return ImageFont.truetype(FONT_PATH, size, index=index)
+def font(weight, size):
+    return ImageFont.truetype(FONT_FILES[weight], size)
 
 
-def draw_scan_frame(draw, cx, cy, half, stroke, color, center_dot=True):
+def draw_scan_frame(draw, cx, cy, half, stroke, color, center_dot=True, center_color=None):
     """Draws the 4-corner viewfinder bracket mark, centered at (cx, cy),
     with each bracket arm spanning `half` px and a `half*0.65` leg length."""
     leg = int(half * 0.62)
@@ -39,9 +47,9 @@ def draw_scan_frame(draw, cx, cy, half, stroke, color, center_dot=True):
             draw.ellipse([p[0] - r, p[1] - r, p[0] + r, p[1] + r], fill=color)
 
     if center_dot:
-        d = int(stroke * 2.3)
+        d = int(stroke * 1.35)  # matches the web BrandMark proportions
         draw.rounded_rectangle(
-            [cx - d, cy - d, cx + d, cy + d], radius=d * 0.35, fill=color
+            [cx - d, cy - d, cx + d, cy + d], radius=d * 0.35, fill=center_color or color
         )
 
 
@@ -49,7 +57,7 @@ def make_icon():
     size = 1024
     im = Image.new("RGB", (size, size), CREAM[:3])
     draw = ImageDraw.Draw(im)
-    draw_scan_frame(draw, size // 2, size // 2, half=210, stroke=52, color=ORANGE[:3])
+    draw_scan_frame(draw, size // 2, size // 2, half=210, stroke=52, color=GREEN[:3], center_color=SAFFRON[:3])
     im.save("assets/icon.png")
     print("wrote assets/icon.png")
 
@@ -60,7 +68,7 @@ def make_android_foreground():
     draw = ImageDraw.Draw(im)
     # Android adaptive icons get masked to a centered ~66% safe zone —
     # keep the mark smaller/more centered than the plain icon.
-    draw_scan_frame(draw, size // 2, size // 2, half=170, stroke=44, color=ORANGE)
+    draw_scan_frame(draw, size // 2, size // 2, half=170, stroke=44, color=GREEN, center_color=SAFFRON)
     im.save("assets/android-icon-foreground.png")
     print("wrote assets/android-icon-foreground.png")
 
@@ -85,7 +93,7 @@ def make_favicon():
     size = 256
     im = Image.new("RGB", (size, size), CREAM[:3])
     draw = ImageDraw.Draw(im)
-    draw_scan_frame(draw, size // 2, size // 2, half=54, stroke=13, color=ORANGE[:3])
+    draw_scan_frame(draw, size // 2, size // 2, half=54, stroke=13, color=GREEN[:3], center_color=SAFFRON[:3])
     im.save("assets/favicon.png")
     print("wrote assets/favicon.png")
 
@@ -98,10 +106,10 @@ def make_splash():
     draw = ImageDraw.Draw(im)
 
     mark_cy = 360
-    draw_scan_frame(draw, w // 2, mark_cy, half=150, stroke=38, color=ORANGE)
+    draw_scan_frame(draw, w // 2, mark_cy, half=150, stroke=38, color=GREEN, center_color=SAFFRON)
 
-    word_font = font(8, 100)  # Heavy
-    tag_font = font(0, 34)    # Bold
+    word_font = font("heavy", 104)
+    tag_font = font("bold", 34)
 
     text = "Menuko"
     bbox = draw.textbbox((0, 0), text, font=word_font)

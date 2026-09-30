@@ -186,7 +186,7 @@ export function ChangeRequestsPanel({
                   })}
                 </View>
                 <View style={styles.compareCol}>
-                  <Text style={[styles.compareTitle, { color: "#ea7c1f" }]}>Requested</Text>
+                  <Text style={[styles.compareTitle, { color: "#1F5C45" }]}>Requested</Text>
                   {(req.requested_items ?? []).map((item, i) => (
                     <Text key={i} style={styles.line}>
                       {itemNameById.get(item.menu_item_id) ?? "(unknown item)"} × {item.quantity}
@@ -206,7 +206,7 @@ export function ChangeRequestsPanel({
                   value={denyReason}
                   onChangeText={setDenyReason}
                   placeholder="Reason (optional)"
-                  placeholderTextColor="#8a7c68"
+                  placeholderTextColor="#55645B"
                   style={styles.denyInput}
                 />
                 <TouchableOpacity
@@ -244,33 +244,34 @@ export function ChangeRequestsPanel({
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
-  card: { backgroundColor: "#fff4e8", borderWidth: 1, borderColor: "#ea7c1f", borderRadius: 14, padding: 14, gap: 8 },
+  card: { backgroundColor: "#FDF3DF", borderWidth: 1, borderColor: "#EAA93B", borderRadius: 22, padding: 14, gap: 8 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontWeight: "700", fontSize: 13, flex: 1 },
-  hint: { fontSize: 10, color: "#8a7c68" },
-  line: { fontSize: 13, color: "#5b5142" },
+  title: { fontWeight: "700", fontSize: 16, flex: 1 },
+  hint: { fontSize: 12, color: "#55645B" },
+  line: { fontSize: 13, color: "#3E4D44" },
   compareRow: { flexDirection: "row", gap: 16 },
   compareCol: { flex: 1, gap: 2 },
-  compareTitle: { fontSize: 11, fontWeight: "700", color: "#8a7c68", marginBottom: 2 },
-  note: { fontSize: 11, fontStyle: "italic", color: "#8a7c68" },
-  errorText: { fontSize: 12, color: "#c0392b", fontWeight: "600" },
+  compareTitle: { fontSize: 11, fontWeight: "700", color: "#55645B", marginBottom: 2 },
+  note: { fontSize: 11, fontStyle: "italic", color: "#55645B" },
+  errorText: { fontSize: 12, color: "#B42318", fontWeight: "600" },
   actionsRow: { flexDirection: "row", gap: 10 },
-  approveButton: { backgroundColor: "#ea7c1f", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 },
+  approveButton: { backgroundColor: "#1F5C45", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, minHeight: 44, justifyContent: "center", alignItems: "center" },
   approveButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  denyButton: { borderWidth: 1, borderColor: "#ece2d3", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 },
-  denyButtonText: { color: "#8a7c68", fontSize: 13 },
+  denyButton: { borderWidth: 1, borderColor: "#E0E6DC", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7, minHeight: 44, justifyContent: "center" },
+  denyButtonText: { color: "#55645B", fontSize: 13 },
   denyRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   denyInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#ece2d3",
-    backgroundColor: "#ffffff",
-    borderRadius: 999,
+    borderColor: "#E0E6DC",
+    backgroundColor: "#F7F9F4",
+    borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    fontSize: 13,
+    paddingVertical: 10,
+    fontSize: 15,
+    minHeight: 44,
   },
-  confirmDenyButton: { backgroundColor: "#241f19", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  confirmDenyButton: { backgroundColor: "#15261E", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   confirmDenyText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
-  link: { fontSize: 12, color: "#8a7c68", textDecorationLine: "underline" },
+  link: { fontSize: 13, color: "#184B38", fontWeight: "700", paddingVertical: 6 },
 });

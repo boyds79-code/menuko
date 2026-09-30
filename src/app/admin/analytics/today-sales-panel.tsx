@@ -63,7 +63,7 @@ export function TodaySalesPanel({
   ).size;
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+    <section className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Today</h2>
         <span className="flex items-center gap-1 text-xs text-muted">
@@ -82,7 +82,7 @@ export function TodaySalesPanel({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg bg-background p-3">
+    <div className="flex flex-col gap-1 rounded-2xl bg-background p-3">
       <span className="text-lg font-semibold text-brand">{value}</span>
       <span className="text-xs text-muted">{label}</span>
     </div>

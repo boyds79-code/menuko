@@ -98,7 +98,7 @@ export function CashierBoard({
           {groups.map((group) => (
             <div
               key={group.tableId}
-              className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm"
+              className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5 shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{group.tableLabel}</span>
@@ -107,7 +107,7 @@ export function CashierBoard({
 
               <button
                 onClick={() => setExpanded(expanded === group.tableId ? null : group.tableId)}
-                className="text-left text-xs text-muted underline"
+                className="text-left text-xs text-brand underline font-semibold underline-offset-4"
               >
                 {expanded === group.tableId ? "Hide details" : "Show details"}
               </button>
@@ -165,7 +165,7 @@ export function CashierBoard({
                   </ul>
 
                   {(paymentQrUrl || paymentLink) && (
-                    <div className="flex flex-col items-center gap-2 rounded-lg bg-background p-3">
+                    <div className="flex flex-col items-center gap-2 rounded-2xl bg-background p-3">
                       {paymentQrUrl && (
                         <Image
                           src={paymentQrUrl}
@@ -197,7 +197,7 @@ export function CashierBoard({
                       )
                     }
                     disabled={settling === group.tableId}
-                    className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition hover:opacity-90 disabled:opacity-60"
+                    className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition hover:opacity-90 disabled:opacity-60 shadow-sm"
                   >
                     {group.orders.length > 1 ? "Settle all" : "Settle payment"}
                   </button>

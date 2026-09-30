@@ -39,11 +39,11 @@ const REVEAL_DWELL_VH = 1.1;
 function Mark({ className = "h-16 w-16" }: { className?: string }) {
   return (
     <svg viewBox="0 0 100 100" fill="none" className={className}>
-      <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#ea7c1f" strokeWidth="8" strokeLinecap="round" />
-      <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#ea7c1f" strokeWidth="8" strokeLinecap="round" />
-      <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#ea7c1f" strokeWidth="8" strokeLinecap="round" />
-      <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#ea7c1f" strokeWidth="8" strokeLinecap="round" />
-      <rect x="41" y="41" width="18" height="18" rx="5" fill="#ea7c1f" />
+      <path d="M14 34V21.5a3 3 0 0 1 3-3h13" stroke="#1F5C45" strokeWidth="8" strokeLinecap="round" />
+      <path d="M86 34V21.5a3 3 0 0 0-3-3H70" stroke="#1F5C45" strokeWidth="8" strokeLinecap="round" />
+      <path d="M14 66V78.5a3 3 0 0 0 3 3h13" stroke="#1F5C45" strokeWidth="8" strokeLinecap="round" />
+      <path d="M86 66V78.5a3 3 0 0 1-3 3H70" stroke="#1F5C45" strokeWidth="8" strokeLinecap="round" />
+      <rect x="41" y="41" width="18" height="18" rx="5" fill="#EAA93B" />
     </svg>
   );
 }
@@ -130,7 +130,7 @@ export function MenuBookIntro() {
 
   return (
     <div ref={wrapperRef} style={{ height: `${(PAGES.length + REVEAL_DWELL_VH) * 100}vh` }} className="relative">
-      <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden bg-[#1a1512]">
+      <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden bg-[#0f1a14]">
         {/* Ambient vignette behind the book, for depth */}
         <div
           className="pointer-events-none absolute inset-0"
@@ -147,7 +147,7 @@ export function MenuBookIntro() {
               Deep layered shadow + a hairline ring gives it real physical weight
               compared to a flat rounded card. */}
           <div
-            className="absolute inset-0 rounded-[26px] bg-[#fdf8ee] ring-1 ring-black/10"
+            className="absolute inset-0 rounded-[26px] bg-[#f7f9f4] ring-1 ring-black/10"
             style={{ boxShadow: "0 30px 60px -15px rgba(0,0,0,0.5), 0 12px 24px -8px rgba(0,0,0,0.35)" }}
             aria-hidden
           />
@@ -156,7 +156,7 @@ export function MenuBookIntro() {
               thick block of pages behind the one showing. */}
           <div
             className="pointer-events-none absolute inset-y-4 -right-0.5 z-0 w-1 rounded-r-full"
-            style={{ boxShadow: "5px 0 0 -1px #efe6d2, 10px 0 0 -2px #e4d7bb, 15px 0 0 -3px #d6c6a3" }}
+            style={{ boxShadow: "5px 0 0 -1px #e8ede4, 10px 0 0 -2px #dde4d8, 15px 0 0 -3px #c9d3c4" }}
             aria-hidden
           />
 
@@ -164,7 +164,7 @@ export function MenuBookIntro() {
               table-side menu book cover. Fades out once fully revealed —
               there's no page left to attribute it to. */}
           <div
-            className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pt-4 text-[10px] font-bold tracking-[0.15em] text-[#8a7a68] uppercase transition-opacity duration-300"
+            className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 pt-4 text-[10px] font-bold tracking-[0.15em] text-[#55645b] uppercase transition-opacity duration-300"
             style={{ opacity: revealed ? 0 : 1 }}
           >
             <span>
@@ -191,14 +191,14 @@ export function MenuBookIntro() {
             {/* Final reveal — sits beneath every page, exposed as they flip
                 away. Sized to comfortably fit the shorter landscape book
                 (aspect-[3/2]), not the taller portrait box this used to be. */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#fffaf3] p-6 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f2f4ee] p-6 text-center">
               <Mark className="h-11 w-11" />
-              <span className="text-lg font-extrabold tracking-tight text-[#231f1a]">Menuko</span>
+              <span className="text-lg font-extrabold tracking-tight text-[#15261e]">Menuko</span>
               {qrDataUrl && (
                 // eslint-disable-next-line @next/next/no-img-element -- data: URL, not a remote image
                 <img src={qrDataUrl} alt="QR code" width={104} height={104} className="rounded-lg" />
               )}
-              <span className="text-[11px] font-bold tracking-[0.2em] text-[#c96612] uppercase">
+              <span className="text-[11px] font-bold tracking-[0.2em] text-[#1F5C45] uppercase">
                 Scan to Order
               </span>
             </div>
@@ -222,15 +222,15 @@ export function MenuBookIntro() {
                 <div className="absolute inset-0 flex overflow-hidden" style={{ backfaceVisibility: "hidden" }}>
                   {/* Left page — an even half, like the real facing page of
                       an open book, not a narrow label strip. */}
-                  <div className="relative flex w-1/2 shrink-0 flex-col items-center justify-center gap-3 bg-[#fdf8ee] px-4 text-center">
-                    <span className="text-[10px] font-bold tracking-[0.25em] text-[#c96612] uppercase">
+                  <div className="relative flex w-1/2 shrink-0 flex-col items-center justify-center gap-3 bg-[#f7f9f4] px-4 text-center">
+                    <span className="text-[10px] font-bold tracking-[0.25em] text-[#1F5C45] uppercase">
                       On Menuko
                     </span>
-                    <span className="font-serif text-2xl leading-tight font-bold text-[#231f1a] sm:text-3xl">
+                    <span className="font-serif text-2xl leading-tight font-bold text-[#15261e] sm:text-3xl">
                       {page.cuisine}
                     </span>
-                    <span className="h-px w-8 bg-[#d8c6a8]" aria-hidden />
-                    <span className="text-[10px] tracking-[0.15em] text-[#8a7a68] uppercase">
+                    <span className="h-px w-8 bg-[#cad4c5]" aria-hidden />
+                    <span className="text-[10px] tracking-[0.15em] text-[#55645b] uppercase">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                   </div>
@@ -281,7 +281,7 @@ export function MenuBookIntro() {
                   style={{
                     backfaceVisibility: "hidden",
                     transform: "rotateY(180deg)",
-                    background: "linear-gradient(135deg, #efe4d1, #e4d6bc)",
+                    background: "linear-gradient(135deg, #e8ede4, #dde4d8)",
                   }}
                 >
                   <Mark className="h-9 w-9 opacity-25" />
@@ -299,7 +299,7 @@ export function MenuBookIntro() {
                 type="button"
                 onClick={() => scrollToPage(Math.max(currentIndex - 1, 0))}
                 aria-label="Previous page"
-                className="absolute top-1/2 -left-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#fdf8ee] text-[#8a7a68] shadow-lg transition hover:text-[#ea7c1f]"
+                className="absolute top-1/2 -left-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#f7f9f4] text-[#55645b] shadow-lg transition hover:text-[#1F5C45]"
               >
                 ‹
               </button>
@@ -307,7 +307,7 @@ export function MenuBookIntro() {
                 type="button"
                 onClick={() => scrollToPage(Math.min(currentIndex + 1, PAGES.length))}
                 aria-label="Next page"
-                className="absolute top-1/2 -right-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#fdf8ee] text-[#8a7a68] shadow-lg transition hover:text-[#ea7c1f]"
+                className="absolute top-1/2 -right-3 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#f7f9f4] text-[#55645b] shadow-lg transition hover:text-[#1F5C45]"
               >
                 ›
               </button>
@@ -315,7 +315,7 @@ export function MenuBookIntro() {
           )}
         </div>
 
-        <span className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 text-xs font-bold tracking-[0.2em] text-[#e7dfd0] uppercase">
+        <span className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 text-xs font-bold tracking-[0.2em] text-[#e0e6dc] uppercase">
           {revealed ? "Scroll down to explore Menuko" : "Scroll to turn the page"}
         </span>
       </div>
