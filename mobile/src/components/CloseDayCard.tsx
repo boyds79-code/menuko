@@ -55,8 +55,7 @@ export function CloseDayCard() {
           <Text style={styles.openButtonText}>Close day</Text>
         </TouchableOpacity>
         <Text style={styles.openHint}>
-          Enter today&apos;s delivery revenue and close out — Premium restaurants get a same-day sales
-          summary right after.
+          Enter today&apos;s delivery revenue and close out the day.
         </Text>
       </View>
     );
@@ -87,8 +86,7 @@ export function CloseDayCard() {
           </View>
         ) : (
           <Text style={styles.hint}>
-            Today&apos;s delivery revenue was recorded. A same-day sales report is included with the
-            Premium plan.
+            Today&apos;s delivery revenue was recorded and the day is closed.
           </Text>
         )}
         <TouchableOpacity style={styles.doneButton} onPress={reset}>

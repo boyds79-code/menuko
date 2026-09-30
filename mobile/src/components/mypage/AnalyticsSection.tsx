@@ -132,20 +132,11 @@ export function AnalyticsSection() {
         )}
       </View>
 
-      {isPremium ? (
+      {isPremium && (
         <>
           <SalesInsights />
           <SalesReportCard />
         </>
-      ) : (
-        <View style={[styles.card, styles.premiumCard]}>
-          <Text style={styles.premiumBadge}>Premium</Text>
-          <Text style={styles.cardTitle}>Deeper analytics</Text>
-          <Text style={styles.hint}>
-            Best-selling items, order combos, and your best-selling day/hour over the last week
-            or month — included with the Premium plan.
-          </Text>
-        </View>
       )}
     </View>
   );
@@ -272,16 +263,6 @@ const styles = StyleSheet.create({
   },
   comboText: { fontSize: 12, flex: 1 },
   comboCount: { fontSize: 10, color: "#55645B" },
-  premiumCard: { alignItems: "center", textAlign: "center" },
-  premiumBadge: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#1F5C45",
-    backgroundColor: "#DCEBE2",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
   monthRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20, paddingVertical: 4 },
   monthArrow: { fontSize: 22, fontWeight: "700", color: "#1F5C45", paddingHorizontal: 8 },
   monthArrowDisabled: { color: "#C9D3C4" },

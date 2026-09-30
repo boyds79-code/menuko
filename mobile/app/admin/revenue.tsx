@@ -13,9 +13,12 @@ import { colors, fonts } from "@/theme";
 // Revenue — opened from Floor's "Revenue today" card. Today is free on every
 // plan (read straight from orders, like the Floor card). 7/30-day history
 // comes from sales_by_day, which is Premium-gated server-side
-// (0024_premium_gate_sales_rpcs.sql) — a free restaurant gets no rows, so
-// the locked card here is presentation only, not the enforcement. Orders
-// are never pruned, so upgrading shows history from before the upgrade.
+// (0024_premium_gate_sales_rpcs.sql) — a free restaurant gets no rows.
+// Free restaurants see only Today here, with no locked teaser or plan
+// label: the iOS app is a free companion to the web service (App Store
+// guideline 3.1.3(f)), so it must not promote or point to paid plans.
+// Orders are never pruned, so a restaurant moved to Premium sees history
+// from before the change.
 
 type Range = "today" | "7" | "30";
 const RANGES: { key: Range; label: string }[] = [
@@ -150,18 +153,13 @@ export default function AdminRevenue() {
         <Text style={styles.title} accessibilityRole="header">
           Revenue
         </Text>
-        {isPremium !== null && (
-          <Text style={[styles.planChip, isPremium ? styles.planChipPremium : styles.planChipFree]}>
-            {isPremium ? "PREMIUM" : "FREE"}
-          </Text>
-        )}
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
-        <SegmentedControl options={RANGES} value={range} onChange={setRange} />
+        {isPremium && <SegmentedControl options={RANGES} value={range} onChange={setRange} />}
 
         {range === "today" && (
           <>
@@ -193,8 +191,6 @@ export default function AdminRevenue() {
         )}
 
         {range !== "today" && isPremium === null && <ActivityIndicator color={colors.accent} />}
-
-        {range !== "today" && isPremium === false && <LockedHistory />}
 
         {range !== "today" && isPremium && (
           <>
@@ -274,53 +270,11 @@ function HeroStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const GHOST_BARS = [50, 44, 70, 96, 82, 60, 30];
-
-function LockedHistory() {
-  return (
-    <View style={styles.lockedWrap}>
-      <View style={[styles.card, styles.ghost]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <View style={[styles.ghostLine, { width: 90 }]} />
-        <View style={[styles.ghostLine, { width: 170, height: 28, marginTop: 8 }]} />
-        <View style={[styles.chart, { gap: 8 }]}>
-          {GHOST_BARS.map((h, i) => (
-            <View key={i} style={[styles.bar, { flex: 1, height: h, backgroundColor: colors.accentSoft }]} />
-          ))}
-        </View>
-      </View>
-      <View style={styles.lockCard}>
-        <View style={styles.lockIcon}>
-          <Ionicons name="lock-closed-outline" size={22} color={colors.accentText} />
-        </View>
-        <Text style={styles.lockTitle}>Every day&apos;s sales, kept for you</Text>
-        <Text style={styles.lockBody}>
-          Menuko already saves all your orders. Premium lets you look back at past days, weeks and months,
-          and compare them.
-        </Text>
-        <View style={styles.lockPill}>
-          <Text style={styles.lockPillText}>Included with the Premium plan</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   topBar: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 8 },
   backButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   title: { flex: 1, fontSize: 26, fontFamily: fonts.display, color: colors.ink, letterSpacing: -0.5 },
-  planChip: {
-    fontSize: 11,
-    fontWeight: "700",
-    borderRadius: 999,
-    overflow: "hidden",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginRight: 10,
-  },
-  planChipPremium: { backgroundColor: colors.saffron, color: colors.ink },
-  planChipFree: { backgroundColor: colors.line, color: colors.muted },
   content: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40, gap: 14 },
   hero: { backgroundColor: colors.accent, borderRadius: 26, padding: 20, gap: 4 },
   heroLabel: { fontSize: 13, fontWeight: "500", color: colors.heroMuted },
@@ -362,44 +316,4 @@ const styles = StyleSheet.create({
   dayLabel: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.ink },
   dayOrders: { fontSize: 12, color: colors.muted },
   dayTotal: { width: 96, textAlign: "right", fontSize: 14, fontWeight: "700", color: colors.ink },
-  lockedWrap: { minHeight: 420 },
-  ghost: { opacity: 0.45 },
-  ghostLine: { height: 14, borderRadius: 7, backgroundColor: colors.line },
-  lockCard: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    top: 40,
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: 20,
-    gap: 10,
-    shadowColor: colors.ink,
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 6,
-  },
-  lockIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: colors.accentSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  lockTitle: { fontSize: 21, fontFamily: fonts.display, color: colors.ink },
-  lockBody: { fontSize: 13, lineHeight: 20, color: colors.muted },
-  lockPill: {
-    marginTop: 4,
-    minHeight: 48,
-    borderRadius: 999,
-    backgroundColor: colors.accentSoft,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  lockPillText: { fontSize: 14, fontWeight: "700", color: colors.accentText },
 });

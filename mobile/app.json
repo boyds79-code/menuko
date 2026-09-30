@@ -44,7 +44,10 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Menuko uses your location only while the app is open, to confirm you're at the restaurant before approving a customer's cancel/change request."
+          "locationWhenInUsePermission": "Menuko uses your location only while the app is open, to confirm you're at the restaurant before approving a customer's cancel or change request. Menuko does not track your location in the background.",
+          "locationAlwaysAndWhenInUsePermission": "Menuko uses your location only while the app is open, to confirm you're at the restaurant before approving a customer's cancel or change request. Menuko does not track your location in the background.",
+          "locationAlwaysPermission": "Menuko uses your location only while the app is open, to confirm you're at the restaurant before approving a customer's cancel or change request. Menuko does not track your location in the background.",
+          "motionUsagePermission": "Menuko does not use motion or fitness data. The app never asks for this permission."
         }
       ],
       [

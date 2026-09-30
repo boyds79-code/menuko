@@ -167,7 +167,14 @@ export function BusinessSection() {
         body: { action: "invite", role, email: staffEmail.trim(), password: staffPassword },
       });
       if (fnError || data?.error) {
-        setStaffError(data?.error ?? "Failed to create the account.");
+        // The Edge Function's limit message mentions plans; the app shows a
+        // neutral one instead (no plan promotion in the iOS app — 3.1.3(f)).
+        const message: string | undefined = data?.error;
+        setStaffError(
+          message && /plan/i.test(message)
+            ? `This restaurant already has a ${role} login. Remove it before adding another.`
+            : (message ?? "Failed to create the account."),
+        );
         return;
       }
       setStaffEmail("");
@@ -281,8 +288,9 @@ export function BusinessSection() {
 
       <AccordionCard title="Staff accounts" subtitle="Kitchen and cashier logins" icon="people-outline">
         <Text style={styles.hint}>
-          The free plan supports 1 owner + 1 kitchen + 1 cashier account. Additional accounts
-          require the premium plan.
+          {isPremium
+            ? "Add as many kitchen and cashier logins as your team needs."
+            : "Your restaurant can have 1 kitchen and 1 cashier login."}
         </Text>
         {accounts.map((a) => (
           <View key={a.id} style={styles.accountRow}>
@@ -379,54 +387,48 @@ export function BusinessSection() {
         />
       </AccordionCard>
 
-      <AccordionCard
-        title="Delivery channels"
-        subtitle="GrabFood and foodpanda commission"
-        icon="bicycle-outline"
-        badge="Premium"
-      >
-        {isPremium ? (
-          <Text style={styles.hint}>Your Premium plan is active — these rates are used in your Sales Report.</Text>
-        ) : (
-          <View style={styles.warnBox}>
-            <Text style={styles.warnTitle}>Not used on the Free plan</Text>
-            <Text style={styles.warnText}>
-              These rates only feed the Premium Sales Report, so on the Free (basic) plan they have no
-              effect. You can fill them in now — they&apos;re saved and are used only if your restaurant is on the Premium plan.
-            </Text>
-          </View>
-        )}
-        <Text style={styles.hint}>
-          Your actual commission rate for each delivery platform, so the Sales Report can show
-          real net revenue instead of an industry-average estimate (26%). Optional.
-        </Text>
-        <Text style={styles.label}>GrabFood commission (%)</Text>
-        <TextInput
-          value={grabfoodPct}
-          onChangeText={setGrabfoodPct}
-          onBlur={() => {
-            const parsed = grabfoodPct.trim() ? Number(grabfoodPct) : null;
-            save({ grabfood_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
-          }}
-          placeholder="e.g. 26"
-          placeholderTextColor={colors.faint}
-          keyboardType="decimal-pad"
-          style={[styles.input, { width: 100 }]}
-        />
-        <Text style={styles.label}>foodpanda commission (%)</Text>
-        <TextInput
-          value={foodpandaPct}
-          onChangeText={setFoodpandaPct}
-          onBlur={() => {
-            const parsed = foodpandaPct.trim() ? Number(foodpandaPct) : null;
-            save({ foodpanda_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
-          }}
-          placeholder="e.g. 26"
-          placeholderTextColor={colors.faint}
-          keyboardType="decimal-pad"
-          style={[styles.input, { width: 100 }]}
-        />
-      </AccordionCard>
+      {/* Commission rates only feed the Sales Report, which only Premium
+          restaurants have — so the card is shown only to them. The iOS app is
+          a free companion to the web service (App Store guideline 3.1.3(f)):
+          it never advertises or points to paid plans. */}
+      {isPremium && (
+        <AccordionCard
+          title="Delivery channels"
+          subtitle="GrabFood and foodpanda commission"
+          icon="bicycle-outline"
+        >
+          <Text style={styles.hint}>
+            Your actual commission rate for each delivery platform, so the Sales Report can show
+            real net revenue instead of an industry-average estimate (26%). Optional.
+          </Text>
+          <Text style={styles.label}>GrabFood commission (%)</Text>
+          <TextInput
+            value={grabfoodPct}
+            onChangeText={setGrabfoodPct}
+            onBlur={() => {
+              const parsed = grabfoodPct.trim() ? Number(grabfoodPct) : null;
+              save({ grabfood_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
+            }}
+            placeholder="e.g. 26"
+            placeholderTextColor={colors.faint}
+            keyboardType="decimal-pad"
+            style={[styles.input, { width: 100 }]}
+          />
+          <Text style={styles.label}>foodpanda commission (%)</Text>
+          <TextInput
+            value={foodpandaPct}
+            onChangeText={setFoodpandaPct}
+            onBlur={() => {
+              const parsed = foodpandaPct.trim() ? Number(foodpandaPct) : null;
+              save({ foodpanda_commission_pct: parsed !== null && Number.isNaN(parsed) ? null : parsed });
+            }}
+            placeholder="e.g. 26"
+            placeholderTextColor={colors.faint}
+            keyboardType="decimal-pad"
+            style={[styles.input, { width: 100 }]}
+          />
+        </AccordionCard>
+      )}
 
       <AccordionCard title="Tables & QR codes" subtitle="Add tables, print their QR codes" icon="grid-outline">
         <TablesSection />
