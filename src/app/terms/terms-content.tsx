@@ -8,7 +8,7 @@ export function TermsContent() {
     <>
       <div>
         <h1 className="font-display text-3xl font-bold tracking-[-0.02em] sm:text-4xl">Terms of Service</h1>
-        <p className="mt-1 text-xs text-muted">Last updated: September 28, 2026</p>
+        <p className="mt-1 text-xs text-muted">Last updated: October 2, 2026</p>
       </div>
 
       <p>
@@ -25,7 +25,8 @@ export function TermsContent() {
           multiple languages for Customers — take orders via table QR codes, and manage kitchen,
           cashier, and (on a premium plan) analytics workflows. The free plan includes one owner, one
           kitchen, and one cashier account per Restaurant, full ordering/kitchen/cashier features, and
-          menu translation; additional accounts and deeper analytics require the premium plan.
+          today&apos;s sales; additional accounts, sales history and reports, and menu translation for
+          Customers require the premium plan.
         </p>
       </Section>
 
@@ -66,13 +67,21 @@ export function TermsContent() {
 
       <Section title="5. Premium plan">
         <p>
-          Some features are gated to a premium plan; others may be offered free to all Restaurants for
-          a time as part of a promotion while Menuko grows its user base. In either case, we may
-          change, at our sole discretion and at any time, which features are free versus premium,
-          introduce new paid plans, or end a promotional period — including for a feature you are
-          currently using for free. Pricing and billing terms for the premium plan will be provided
-          separately at the time it becomes self-serve; until then, plan changes are made manually by
-          Menuko.
+          Menuko Premium costs USD 9 per month or USD 90 per year, plus applicable taxes shown at
+          checkout. Subscriptions renew automatically until cancelled and are purchased on menuko.net
+          — never inside the Menuko mobile apps. Payments are processed by our reseller and merchant of
+          record, Paddle.com, whose buyer terms also apply to your purchase.
+        </p>
+        <p>
+          A Restaurant can start a free Premium trial without a payment card; when it ends, the account
+          returns to the free plan unless you subscribe. Cancellations and refunds follow our{" "}
+          <Link href="/refund-policy" className="font-semibold text-brand underline underline-offset-4">Refund &amp; Cancellation Policy</Link>.
+        </p>
+        <p>
+          Some features may be offered free to all Restaurants for a time as part of a promotion. We may
+          change which features are free versus premium, introduce new plans, or change prices; price
+          changes apply from your next billing period after we notify you, and you can cancel before
+          they take effect.
         </p>
       </Section>
 

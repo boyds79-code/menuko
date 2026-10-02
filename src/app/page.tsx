@@ -572,6 +572,7 @@ function SiteFooter() {
         { href: "mailto:hello@menuko.net", label: "Contact" },
         { href: "/privacy", label: "Privacy Policy" },
         { href: "/terms", label: "Terms of Service" },
+        { href: "/refund-policy", label: "Refund Policy" },
       ],
     },
   ];
